@@ -450,37 +450,27 @@ function AdminPanel({onClose}) {
     setAiProfile(null);
     goTo(5);
 
-    const isTE = currentLang === "te";
     const choiceDescriptions = finalAnswers.map((ci, i) => {
       const s = SCENARIOS[i];
       const chosen = s[currentLang].ch[ci].l;
       const sit    = s[currentLang].sit.replace(/\n/g," ");
-      return `Situation ${i+1}: "${sit}" -> Chosen: "${chosen}"`;
+      return `Situation ${i+1}: "${sit}" → User chose: "${chosen}"`;
     }).join("\n");
-
-    const systemPrompt = isTE
-      ? `నువ్వు MPV Trading Psychology Analyzer. Trader 4 responses analyze చేయి. ONLY JSON respond చేయి:\n{"primaryPattern":"2 lines Telugu","coreInsight":"2-3 sentences Telugu","behaviorLines":["S1 Telugu","S2 Telugu","S3 Telugu","S4 Telugu"],"hiddenStrength":"strength Telugu","warningLine":"warning Telugu"}`
-      : `You are MPV Trading Psychology Analyzer. Analyze trader 4 responses. ONLY JSON, no extra text:\n{"primaryPattern":"2 lines English","coreInsight":"2-3 sentences English","behaviorLines":["S1 English","S2 English","S3 English","S4 English"],"hiddenStrength":"strength English","warningLine":"warning English"}`;
 
     let parsed = null;
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      // Call our Vercel serverless function — no CORS issue
+      const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: "user", content: `Analyze these trader responses:\n${choiceDescriptions}` }]
-        })
+        body: JSON.stringify({ choiceDescriptions, lang: currentLang })
       });
-      const data = await res.json();
-      const raw = (data.content?.[0]?.text || "").replace(/```json|```/g,"").trim();
-      const match = raw.match(/\{[\s\S]*\}/);
-      if(match) parsed = JSON.parse(match[0]);
-    } catch(e) { console.log("AI err:",e); }
+      if(res.ok) {
+        parsed = await res.json();
+      }
+    } catch(e) { console.log("API err:", e); }
 
-    // Robust fallback if AI fails or returns bad JSON
+    // Fallback only if serverless call fails
     if(!parsed || !parsed.primaryPattern) {
       const sp = buildProfile(finalAnswers, currentLang);
       parsed = {
@@ -489,12 +479,12 @@ function AdminPanel({onClose}) {
         behaviorLines:  sp.behaviorLines,
         hiddenStrength: sp.strengthLine,
         warningLine:    sp.warningLine,
+        actionStep:     "",
       };
     }
 
     setAiProfile(parsed);
     setAiLoading(false);
-
   };
 
   const handleNext=()=>{
@@ -697,7 +687,7 @@ function AdminPanel({onClose}) {
         </div>
       );
     }
-    const {primaryPattern,coreInsight,behaviorLines=[],hiddenStrength,warningLine}=aiProfile;
+    const {primaryPattern,coreInsight,behaviorLines=[],hiddenStrength,warningLine,actionStep}=aiProfile;
     return(
       <div style={{...sec,textAlign:"center"}}>
         <Tg>{L.res.tag}</Tg>
@@ -727,7 +717,8 @@ function AdminPanel({onClose}) {
           </div>
         )}
         {hiddenStrength&&<div style={{maxWidth:620,margin:"0 auto 16px",padding:"18px 22px",background:"rgba(107,142,107,0.07)",border:"1px solid rgba(107,142,107,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(107,142,107,0.85)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.strength}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{hiddenStrength}</p></div>}
-        {warningLine&&<div style={{maxWidth:620,margin:"0 auto 32px",padding:"18px 22px",background:"rgba(139,26,26,0.07)",border:"1px solid rgba(139,26,26,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(200,80,80,0.8)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.notice}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{warningLine}</p></div>}
+        {warningLine&&<div style={{maxWidth:620,margin:"0 auto 16px",padding:"18px 22px",background:"rgba(139,26,26,0.07)",border:"1px solid rgba(139,26,26,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(200,80,80,0.8)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.notice}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{warningLine}</p></div>}
+        {actionStep&&<div style={{maxWidth:620,margin:"0 auto 32px",padding:"18px 22px",background:"rgba(201,168,76,0.06)",border:`1px solid ${G.gold}30`,borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:`${G.gold}90`,textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{lang==="te"?"ఈ వారం నుండి చేయి":"Start This Week"}</p><p className={lc} style={{fontSize:14,color:G.smoke,lineHeight:1.8,fontWeight:600}}>{actionStep}</p></div>}
         <div style={{maxWidth:580,margin:"0 auto 40px",padding:"26px 28px",border:`1px solid ${G.gold}35`,borderRadius:7,background:`${G.gold}06`}}>
           <p className={lc} style={{fontSize:"clamp(16px,2vw,21px)",color:G.smoke,lineHeight:2}}>"{L.res.close}<br/><span style={{color:G.gold}}>{L.res.closeg}"</span></p>
         </div>
@@ -748,6 +739,7 @@ function AdminPanel({onClose}) {
       const bLines  = aiProfile?.behaviorLines || [];
       const strength= aiProfile?.hiddenStrength|| "";
       const warning = aiProfile?.warningLine   || "";
+      const action  = aiProfile?.actionStep    || "";
 
       // Full detailed report — Cherry receives this from user's WhatsApp
       const msg=encodeURIComponent(
@@ -778,6 +770,9 @@ ${strength}
 
 ⚠️ *KEY WARNING*
 ${warning}
+
+🔑 *ACTION STEP*
+${action}
 ━━━━━━━━━━━━━━━━━━━━━
 _Via mindpowervaultt.com_`
       );
