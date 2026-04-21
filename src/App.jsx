@@ -146,9 +146,21 @@ function buildProfile(answers, L) {
 }
 
 const REVIEWS=[
-  {name:"Ravi K.",city:"Hyderabad",stars:5,te:"MPV కి రాకముందు నేను రోజూ revenge trade చేసేవాడిని. 3 నెలల తర్వాత — ఒక్కసారి కూడా చేయలేదు. 2 సంవత్సరాల తర్వాత capital intact గా ఉంది.",en:"Before MPV I revenge traded every single day. 3 months later — not once. Capital intact for the first time in 2 years."},
-  {name:"Suresh M.",city:"Vijayawada",stars:5,te:"Cherry strategies నేర్పించడు. నిజంగా నిన్ను నువ్వు చూసుకోవడం నేర్పిస్తాడు. అదే నాకు work అయింది.",en:"Cherry doesn't teach strategies. He teaches you to see yourself honestly. That's the only thing that actually worked."},
-  {name:"Anitha P.",city:"Bengaluru",stars:5,te:"Chart patterns కోసం వచ్చాను. Psychology వల్ల ఉండిపోయాను. Win rate పెద్దగా మారలేదు — కానీ drawdown 60% తగ్గింది.",en:"I came for chart patterns. I stayed for the psychology. Win rate didn't change much — but my drawdown dropped 60%."},
+  {name:"Ravi K.",city:"Hyderabad",stars:5,
+   te:"K Prasad గారి దగ్గరకు రాకముందు నేను రోజూ revenge trade చేసేవాడిని. 3 నెలల తర్వాత — ఒక్కసారి కూడా చేయలేదు. Capital intact గా ఉంది.",
+   en:"Before K Prasad's guidance I revenge traded daily. 3 months later — not once. Capital fully intact."},
+  {name:"Suresh M.",city:"Vijayawada",stars:5,
+   te:"K Prasad గారు strategies నేర్పించరు. నిన్ను నువ్వు చూసుకోవడం నేర్పిస్తారు. అదే నాకు work అయింది. చాలా మంది traders ని train చేసిన experience వారి దగ్గర ఉంది.",
+   en:"K Prasad doesn't teach strategies. He teaches you to see yourself. That's what worked. Years of experience training traders shows."},
+  {name:"Anitha P.",city:"Bengaluru",stars:5,
+   te:"Chart patterns కోసం వచ్చాను. Psychology వల్ల ఉండిపోయాను. Win rate మారలేదు — కానీ drawdown 60% తగ్గింది. K Prasad గారి approach unique గా ఉంటుంది.",
+   en:"Came for chart patterns. Stayed for the psychology. Win rate unchanged — but drawdown dropped 60%. K Prasad's approach is truly unique."},
+  {name:"Kiran T.",city:"Hyderabad",stars:5,
+   te:"6 సంవత్సరాల trading లో ఎవరూ చెప్పనిది K Prasad గారు చెప్పారు — problem strategy లో కాదు, నా mind లో ఉంది అని.",
+   en:"In 6 years of trading nobody told me what K Prasad did — the problem isn't the strategy, it's in my mind."},
+  {name:"Deepika R.",city:"Chennai",stars:5,
+   te:"Stop loss hit అయినప్పుడు నా reaction ఏమిటో నాకే తెలియదు. K Prasad గారు clearly చూపించారు. ఇప్పుడు aware గా trade చేస్తున్నాను.",
+   en:"I didn't even know how I reacted when SL hit. K Prasad showed it clearly. Now I trade with full awareness."},
 ];
 
 const css=`
@@ -176,13 +188,7 @@ const css=`
   .rit{animation:ritIn 0.85s ease forwards}
   .lg{animation:lineG 0.7s ease 0.2s forwards;height:0;opacity:0}
   input{outline:none}input:focus{border-color:rgba(201,168,76,0.5)!important}
-  .aifab{position:fixed;bottom:28px;right:28px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#9A7020);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 24px rgba(201,168,76,0.4);z-index:400;transition:all 0.3s}
-  .aifab:hover{transform:scale(1.1)}
-  .aimod{position:fixed;bottom:96px;right:20px;width:340px;max-height:500px;background:#0F0F16;border:1px solid rgba(201,168,76,0.25);border-radius:12px;display:flex;flex-direction:column;z-index:400;box-shadow:0 8px 48px rgba(0,0,0,0.8)}
-  .aimsg{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-  .mu{align-self:flex-end;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);border-radius:10px 10px 2px 10px;padding:9px 13px;max-width:80%}
-  .ma{align-self:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px 10px 10px 2px;padding:9px 13px;max-width:85%}
-  @media(max-width:500px){.aimod{width:calc(100vw - 24px);right:12px}}
+
 `;
 
 const GL=()=>(
@@ -197,49 +203,58 @@ const Tg=({c,ch})=>(
   <p style={{fontSize:11,letterSpacing:5,color:c==="s"?`${G.smoke}60`:`${G.gold}90`,textTransform:"uppercase",marginBottom:14,fontFamily:sans}}>{ch}</p>
 );
 
-function AIChat({lang}){
-  const [open,setOpen]=useState(false);
-  const [msgs,setMsgs]=useState([{r:"a",t:lang==="te"?"నమస్కారం! Trading psychology గురించి ఏమైనా అడుగు.":"Hello! Ask me anything about trading psychology."}]);
-  const [inp,setInp]=useState("");
-  const [loading,setLoading]=useState(false);
-  const endRef=useRef(null);
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
-  const send=async()=>{
-    if(!inp.trim()||loading)return;
-    const q=inp.trim();setInp("");
-    setMsgs(m=>[...m,{r:"user",t:q}]);setLoading(true);
-    try{
-      const sys=lang==="te"?"నువ్వు MPV Trading Psychology Expert. Telugu లో short, honest, practical answers ఇవ్వు. Investment advice ఇవ్వకు.":"You are MPV Trading Psychology Expert. Give short, honest, practical answers about trader psychology only. No investment advice.";
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,system:sys,messages:[{role:"user",content:q}]})});
-      const d=await res.json();
-      setMsgs(m=>[...m,{r:"a",t:d.content?.[0]?.text||"Try again."}]);
-    }catch{setMsgs(m=>[...m,{r:"a",t:"Connection error. Try again."}]);}
-    setLoading(false);
-  };
+
+// ─── PSYCHOLOGY BASICS COMPONENT ──────────────────────────────
+const PSYCH_TOPICS = {
+  te:[
+    { q:"FOMO అంటే ఏమిటి?", a:"Fear Of Missing Out — Trade miss అవుతానని భయం. ఇది నిన్ను late entries తీసుకోవడానికి, poor setups లో enter అవ్వడానికి force చేస్తుంది. Fix: Entry criteria రాసుకో. Criteria లేకుండా enter అవ్వకు." },
+    { q:"Revenge Trading ఎందుకు జరుగుతుంది?", a:"Loss తర్వాత ఆ పైకి తక్షణంగా money recover చేయాలని ego react చేస్తుంది. ఇది emotion-driven trade — market analysis కాదు. Fix: Loss వచ్చిన తర్వాత minimum 30 minutes screen నుండి దూరంగా వెళ్ళు." },
+    { q:"Overconfidence ఎప్పుడు వస్తుంది?", a:"Win streak వచ్చినప్పుడు 'నేను market ని understand చేశాను' అని feel అవుతావు. ఇది position size పెంచడానికి, rules break చేయడానికి lead అవుతుంది. Fix: Good days లో rules మరింత strictly follow చేయి." },
+    { q:"Loss తర్వాత ఏమి చేయాలి?", a:"1. Screen వదిలేయి. 2. Journal లో రాయి — ఏమి జరిగిందో, ఎందుకు enter అయ్యావో. 3. Rule follow చేశావా లేదా check చేయి. 4. Next trade కి fresh గా రావడానికి rest తీసుకో." },
+    { q:"Stop Loss పెట్టినా move చేయడం ఎందుకు?", a:"Loss accept చేయలేకపోవడం వల్ల. SL hit అవుతే 'తప్పు అయ్యాను' అని feel అవుతావు. ఆ feeling నుండి escape కోసం SL move చేస్తావు. Fix: SL పెట్టిన తర్వాత screen వదిలేయి." },
+    { q:"Consistency ఎలా వస్తుంది?", a:"Rules follow చేయడం వల్ల — results వల్ల కాదు. Good trade bad result రావచ్చు. Bad trade good result రావచ్చు. Process correct అయితే long term లో results correct అవుతాయి." },
+  ],
+  en:[
+    { q:"What is FOMO in trading?", a:"Fear Of Missing Out — the fear of missing a trade. It forces late entries and poor setups. Fix: Write your entry criteria. Never enter without it." },
+    { q:"Why does revenge trading happen?", a:"After a loss, ego reacts to recover money immediately. This is emotion-driven, not analysis-driven. Fix: After every loss, step away from the screen for minimum 30 minutes." },
+    { q:"When does overconfidence appear?", a:"During a winning streak you feel you 'understand the market.' This leads to oversizing and rule-breaking. Fix: Follow rules even more strictly on good days." },
+    { q:"What to do after a loss?", a:"1. Leave the screen. 2. Journal — what happened, why you entered. 3. Check if you followed your rule. 4. Rest before the next trade." },
+    { q:"Why do traders move their Stop Loss?", a:"Because they can't accept being wrong. Moving SL is an escape from that feeling. Fix: Place SL then leave the screen." },
+    { q:"How does consistency come?", a:"By following rules — not from results. A good trade can have a bad result. A bad trade can have a good result. Correct process leads to correct results long term." },
+  ]
+};
+
+function PsychBasics({lang, lc}){
+  const [open, setOpen] = useState(null);
+  const topics = PSYCH_TOPICS[lang] || PSYCH_TOPICS.te;
   return(
-    <>
-      <button className="aifab" onClick={()=>setOpen(o=>!o)}>{open?"✕":"🧠"}</button>
-      {open&&(
-        <div className="aimod">
-          <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(201,168,76,0.15)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><div style={{fontSize:13,fontWeight:700,color:G.gold,fontFamily:sans}}>MPV AI</div><div style={{fontSize:10,color:G.soft,fontFamily:sans}}>{lang==="te"?"Trading Psychology Expert":"Trading Psychology Expert"}</div></div>
-            <button onClick={()=>setOpen(false)} style={{background:"transparent",border:"none",color:G.soft,cursor:"pointer",fontSize:18,fontFamily:sans}}>✕</button>
-          </div>
-          <div className="aimsg">
-            {msgs.map((m,i)=><div key={i} className={m.r==="user"?"mu":"ma"}><p style={{fontSize:13,color:G.mid,lineHeight:1.7,fontFamily:sans,whiteSpace:"pre-wrap"}}>{m.t}</p></div>)}
-            {loading&&<div className="ma"><p style={{fontSize:13,color:G.soft,fontFamily:sans}}>...</p></div>}
-            <div ref={endRef}/>
-          </div>
-          <div style={{padding:"10px",borderTop:"1px solid rgba(201,168,76,0.12)",display:"flex",gap:8}}>
-            <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()}
-              placeholder={lang==="te"?"Psychology అడుగు...":"Ask psychology..."}
-              style={{flex:1,background:"rgba(201,168,76,0.05)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:6,padding:"8px 11px",color:G.smoke,fontSize:13,fontFamily:sans}}/>
-            <button onClick={send} disabled={loading} style={{padding:"8px 14px",background:`linear-gradient(135deg,${G.gold},#9A7020)`,color:G.black,border:"none",borderRadius:6,fontFamily:sans,fontSize:12,fontWeight:700,cursor:"pointer",opacity:loading?0.5:1}}>→</button>
-          </div>
-          <p style={{padding:"6px 12px",fontSize:10,color:G.vsoft,fontFamily:sans,textAlign:"center",borderTop:"1px solid rgba(201,168,76,0.08)"}}>{lang==="te"?"Investment advice కాదు":"Not investment advice"}</p>
+    <div style={{maxWidth:620,margin:"0 auto 52px",textAlign:"left"}}>
+      <p style={{fontSize:11,letterSpacing:5,color:`rgba(201,168,76,0.7)`,textTransform:"uppercase",marginBottom:6,fontFamily:"'DM Sans',sans-serif",textAlign:"center"}}>
+        {lang==="te"?"Trading Psychology — Basic Concepts":"Trading Psychology — Basic Concepts"}
+      </p>
+      <p style={{fontSize:12,color:"rgba(240,237,228,0.4)",textAlign:"center",marginBottom:20,fontFamily:"'DM Sans',sans-serif"}}>
+        {lang==="te"?"మరింత తెలుసుకోవాలంటే K Prasad గారిని contact చేయండి →":"For deeper understanding, contact K Prasad →"}
+      </p>
+      {topics.map((t,i)=>(
+        <div key={i} style={{marginBottom:8,border:"1px solid rgba(201,168,76,0.15)",borderRadius:6,overflow:"hidden"}}>
+          <button onClick={()=>setOpen(open===i?null:i)}
+            style={{width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",textAlign:"left"}}>
+            <span className={lc} style={{fontSize:14,color:"#F5F2EA",fontWeight:600}}>{t.q}</span>
+            <span style={{color:"#C9A84C",fontSize:18,flexShrink:0,marginLeft:12}}>{open===i?"−":"+"}</span>
+          </button>
+          {open===i&&(
+            <div style={{padding:"14px 18px 18px",background:"rgba(201,168,76,0.02)"}}>
+              <p className={lc} style={{fontSize:13,color:"#D0CCBF",lineHeight:1.9}}>{t.a}</p>
+              <div style={{marginTop:14,padding:"10px 14px",background:"rgba(201,168,76,0.06)",borderRadius:4,border:"1px solid rgba(201,168,76,0.15)"}}>
+                <p style={{fontSize:12,color:"#C9A84C",fontFamily:"'DM Sans',sans-serif"}}>
+                  {lang==="te"?"💡 Indepth గా నేర్చుకోవాలంటే → K Prasad గారిని contact చేయండి":"💡 To learn this in depth → Contact K Prasad"}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </>
+      ))}
+    </div>
   );
 }
 
@@ -357,7 +372,7 @@ Be specific to their actual choices. No generic advice.`;
   const INT={te:{t1:"ఇది test కాదు.",t2:"ఇది నీ mirror.",p1:"Score రాదు. Marks రావు. Right/Wrong లేదు.",p2:"4 real situations వస్తాయి.\nనీ honest reaction select చేయి.\nనీ behavior ని నేను reflect చేస్తాను.",tags:["4 Situations","నీ Reactions","Behavior Analysis","నీ Profile"],cta:"Start →"},en:{t1:"This is not a test.",t2:"This is your mirror.",p1:"No scores. No marks. No right or wrong.",p2:"4 real trading situations will appear.\nChoose your honest reaction.\nI will reflect your behavior back to you.",tags:["4 Situations","Your Reactions","Behavior Analysis","Your Profile"],cta:"Start →"}};
   const RES={te:{tag:"నీ Behavior Analysis",primary:"Primary Pattern Detected",breakdown:"4 Situations లో నీ Behavior",strength:"Hidden Strength",notice:"Notice చేయి",close:"నువ్వు ఇప్పుడు నీ గురించి చదివావు.",closeg:"ఇప్పటి నుండి నీ trading వేరేగా మొదలవుతుంది.",cta:"నా Analysis Save చేసుకో →"},en:{tag:"Your Behavior Analysis",primary:"Primary Pattern Detected",breakdown:"Your Behavior Across 4 Situations",strength:"Hidden Strength",notice:"Pay Attention",close:"You have now read about yourself.",closeg:"Your trading changes from this point.",cta:"Save My Analysis →"}};
   const LED={te:{tag:"నీ Analysis Save చేసుకో",th:"నీ analysis నీకు పంపిస్తా.",tg:"నీ పేరు చెప్పు.",sub:"మీ report WhatsApp కి వస్తుంది. K Prasad personal గా review చేస్తారు.",nl:"మీ పేరు",np:"మీ పేరు రాయండి",wl:"WhatsApp Number",wp:"10-digit number రాయండి...",el:"మీ Trading Experience",lvls:[{v:"beginner",l:"Beginner — Trading start చేశాను"},{v:"struggling",l:"Struggling — Losses అవుతున్నాయి"},{v:"inconsistent",l:"Inconsistent — కొన్నిసార్లు profit, కొన్నిసార్లు loss"},{v:"experienced",l:"Experienced — System కోసం వెతుకుతున్నా"}],sub2:"నా Report పంపించు →",send:"పంపిస్తున్నాను...",priv:"మీ details ఎవరికీ share చేయం. Spam రాదు.",eN:"పేరు రాయి",eW:"Valid WhatsApp number రాయి",eL:"Level select చేయి"},en:{tag:"Save Your Analysis",th:"I will send your analysis.",tg:"Tell me who you are.",sub:"Your report comes to WhatsApp. Cherry personally reviews it.",nl:"Your Name",np:"Enter your name...",wl:"WhatsApp Number",wp:"Enter 10-digit number...",el:"Your Trading Experience",lvls:[{v:"beginner",l:"Beginner — Just started trading"},{v:"struggling",l:"Struggling — Taking regular losses"},{v:"inconsistent",l:"Inconsistent — Sometimes profit, sometimes loss"},{v:"experienced",l:"Experienced — Looking for a system"}],sub2:"Send My Report →",send:"Sending...",priv:"Your details are never shared. No spam.",eN:"Enter your name",eW:"Enter valid WhatsApp number",eL:"Select your level"}};
-  const CNV={te:{tag:"నీ తర్వాత Step",h:"మీ problem ఇప్పుడు clearly తెలుసు.",sub:'"Analysis మాత్రమే చాలదు. దాన్ని fix చేయడానికి ఒక system కావాలి."',cards:["నువ్వు chart చదవడం నేర్చుకున్నావు. కానీ chart చూసే moment లో నీ mind ని control చేయడం నేర్చుకోలేదు.","Strategy correct గా ఉంటుంది. కానీ ఆ strategy execute చేసే వ్యక్తి correct గా లేడు — అందుకే results వేరేగా వస్తున్నాయి.","Mind Power Vault లో ఉన్నది strategies కాదు — ఈ gap ని close చేసే system. నీ specific pattern కి specific approach."],k1:"ఇప్పుడైనా…",k2:"random గా trade చేయాలా…",k3:"లేదా conscious గా?",s1:"Strategies అన్ని చోట్లా దొరుకుతాయి.",h2:"Clarity ఇక్కడ మాత్రమే.",s2:"ఇది నీ స్థలం.",b1:"🎯 Mentorship కి Apply చేయి",b2:"Free Community లో Join చేయి",lk:"🔒 Limited seats. Cherry personally review చేస్తాడు.",bio:"11 సంవత్సరాల trading. 7 సంవత్సరాల teaching.",q:'"Profit promise చేయను. Clarity ఇస్తాను."',rev:"Real Students",soc:"మాతో Connect అవ్వు",disc:"SEBI registered investment advice కాదు."},en:{tag:"Your Next Step",h:"Your problem is now clearly visible.",sub:'"Analysis alone isn\'t enough. Fixing it requires a system."',cards:["You learned to read charts. But you haven't learned to control your mind while reading them.","The strategy is correct. But the person executing it isn't — that's why the results are different.","Mind Power Vault doesn't teach strategies — it closes this gap. A specific approach for your specific pattern."],k1:"From this point…",k2:"do you trade randomly…",k3:"or consciously?",s1:"Strategies are everywhere.",h2:"Clarity is rare.",s2:"This is where you find it.",b1:"🎯 Apply for Mentorship",b2:"Join Free Community",lk:"🔒 Limited seats. Cherry personally reviews each application.",bio:"11 years trading. 7 years teaching.",q:'"I don\'t promise profit. I offer clarity."',rev:"Real Students",soc:"Connect With Us",disc:"Not SEBI registered investment advice."}};
+  const CNV={te:{tag:"నీ తర్వాత Step",h:"మీ problem ఇప్పుడు clearly తెలుసు.",sub:'"Analysis మాత్రమే చాలదు. దాన్ని fix చేయడానికి ఒక system కావాలి."',cards:["నువ్వు chart చదవడం నేర్చుకున్నావు. కానీ chart చూసే moment లో నీ mind ని control చేయడం నేర్చుకోలేదు.","Strategy correct గా ఉంటుంది. కానీ ఆ strategy execute చేసే వ్యక్తి correct గా లేడు — అందుకే results వేరేగా వస్తున్నాయి.","Mind Power Vault లో ఉన్నది strategies కాదు — ఈ gap ని close చేసే system. నీ specific pattern కి specific approach."],k1:"ఇప్పుడైనా…",k2:"random గా trade చేయాలా…",k3:"లేదా conscious గా?",s1:"Strategies అన్ని చోట్లా దొరుకుతాయి.",h2:"Clarity ఇక్కడ మాత్రమే.",s2:"ఇది నీ స్థలం.",b1:"🎯 Mentorship కి Apply చేయి",b2:"Free Community లో Join చేయి",lk:"🔒 Limited seats. K Prasad గారు personally review చేస్తారు.",bio:"11 సంవత్సరాల trading. 7 సంవత్సరాల teaching. చాలా మంది traders ని train చేసిన experience.",q:'"Profit promise చేయను. Clarity ఇస్తాను."',rev:"Real Students",soc:"మాతో Connect అవ్వు",disc:"SEBI registered investment advice కాదు. | GST: 37DLNPM0984C1ZU"},en:{tag:"Your Next Step",h:"Your problem is now clearly visible.",sub:'"Analysis alone isn\'t enough. Fixing it requires a system."',cards:["You learned to read charts. But you haven't learned to control your mind while reading them.","The strategy is correct. But the person executing it isn't — that's why the results are different.","Mind Power Vault doesn't teach strategies — it closes this gap. A specific approach for your specific pattern."],k1:"From this point…",k2:"do you trade randomly…",k3:"or consciously?",s1:"Strategies are everywhere.",h2:"Clarity is rare.",s2:"This is where you find it.",b1:"🎯 Apply for Mentorship",b2:"Join Free Community",lk:"🔒 Limited seats. K Prasad personally reviews each application.",bio:"11 years trading. 7 years teaching. Experience training many traders.",q:'"I don\'t promise profit. I offer clarity."',rev:"Real Students",soc:"Connect With Us",disc:"Not SEBI registered investment advice. | GST: 37DLNPM0984C1ZU"}};
   const L={rit:RIT[lang],hro:HRO[lang],mir:MIR[lang],int:INT[lang],res:RES[lang],led:LED[lang],cnv:CNV[lang]};
 
   const Ritual=()=>(
@@ -382,7 +397,8 @@ Be specific to their actual choices. No generic advice.`;
       <div className="brth" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:540,height:540,background:"radial-gradient(circle,rgba(201,168,76,0.11) 0%,transparent 65%)"}}/>
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
-          <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:28,fontFamily:sans}}>Mind Power Vaultt</p>
+          <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
+          <img src="/logo.jpg" alt="Mind Power Vaultt" className="flt" style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}50`,margin:"0 auto 20px",display:"block",boxShadow:`0 0 32px ${G.gold}30`}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
           <h1 className={lc} style={{fontSize:"clamp(26px,4.5vw,56px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
@@ -589,22 +605,21 @@ Be specific to their actual choices. No generic advice.`;
       const strength=aiProfile?.hiddenStrength||"";
       const warning=aiProfile?.warningLine||"";
       const msg=encodeURIComponent(
-`🔔 *New MPV Lead — AI Analysis*
+`${form.name} — Trading Psychology Analysis
 
-👤 *Name:* ${form.name}
-📱 *WhatsApp:* ${form.wa}
-📊 *Level:* ${form.level}
+📊 Level: ${form.level}
+📱 WhatsApp: ${form.wa}
 
-🧠 *Primary Pattern:*
+Primary Pattern:
 ${pat}
 
-📋 *Behavior Analysis:*
+Behaviour Analysis:
 ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
 
-✅ *Hidden Strength:* ${strength}
-⚠️ *Warning:* ${warning}
+Hidden Strength: ${strength}
+Key Warning: ${warning}
 
-_Via mindpowervaultt.com_`
+Via mindpowervaultt.com`
       );
       setTimeout(()=>{setSending(false);window.open(`https://wa.me/${CHERRY_WA}?text=${msg}`,"_blank");goTo(7);},1200);};
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
@@ -653,7 +668,7 @@ _Via mindpowervaultt.com_`
     const CV=L.cnv;
     const mMsg=encodeURIComponent(lang==="te"?"నమస్కారం Cherry గారు, నేను MPV Self-Discovery Engine complete చేశాను. Mentorship గురించి మాట్లాడాలనుకుంటున్నాను.":"Hello Cherry, I completed the MPV Self-Discovery Engine. I would like to discuss mentorship.");
     const cMsg=encodeURIComponent(lang==="te"?"నమస్కారం, నేను Mind Power Vaultt Free Community లో join అవ్వాలనుకుంటున్నాను.":"Hello, I would like to join the Mind Power Vaultt Free Community.");
-    const socials=[{icon:"▶",label:"YouTube",url:"https://youtube.com/@mindpowervaultt",color:"#FF4444"},{icon:"📸",label:"Instagram",url:"https://instagram.com/mindpowervaultt",color:"#E1306C"},{icon:"𝕏",label:"X",url:"https://x.com/mindpowervaultt",color:G.smoke},{icon:"✈",label:"Telegram",url:"https://t.me/mindpowervaultt",color:"#2AABEE"}];
+    const socials=[{icon:"▶",label:"YouTube",url:"https://www.youtube.com/@mindpowervaultt66",color:"#FF4444"},{icon:"📸",label:"Instagram",url:"https://www.instagram.com/mindpowervaultt66",color:"#E1306C"},{icon:"𝕏",label:"X",url:"https://x.com/mindpvault",color:G.smoke},{icon:"✈",label:"Telegram",url:"https://t.me/mindpowervaultt",color:"#2AABEE"}];
     return(
       <div style={{...sec,textAlign:"center"}}>
         <Tg>{CV.tag}</Tg>
@@ -705,10 +720,14 @@ _Via mindpowervaultt.com_`
           </div>
           <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold}35,transparent)`}}/>
         </div>
+
+        {/* Psychology Basics */}
+        <PsychBasics lang={lang} lc={lc}/>
+
         <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
-          <div className="flt" style={{width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${G.gold}28,${G.gold}0a)`,border:`2px solid ${G.gold}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🧘</div>
+          <img src="/logo.jpg" alt="MPV" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}40`,flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
-            <Tg>Cherry</Tg>
+            <Tg>K Prasad — Mind Power Vaultt</Tg>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9,marginBottom:8}}>{CV.bio}</p>
             <p className={lc} style={{fontFamily:serif,fontSize:14,fontStyle:"italic",color:G.soft}}>{CV.q}</p>
           </div>
@@ -738,11 +757,14 @@ _Via mindpowervaultt.com_`
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
       <style>{css}</style>
       <div ref={topRef}/>
-      {phase>0&&<AIChat lang={lang}/>}
+      
       {phase>0&&(
         <nav style={navStyle}>
           <div style={{cursor:"pointer"}} onClick={()=>{setPhase(1);setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);top();}}>
-            <div style={{fontFamily:serif,fontSize:22,fontWeight:700,letterSpacing:3,color:G.gold,textTransform:"uppercase",lineHeight:1.2}}>Mind Power Vaultt</div>
+            <div style={{fontFamily:serif,fontSize:22,fontWeight:700,letterSpacing:3,color:G.gold,textTransform:"uppercase",lineHeight:1.2,display:"flex",alignItems:"center",gap:10}}>
+              <img src="/logo.jpg" alt="MPV" style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`1px solid ${G.gold}40`}} onError={e=>e.target.style.display="none"}/>
+              Mind Power Vaultt
+            </div>
             <div style={{fontSize:10,letterSpacing:3,color:G.mid,textTransform:"uppercase",marginTop:3,fontFamily:sans}}>Trading Psychology · Discipline · Clarity</div>
           </div>
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
