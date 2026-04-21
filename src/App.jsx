@@ -925,8 +925,6 @@ Via mindpowervaultt.com`
       {adminOpen && adminAuth && (
         <AdminPanel onClose={()=>{setAdminOpen(false);setAdminAuth(false);setAdminPwdInput("");setDynamicReviews(loadReviews());}}/>
       )}
-      )}
-      
       {phase>0&&(
         <nav style={navStyle}>
           <div style={{cursor:"pointer"}} onClick={()=>{setPhase(1);setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);top();}}>
