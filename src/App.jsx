@@ -384,6 +384,8 @@ function AdminPanel({onClose}) {
   const [phase,setPhase]=useState(0);
   const [adminOpen,setAdminOpen]=useState(false);
   const [adminAuth,setAdminAuth]=useState(false);
+  const [adminPwdInput,setAdminPwdInput]=useState("");
+  const [adminPwdErr,setAdminPwdErr]=useState(false);
   const [dynamicReviews,setDynamicReviews]=useState(()=>loadReviews());
   const [rs,setRs]=useState(0);
   const [heroIn,setHeroIn]=useState(false);
@@ -396,13 +398,17 @@ function AdminPanel({onClose}) {
   const [scrolled,setScrolled]=useState(false);
   const [fading,setFading]=useState(false);
 
-  // Admin panel URL trigger
+  // Admin panel URL trigger — opens in-page password modal
   useEffect(()=>{
     if(window.location.search.includes("admin=1")){
-      const pwd=window.prompt("Admin Password:");
-      if(pwd===ADMIN_PWD){setAdminOpen(true);setAdminAuth(true);}
+      setAdminOpen(true);
     }
   },[]);
+
+  const handleAdminLogin=()=>{
+    if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
+    else{setAdminPwdErr(true);setAdminPwdInput("");}
+  };
   const [aiProfile,setAiProfile]=useState(null);
   const [aiLoading,setAiLoading]=useState(false);
   const topRef=useRef(null);
@@ -489,19 +495,6 @@ function AdminPanel({onClose}) {
     setAiProfile(parsed);
     setAiLoading(false);
 
-    // ── Auto-send report to Cherry WhatsApp immediately after analysis ──
-    try {
-      const rpt = encodeURIComponent(
-`📊 *MPV Analysis Completed*
-🧠 *Pattern:* ${(parsed.primaryPattern||"").split("\n")[0]}
-📋 *Behaviour:*
-${(parsed.behaviorLines||[]).map((l,i)=>`S${i+1}: ${l}`).join("\n")}
-✅ *Strength:* ${parsed.hiddenStrength||""}
-⚠️ *Warning:* ${parsed.warningLine||""}
-_User filling form now — mindpowervaultt.com_`
-      );
-      window.open(`https://wa.me/919059181616?text=${rpt}`, "_blank");
-    } catch(e) {}
   };
 
   const handleNext=()=>{
@@ -548,7 +541,7 @@ _User filling form now — mindpowervaultt.com_`
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
           <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
-          <img src={LOGO_B64} alt="Mind Power Vaultt" className="flt" style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}50`,margin:"0 auto 20px",display:"block",boxShadow:`0 0 32px ${G.gold}30`}} onError={e=>e.target.style.display="none"}/>
+          <img src={LOGO_B64} alt="Mind Power Vaultt" style={{width:100,height:100,borderRadius:"16px",objectFit:"contain",background:"transparent",margin:"0 auto 20px",display:"block",filter:`drop-shadow(0 0 16px ${G.gold}40)`}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
           <h1 className={lc} style={{fontSize:"clamp(26px,4.5vw,56px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
@@ -875,7 +868,7 @@ Via mindpowervaultt.com`
         <PsychBasics lang={lang} lc={lc}/>
 
         <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
-          <img src={LOGO_B64} alt="MPV" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}40`,flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
+          <img src={LOGO_B64} alt="MPV" style={{width:64,height:64,borderRadius:"10px",objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
             <Tg>K Prasad — Mind Power Vaultt</Tg>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9,marginBottom:8}}>{CV.bio}</p>
@@ -907,15 +900,38 @@ Via mindpowervaultt.com`
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
       <style>{css}</style>
       <div ref={topRef}/>
+      {adminOpen && !adminAuth && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"#0F0F16",border:"1px solid rgba(201,168,76,0.4)",borderRadius:12,padding:"40px 36px",width:340,textAlign:"center"}}>
+            <img src={LOGO_B64} alt="MPV" style={{width:60,height:60,borderRadius:10,objectFit:"contain",margin:"0 auto 20px",display:"block"}}/>
+            <p style={{fontSize:11,letterSpacing:4,color:"rgba(201,168,76,0.8)",textTransform:"uppercase",marginBottom:8,fontFamily:"'DM Sans',sans-serif"}}>Mind Power Vaultt</p>
+            <h3 style={{color:"#F5F2EA",fontSize:18,fontFamily:"'DM Sans',sans-serif",marginBottom:6}}>Admin Access</h3>
+            <p style={{color:"#A8A498",fontSize:12,marginBottom:24,fontFamily:"'DM Sans',sans-serif"}}>Reviews panel — authorized only</p>
+            <input type="password" value={adminPwdInput} placeholder="Enter password"
+              onChange={e=>{setAdminPwdInput(e.target.value);setAdminPwdErr(false);}}
+              onKeyDown={e=>e.key==="Enter"&&handleAdminLogin()}
+              style={{width:"100%",padding:"12px 16px",background:"rgba(201,168,76,0.06)",border:`1px solid ${adminPwdErr?"rgba(200,80,80,0.6)":"rgba(201,168,76,0.25)"}`,borderRadius:6,color:"#F5F2EA",fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:adminPwdErr?6:16,outline:"none",textAlign:"center"}}
+            />
+            {adminPwdErr&&<p style={{color:"rgba(200,80,80,0.9)",fontSize:12,marginBottom:12,fontFamily:"'DM Sans',sans-serif"}}>Incorrect password. Try again.</p>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setAdminOpen(false);setAdminPwdInput("");setAdminPwdErr(false);}}
+                style={{flex:1,padding:"11px",background:"transparent",border:"1px solid rgba(201,168,76,0.25)",color:"#A8A498",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Cancel</button>
+              <button onClick={handleAdminLogin}
+                style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#C9A84C,#9A7020)",color:"#05050A",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700}}>Login →</button>
+            </div>
+          </div>
+        </div>
+      )}
       {adminOpen && adminAuth && (
-        <AdminPanel onClose={()=>{setAdminOpen(false);setDynamicReviews(loadReviews());}}/>
+        <AdminPanel onClose={()=>{setAdminOpen(false);setAdminAuth(false);setAdminPwdInput("");setDynamicReviews(loadReviews());}}/>
+      )}
       )}
       
       {phase>0&&(
         <nav style={navStyle}>
           <div style={{cursor:"pointer"}} onClick={()=>{setPhase(1);setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);top();}}>
             <div style={{fontFamily:serif,fontSize:22,fontWeight:700,letterSpacing:3,color:G.gold,textTransform:"uppercase",lineHeight:1.2,display:"flex",alignItems:"center",gap:10}}>
-              <img src={LOGO_B64} alt="MPV" style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`1px solid ${G.gold}40`}} onError={e=>e.target.style.display="none"}/>
+              <img src={LOGO_B64} alt="MPV" style={{width:36,height:36,borderRadius:"6px",objectFit:"contain",background:"transparent"}} onError={e=>e.target.style.display="none"}/>
               Mind Power Vaultt
             </div>
             <div style={{fontSize:10,letterSpacing:3,color:G.mid,textTransform:"uppercase",marginTop:3,fontFamily:sans}}>Trading Psychology · Discipline · Clarity</div>
