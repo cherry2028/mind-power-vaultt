@@ -309,17 +309,26 @@ function AdminPanel({onClose}) {
     if(i===0) return;
     const updated = [...reviews];
     [updated[i-1], updated[i]] = [updated[i], updated[i-1]];
-    setReviews(updated);
-    saveReviews(updated);
+    setReviews(updated); saveReviews(updated);
   };
-
   const moveDown = (i) => {
     if(i===reviews.length-1) return;
     const updated = [...reviews];
     [updated[i], updated[i+1]] = [updated[i+1], updated[i]];
+    setReviews(updated); saveReviews(updated);
+  };
+  const handleDragStart = (i) => setDrag(i);
+  const handleDragOver = (e, i) => {
+    e.preventDefault();
+    if(drag === null || drag === i) return;
+    const updated = [...reviews];
+    const item = updated.splice(drag, 1)[0];
+    updated.splice(i, 0, item);
     setReviews(updated);
     saveReviews(updated);
+    setDrag(i);
   };
+  const handleDragEnd = () => setDrag(null);
 
   const G2 = {black:"#05050A",gold:"#C9A84C",dark:"#0F0F16",smoke:"#F5F2EA",mid:"#D0CCBF"};
   const inp = {width:"100%",padding:"10px 14px",background:"rgba(201,168,76,0.06)",border:"1px solid rgba(201,168,76,0.25)",borderRadius:6,color:G2.smoke,fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:8};
@@ -355,10 +364,16 @@ function AdminPanel({onClose}) {
         {/* Reviews List */}
         <p style={{color:G2.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase",marginBottom:14,fontFamily:"'DM Sans',sans-serif"}}>All Reviews ({reviews.length}) — Drag to reorder</p>
         {reviews.map((r,i)=>(
-          <div key={r.id} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(201,168,76,0.15)",borderRadius:6,padding:"14px 16px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
-            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button onClick={()=>moveUp(i)} disabled={i===0} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"2px 8px",opacity:i===0?0.3:1}}>↑</button>
-              <button onClick={()=>moveDown(i)} disabled={i===reviews.length-1} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"2px 8px",opacity:i===reviews.length-1?0.3:1}}>↓</button>
+          <div key={r.id}
+            draggable
+            onDragStart={()=>handleDragStart(i)}
+            onDragOver={e=>handleDragOver(e,i)}
+            onDragEnd={handleDragEnd}
+            style={{background:drag===i?"rgba(201,168,76,0.1)":"rgba(255,255,255,0.03)",border:`1px solid ${drag===i?"rgba(201,168,76,0.5)":"rgba(201,168,76,0.15)"}`,borderRadius:6,padding:"14px 16px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start",cursor:"grab",transition:"all 0.15s"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
+              <span style={{fontSize:16,color:"rgba(201,168,76,0.5)",userSelect:"none",lineHeight:1}}>⠿</span>
+              <button onClick={()=>moveUp(i)} disabled={i===0} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"1px 7px",fontSize:11,opacity:i===0?0.3:1}}>↑</button>
+              <button onClick={()=>moveDown(i)} disabled={i===reviews.length-1} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"1px 7px",fontSize:11,opacity:i===reviews.length-1?0.3:1}}>↓</button>
             </div>
             <div style={{flex:1}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -381,36 +396,58 @@ function AdminPanel({onClose}) {
   );
 }
 
-  const [phase,setPhase]=useState(0);
-  const [adminOpen,setAdminOpen]=useState(false);
-  const [adminAuth,setAdminAuth]=useState(false);
-  const [adminPwdInput,setAdminPwdInput]=useState("");
-  const [adminPwdErr,setAdminPwdErr]=useState(false);
-  const [dynamicReviews,setDynamicReviews]=useState(()=>loadReviews());
-  const [rs,setRs]=useState(0);
-  const [heroIn,setHeroIn]=useState(false);
-  const [lang,setLang]=useState("te");
-  const [scIdx,setScIdx]=useState(0);
-  const [answers,setAnswers]=useState([]);
-  const [refText,setRefText]=useState(null);
-  const [showEsc,setShowEsc]=useState(false);
-  const [escPend,setEscPend]=useState(null);
-  const [scrolled,setScrolled]=useState(false);
-  const [fading,setFading]=useState(false);
+  // ── Session persistence — restore state on refresh ───────────
+  const SS_KEY = "mpv_session_v1";
+  const loadSession = () => {
+    try {
+      const s = sessionStorage.getItem(SS_KEY);
+      if(s) return JSON.parse(s);
+    } catch(e) {}
+    return null;
+  };
+  const saved = loadSession();
 
-  // Admin panel URL trigger — opens in-page password modal
+  const [phase,setPhase]     = useState(saved?.phase || 0);
+  const [scIdx,setScIdx]     = useState(saved?.scIdx || 0);
+  const [answers,setAnswers] = useState(saved?.answers || []);
+  const [aiProfile,setAiProfile] = useState(saved?.aiProfile || null);
+  const [lang,setLang]       = useState(saved?.lang || "te");
+
+  // Lifted form state — avoids auto-clear bug on re-render
+  const [formName,setFormName]   = useState("");
+  const [formWa,setFormWa]       = useState("");
+  const [formLevel,setFormLevel] = useState("");
+
+  const [adminOpen,setAdminOpen]       = useState(false);
+  const [adminAuth,setAdminAuth]       = useState(false);
+  const [adminPwdInput,setAdminPwdInput] = useState("");
+  const [adminPwdErr,setAdminPwdErr]   = useState(false);
+  const [dynamicReviews,setDynamicReviews] = useState(()=>loadReviews());
+  const [rs,setRs]           = useState(0);
+  const [heroIn,setHeroIn]   = useState(false);
+  const [refText,setRefText] = useState(null);
+  const [showEsc,setShowEsc] = useState(false);
+  const [escPend,setEscPend] = useState(null);
+  const [scrolled,setScrolled] = useState(false);
+  const [fading,setFading]   = useState(false);
+  const [aiLoading,setAiLoading] = useState(false);
+
+  // Save session on important state changes
   useEffect(()=>{
-    if(window.location.search.includes("admin=1")){
-      setAdminOpen(true);
-    }
+    try {
+      sessionStorage.setItem(SS_KEY, JSON.stringify({phase,scIdx,answers,aiProfile,lang}));
+    } catch(e) {}
+  },[phase,scIdx,answers,aiProfile,lang]);
+
+  // Admin panel URL trigger
+  useEffect(()=>{
+    if(window.location.search.includes("admin=1")) setAdminOpen(true);
   },[]);
 
   const handleAdminLogin=()=>{
     if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
     else{setAdminPwdErr(true);setAdminPwdInput("");}
   };
-  const [aiProfile,setAiProfile]=useState(null);
-  const [aiLoading,setAiLoading]=useState(false);
   const topRef=useRef(null);
 
   useEffect(()=>{const fn=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",fn);return()=>window.removeEventListener("scroll",fn);},[]);
@@ -418,7 +455,10 @@ function AdminPanel({onClose}) {
   useEffect(()=>{if(phase===1)setTimeout(()=>setHeroIn(true),150);},[phase]);
 
   const top=()=>topRef.current?.scrollIntoView({behavior:"smooth"});
-  const goTo=(p)=>{setFading(true);setTimeout(()=>{setPhase(p);setFading(false);top();},230);};
+  const goTo=(p)=>{
+    if(p===0){ try{sessionStorage.removeItem(SS_KEY);}catch(e){} }
+    setFading(true);setTimeout(()=>{setPhase(p);setFading(false);top();},230);
+  };
   const goBack=()=>{
     if(phase===4){
       if(refText){setRefText(null);setShowEsc(false);setEscPend(null);top();return;}
@@ -531,7 +571,7 @@ function AdminPanel({onClose}) {
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
           <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
-          <img src={LOGO_B64} alt="Mind Power Vaultt" style={{width:100,height:100,borderRadius:"16px",objectFit:"contain",background:"transparent",margin:"0 auto 20px",display:"block",filter:`drop-shadow(0 0 16px ${G.gold}40)`}} onError={e=>e.target.style.display="none"}/>
+          <img src={LOGO_B64} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
           <h1 className={lc} style={{fontSize:"clamp(26px,4.5vw,56px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
@@ -728,55 +768,69 @@ function AdminPanel({onClose}) {
   };
 
   const LeadCapture=()=>{
-    const [form,setForm]=useState({name:"",wa:"",level:""});
+    // form state LIFTED to parent — avoids auto-clear bug
+    const form = {name:formName, wa:formWa, level:formLevel};
     const [errs,setErrs]=useState({});
     const [sending,setSending]=useState(false);
     const LL=L.led;
-    const valid=()=>{const e={};if(!form.name.trim())e.name=LL.eN;if(form.wa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(!form.level)e.level=LL.eL;return e;};
+    const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(!formLevel)e.level=LL.eL;return e;};
     const submit=()=>{const e=valid();if(Object.keys(e).length){setErrs(e);return;}setSending(true);
-      const pat   = aiProfile?.primaryPattern  || "";
-      const insight = aiProfile?.coreInsight   || "";
-      const bLines  = aiProfile?.behaviorLines || [];
-      const strength= aiProfile?.hiddenStrength|| "";
-      const warning = aiProfile?.warningLine   || "";
-      const action  = aiProfile?.actionStep    || "";
+      const pat    = aiProfile?.primaryPattern  || "";
+      const insight= aiProfile?.coreInsight    || "";
+      const bLines = aiProfile?.behaviorLines  || [];
+      const strength=aiProfile?.hiddenStrength || "";
+      const warning= aiProfile?.warningLine    || "";
+      const action = aiProfile?.actionStep     || "";
 
-      // Full detailed report — Cherry receives this from user's WhatsApp
-      const msg=encodeURIComponent(
+      // Message 1: User's WhatsApp → Cherry (user sends this)
+      // Short, natural — user is reaching out for mentorship
+      const userMsg = encodeURIComponent(
+`నమస్కారం K Prasad గారు,
+
+నేను MPV website లో నా trading psychology test complete చేశాను.
+
+👤 పేరు: ${form.name}
+📊 Experience: ${form.level}
+
+నా analysis చూశాను — మీతో మాట్లాడాలనుకుంటున్నాను.`
+      );
+
+      // Message 2: Cherry's self-message — full AI report (Cherry sends to own number)
+      const selfReport = encodeURIComponent(
 `━━━━━━━━━━━━━━━━━━━━━
-🧠 MPV — TRADER ANALYSIS REPORT
+🧠 MPV TRADER REPORT
 ━━━━━━━━━━━━━━━━━━━━━
+👤 ${form.name}
+📱 ${form.wa}
+📊 ${form.level}
 
-👤 *Name:* ${form.name}
-📱 *WhatsApp:* ${form.wa}
-📊 *Experience:* ${form.level}
-
-━━━━━━━━━━━━━━━━━━━━━
-🎯 *PRIMARY PATTERN*
-━━━━━━━━━━━━━━━━━━━━━
+🎯 PRIMARY PATTERN:
 ${pat}
 
-💡 *Core Insight:*
+💡 CORE INSIGHT:
 ${insight}
 
-━━━━━━━━━━━━━━━━━━━━━
-📋 *BEHAVIOUR — 4 SITUATIONS*
-━━━━━━━━━━━━━━━━━━━━━
-${bLines.map((l,i)=>`*S${i+1}:* ${l}`).join("\n")}
+📋 4 SITUATIONS:
+${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
 
-━━━━━━━━━━━━━━━━━━━━━
-✅ *HIDDEN STRENGTH*
-${strength}
+✅ STRENGTH: ${strength}
 
-⚠️ *KEY WARNING*
-${warning}
+⚠️ WARNING: ${warning}
 
-🔑 *ACTION STEP*
-${action}
-━━━━━━━━━━━━━━━━━━━━━
-_Via mindpowervaultt.com_`
+🔑 ACTION: ${action}
+━━━━━━━━━━━━━━━━━━━━━`
       );
-      setTimeout(()=>{setSending(false);window.open(`https://wa.me/${CHERRY_WA}?text=${msg}`,"_blank");goTo(7);},1200);};
+
+      setTimeout(()=>{
+        setSending(false);
+        // Step 1: User's WhatsApp → Cherry's number
+        window.open(`https://wa.me/${CHERRY_WA}?text=${userMsg}`, "_blank");
+        // Step 2: Cherry saves full report as self-message (Cherry opens own number)
+        setTimeout(()=>{
+          window.open(`https://wa.me/${CHERRY_WA}?text=${selfReport}`, "_blank");
+        }, 800);
+        goTo(7);
+      }, 1200);};
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
     return(
       <div style={sec}>
@@ -789,19 +843,19 @@ _Via mindpowervaultt.com_`
         <div style={{maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",gap:24}}>
           <div>
             <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.nl}</label>
-            <input type="text" value={form.name} placeholder={LL.np} onChange={e=>{setForm(f=>({...f,name:e.target.value}));setErrs(r=>({...r,name:""}));}} style={is("name")}/>
+            <input type="text" value={form.name} placeholder={LL.np} onChange={e=>{setFormName(e.target.value);setErrs(r=>({...r,name:""}));}} style={is("name")}/>
             {errs.name&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.name}</p>}
           </div>
           <div>
             <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.wl}</label>
-            <input type="tel" value={form.wa} placeholder={LL.wp} onChange={e=>{setForm(f=>({...f,wa:e.target.value}));setErrs(r=>({...r,wa:""}));}} style={is("wa")}/>
+            <input type="tel" value={form.wa} placeholder={LL.wp} onChange={e=>{setFormWa(e.target.value);setErrs(r=>({...r,wa:""}));}} style={is("wa")}/>
             {errs.wa&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.wa}</p>}
           </div>
           <div>
             <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.el}</label>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {LL.lvls.map(l=>(
-                <button key={l.v} onClick={()=>{setForm(f=>({...f,level:l.v}));setErrs(r=>({...r,level:""}));}}
+                <button key={l.v} onClick={()=>{setFormLevel(l.v);setErrs(r=>({...r,level:""}));}}
                   style={{padding:"14px 18px",textAlign:"left",cursor:"pointer",background:form.level===l.v?`rgba(201,168,76,0.12)`:`rgba(201,168,76,0.03)`,border:`1px solid ${form.level===l.v?G.gold:G.goldDim}`,borderRadius:6,color:form.level===l.v?G.smoke:G.mid,fontSize:14,fontFamily:sans,transition:"all 0.2s",display:"flex",alignItems:"center",gap:12}}>
                   <div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,border:`2px solid ${form.level===l.v?G.gold:G.goldDim}`,background:form.level===l.v?G.gold:"transparent",transition:"all 0.2s"}}/>
                   <span className={lc}>{l.l}</span>
@@ -880,7 +934,7 @@ _Via mindpowervaultt.com_`
         <PsychBasics lang={lang} lc={lc}/>
 
         <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
-          <img src={LOGO_B64} alt="MPV" style={{width:64,height:64,borderRadius:"10px",objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
+          <img src={LOGO_B64} alt="MPV" style={{width:56,height:56,objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
             <Tg>K Prasad — Mind Power Vaultt</Tg>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9,marginBottom:8}}>{CV.bio}</p>
@@ -941,7 +995,7 @@ _Via mindpowervaultt.com_`
         <nav style={navStyle}>
           <div style={{cursor:"pointer"}} onClick={()=>{setPhase(1);setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);top();}}>
             <div style={{fontFamily:serif,fontSize:22,fontWeight:700,letterSpacing:3,color:G.gold,textTransform:"uppercase",lineHeight:1.2,display:"flex",alignItems:"center",gap:10}}>
-              <img src={LOGO_B64} alt="MPV" style={{width:36,height:36,borderRadius:"6px",objectFit:"contain",background:"transparent"}} onError={e=>e.target.style.display="none"}/>
+              <img src={LOGO_B64} alt="MPV" style={{width:32,height:32,objectFit:"contain",background:"transparent"}} onError={e=>e.target.style.display="none"}/>
               Mind Power Vaultt
             </div>
             <div style={{fontSize:10,letterSpacing:3,color:G.mid,textTransform:"uppercase",marginTop:3,fontFamily:sans}}>Trading Psychology · Discipline · Clarity</div>
