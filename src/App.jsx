@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import LOGO_IMG from "./MIND POWER VAULTT.jpeg";
 
 
 const LOGO_B64 = "data:image/jpeg;base64,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";
@@ -264,7 +265,7 @@ export default function MPV(){
 
 // ─── ADMIN REVIEWS PANEL ──────────────────────────────────────
 // Access: add ?admin=1 to URL → enter password → manage reviews
-const ADMIN_PWD = "mpv@cherry2028"; // Change this password!
+const ADMIN_PWD = "mpv@kprasad2028"; // Change this password!
 const REVIEWS_KEY = "mpv_reviews_v1";
 
 function loadReviews() {
@@ -389,7 +390,7 @@ function AdminPanel({onClose}) {
 
         <p style={{color:"rgba(200,196,188,0.3)",fontSize:11,marginTop:20,textAlign:"center",fontFamily:"'DM Sans',sans-serif"}}>
           Reviews saved in browser. Add ?admin=1 to URL to access this panel.<br/>
-          Password: mpv@cherry2028 (change in App.jsx ADMIN_PWD)
+          Password: mpv@kprasad2028 (change in App.jsx ADMIN_PWD)
         </p>
       </div>
     </div>
@@ -417,6 +418,9 @@ function AdminPanel({onClose}) {
   const [formName,setFormName]   = useState("");
   const [formWa,setFormWa]       = useState("");
   const [formLevel,setFormLevel] = useState("");
+  const [leadErrs,setLeadErrs] = useState({});
+  const [leadSending,setLeadSending] = useState(false);
+  const [showTerms,setShowTerms] = useState(false);
 
   const [adminOpen,setAdminOpen]       = useState(false);
   const [adminAuth,setAdminAuth]       = useState(false);
@@ -471,7 +475,7 @@ function AdminPanel({onClose}) {
 
   const sc=SCENARIOS[scIdx];
   const scL=sc?.[lang];
-  const CHERRY_WA="919059181616";
+  const KPRASAD_WA="919059181616";
   const lc=lang==="te"?"tel":"eng";
   const sec={padding:"108px 0 72px"};
   const gBtn={padding:"15px 36px",background:`linear-gradient(135deg,${G.gold},#9A7020)`,color:G.black,border:"none",borderRadius:2,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans};
@@ -544,7 +548,7 @@ function AdminPanel({onClose}) {
   const MIR={te:{title:"ఇది నీ కథేనా?",sub:'"చదివేటప్పుడు ఇది నాకే అనిపిస్తే… అదే నీ answer."',close:'"ఇది failure కాదు…\n\nనీ mind ఇంకా అర్థం చేసుకోలేదు.\nఅర్థం అయిన రోజు —\n\nనీ అవగాహన మారదు…\nనీ ఆచరణ మారుతుంది."',prompt:"నీకు నీ గురించి మరింత తెలుసుకోవాలని ఉందా?",cta:"లోపలికి వెళ్ళు →",cards:[{i:"🔄",t:"వారానికోసారి strategy మారుస్తావు — problem system లో ఉందని నమ్ముతావు."},{i:"💢",t:"Loss తర్వాత వెంటనే trade చేస్తావు — money కోసం కాదు, ego కోసం."},{i:"🙏",t:"SL పెట్టావు — అది hit అవ్వకూడదని మనసులో కోరుకుంటున్నావు."},{i:"📱",t:"ఇతరుల trades copy చేస్తావు. Result వేరేగా వస్తుందని ఆశపడతావు."},{i:"🎲",t:"Profit వస్తే నీ తెలివి — loss వస్తే market తప్పు."},{i:"🔒",t:"ఏమి చేయాలో తెలుసు. కానీ ఆ క్షణంలో చేయలేవు."}]},en:{title:"Is this your story?",sub:'"If while reading you think — this is about me… that is your answer."',close:'"This isn\'t failure. This is an untrained mind.\nAnd it can be trained."',prompt:"Do you want to understand yourself better?",cta:"Enter →",cards:[{i:"🔄",t:"You change strategies every week — believing the problem is the system."},{i:"💢",t:"After a loss you trade again immediately — not for money, but for ego."},{i:"🙏",t:"You placed your SL — but deep down you hope it doesn't get hit."},{i:"📱",t:"You copy trades from others and wonder why your results are different."},{i:"🎲",t:"When you profit — you're smart. When you lose — it's the market's fault."},{i:"🔒",t:"You know exactly what to do. But in that moment, you cannot do it."}]}};
   const INT={te:{t1:"ఇది test కాదు.",t2:"ఇది నీ mirror.",p1:"Score రాదు. Marks రావు. Right/Wrong లేదు.",p2:"4 real situations వస్తాయి.\nనీ honest reaction select చేయి.\nనీ behavior ని నేను reflect చేస్తాను.",tags:["4 Situations","నీ Reactions","Behavior Analysis","నీ Profile"],cta:"Start →"},en:{t1:"This is not a test.",t2:"This is your mirror.",p1:"No scores. No marks. No right or wrong.",p2:"4 real trading situations will appear.\nChoose your honest reaction.\nI will reflect your behavior back to you.",tags:["4 Situations","Your Reactions","Behavior Analysis","Your Profile"],cta:"Start →"}};
   const RES={te:{tag:"నీ Behavior Analysis",primary:"Primary Pattern Detected",breakdown:"4 Situations లో నీ Behavior",strength:"Hidden Strength",notice:"Notice చేయి",close:"నువ్వు ఇప్పుడు నీ గురించి చదివావు.",closeg:"ఇప్పటి నుండి నీ trading వేరేగా మొదలవుతుంది.",cta:"నా Analysis Save చేసుకో →"},en:{tag:"Your Behavior Analysis",primary:"Primary Pattern Detected",breakdown:"Your Behavior Across 4 Situations",strength:"Hidden Strength",notice:"Pay Attention",close:"You have now read about yourself.",closeg:"Your trading changes from this point.",cta:"Save My Analysis →"}};
-  const LED={te:{tag:"నీ Analysis Save చేసుకో",th:"నీ analysis నీకు పంపిస్తా.",tg:"నీ పేరు చెప్పు.",sub:"మీ report WhatsApp కి వస్తుంది. K Prasad personal గా review చేస్తారు.",nl:"మీ పేరు",np:"మీ పేరు రాయండి",wl:"WhatsApp Number",wp:"10-digit number రాయండి...",el:"మీ Trading Experience",lvls:[{v:"beginner",l:"Beginner — Trading start చేశాను"},{v:"struggling",l:"Struggling — Losses అవుతున్నాయి"},{v:"inconsistent",l:"Inconsistent — కొన్నిసార్లు profit, కొన్నిసార్లు loss"},{v:"experienced",l:"Experienced — System కోసం వెతుకుతున్నా"}],sub2:"నా Report పంపించు →",send:"పంపిస్తున్నాను...",priv:"మీ details ఎవరికీ share చేయం. Spam రాదు.",eN:"పేరు రాయి",eW:"Valid WhatsApp number రాయి",eL:"Level select చేయి"},en:{tag:"Save Your Analysis",th:"I will send your analysis.",tg:"Tell me who you are.",sub:"Your report comes to WhatsApp. Cherry personally reviews it.",nl:"Your Name",np:"Enter your name...",wl:"WhatsApp Number",wp:"Enter 10-digit number...",el:"Your Trading Experience",lvls:[{v:"beginner",l:"Beginner — Just started trading"},{v:"struggling",l:"Struggling — Taking regular losses"},{v:"inconsistent",l:"Inconsistent — Sometimes profit, sometimes loss"},{v:"experienced",l:"Experienced — Looking for a system"}],sub2:"Send My Report →",send:"Sending...",priv:"Your details are never shared. No spam.",eN:"Enter your name",eW:"Enter valid WhatsApp number",eL:"Select your level"}};
+  const LED={te:{tag:"నీ Analysis Save చేసుకో",th:"నీ analysis నీకు పంపిస్తా.",tg:"నీ పేరు చెప్పు.",sub:"మీ report WhatsApp కి వస్తుంది. K Prasad personal గా review చేస్తారు.",nl:"మీ పేరు",np:"మీ పేరు రాయండి",wl:"WhatsApp Number",wp:"10-digit number రాయండి...",el:"మీ Trading Experience",lvls:[{v:"beginner",l:"Beginner — Trading start చేశాను"},{v:"struggling",l:"Struggling — Losses అవుతున్నాయి"},{v:"inconsistent",l:"Inconsistent — కొన్నిసార్లు profit, కొన్నిసార్లు loss"},{v:"experienced",l:"Experienced — System కోసం వెతుకుతున్నా"}],sub2:"నా Report పంపించు →",send:"పంపిస్తున్నాను...",priv:"మీ details ఎవరికీ share చేయం. Spam రాదు.",eN:"పేరు రాయి",eW:"Valid WhatsApp number రాయి",eL:"Level select చేయి"},en:{tag:"Save Your Analysis",th:"I will send your analysis.",tg:"Tell me who you are.",sub:"Your report comes to WhatsApp. K Prasad personally reviews it.",nl:"Your Name",np:"Enter your name...",wl:"WhatsApp Number",wp:"Enter 10-digit number...",el:"Your Trading Experience",lvls:[{v:"beginner",l:"Beginner — Just started trading"},{v:"struggling",l:"Struggling — Taking regular losses"},{v:"inconsistent",l:"Inconsistent — Sometimes profit, sometimes loss"},{v:"experienced",l:"Experienced — Looking for a system"}],sub2:"Send My Report →",send:"Sending...",priv:"Your details are never shared. No spam.",eN:"Enter your name",eW:"Enter valid WhatsApp number",eL:"Select your level"}};
   const CNV={te:{tag:"నీ తర్వాత Step",h:"మీ problem ఇప్పుడు clearly తెలుసు.",sub:'"Analysis మాత్రమే చాలదు. దాన్ని fix చేయడానికి ఒక system కావాలి."',cards:["నువ్వు chart చదవడం నేర్చుకున్నావు. కానీ chart చూసే moment లో నీ mind ని control చేయడం నేర్చుకోలేదు.","Strategy correct గా ఉంటుంది. కానీ ఆ strategy execute చేసే వ్యక్తి correct గా లేడు — అందుకే results వేరేగా వస్తున్నాయి.","Mind Power Vault లో ఉన్నది strategies కాదు — ఈ gap ని close చేసే system. నీ specific pattern కి specific approach."],k1:"ఇప్పుడైనా…",k2:"random గా trade చేయాలా…",k3:"లేదా conscious గా?",s1:"Strategies అన్ని చోట్లా దొరుకుతాయి.",h2:"Clarity ఇక్కడ మాత్రమే.",s2:"ఇది నీ స్థలం.",b1:"🎯 Mentorship కి Apply చేయి",b2:"Free Community లో Join చేయి",lk:"🔒 Limited seats. K Prasad గారు personally review చేస్తారు.",bio:"11 సంవత్సరాల trading. 7 సంవత్సరాల teaching. చాలా మంది traders ని train చేసిన experience.",q:'"Profit promise చేయను. Clarity ఇస్తాను."',rev:"Real Students",soc:"మాతో Connect అవ్వు",disc:"SEBI registered investment advice కాదు. | GST: 37DLNPM0984C1ZU"},en:{tag:"Your Next Step",h:"Your problem is now clearly visible.",sub:'"Analysis alone isn\'t enough. Fixing it requires a system."',cards:["You learned to read charts. But you haven't learned to control your mind while reading them.","The strategy is correct. But the person executing it isn't — that's why the results are different.","Mind Power Vault doesn't teach strategies — it closes this gap. A specific approach for your specific pattern."],k1:"From this point…",k2:"do you trade randomly…",k3:"or consciously?",s1:"Strategies are everywhere.",h2:"Clarity is rare.",s2:"This is where you find it.",b1:"🎯 Apply for Mentorship",b2:"Join Free Community",lk:"🔒 Limited seats. K Prasad personally reviews each application.",bio:"11 years trading. 7 years teaching. Experience training many traders.",q:'"I don\'t promise profit. I offer clarity."',rev:"Real Students",soc:"Connect With Us",disc:"Not SEBI registered investment advice. | GST: 37DLNPM0984C1ZU"}};
   const L={rit:RIT[lang],hro:HRO[lang],mir:MIR[lang],int:INT[lang],res:RES[lang],led:LED[lang],cnv:CNV[lang]};
 
@@ -571,7 +575,7 @@ function AdminPanel({onClose}) {
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
           <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
-          <img src={LOGO_B64} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
+          <img src={LOGO_IMG} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
           <h1 className={lc} style={{fontSize:"clamp(26px,4.5vw,56px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
@@ -767,11 +771,13 @@ function AdminPanel({onClose}) {
     );
   };
 
-  const LeadCapture=()=>{
-    // form state LIFTED to parent — avoids auto-clear bug
+  const leadCaptureJSX=()=>{
+    // form state and hooks LIFTED to parent MPV to prevent focus loss on re-render
     const form = {name:formName, wa:formWa, level:formLevel};
-    const [errs,setErrs]=useState({});
-    const [sending,setSending]=useState(false);
+    const errs = leadErrs;
+    const setErrs = setLeadErrs;
+    const sending = leadSending;
+    const setSending = setLeadSending;
     const LL=L.led;
     const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(!formLevel)e.level=LL.eL;return e;};
     const submit=()=>{const e=valid();if(Object.keys(e).length){setErrs(e);return;}setSending(true);
@@ -782,23 +788,8 @@ function AdminPanel({onClose}) {
       const warning= aiProfile?.warningLine    || "";
       const action = aiProfile?.actionStep     || "";
 
-      // Message 1: User's WhatsApp → Cherry (user sends this)
-      // Short, natural — user is reaching out for mentorship
-      const userMsg = encodeURIComponent(
-`నమస్కారం K Prasad గారు,
-
-నేను MPV website లో నా trading psychology test complete చేశాను.
-
-👤 పేరు: ${form.name}
-📊 Experience: ${form.level}
-
-నా analysis చూశాను — మీతో మాట్లాడాలనుకుంటున్నాను.`
-      );
-
-      // Message 2: Cherry's self-message — full AI report (Cherry sends to own number)
-      const selfReport = encodeURIComponent(
-`━━━━━━━━━━━━━━━━━━━━━
-🧠 MPV TRADER REPORT
+      const fullMsg = encodeURIComponent(
+`🧠 MPV TRADER REPORT
 ━━━━━━━━━━━━━━━━━━━━━
 👤 ${form.name}
 📱 ${form.wa}
@@ -818,17 +809,17 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
 ⚠️ WARNING: ${warning}
 
 🔑 ACTION: ${action}
-━━━━━━━━━━━━━━━━━━━━━`
+━━━━━━━━━━━━━━━━━━━━━
+
+నమస్కారం K Prasad గారు,
+నేను MPV website లో నా trading psychology test complete చేశాను.
+నా analysis చూశాను — మీతో మాట్లాడాలనుకుంటున్నాను.`
       );
 
       setTimeout(()=>{
         setSending(false);
-        // Step 1: User's WhatsApp → Cherry's number
-        window.open(`https://wa.me/${CHERRY_WA}?text=${userMsg}`, "_blank");
-        // Step 2: Cherry saves full report as self-message (Cherry opens own number)
-        setTimeout(()=>{
-          window.open(`https://wa.me/${CHERRY_WA}?text=${selfReport}`, "_blank");
-        }, 800);
+        // Single WhatsApp message with full report to K Prasad
+        window.open(`https://wa.me/${KPRASAD_WA}?text=${fullMsg}`, "_blank");
         goTo(7);
       }, 1200);};
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
@@ -875,7 +866,7 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
 
   const Conversion=()=>{
     const CV=L.cnv;
-    const mMsg=encodeURIComponent(lang==="te"?"నమస్కారం Cherry గారు, నేను MPV Self-Discovery Engine complete చేశాను. Mentorship గురించి మాట్లాడాలనుకుంటున్నాను.":"Hello Cherry, I completed the MPV Self-Discovery Engine. I would like to discuss mentorship.");
+    const mMsg=encodeURIComponent(lang==="te"?`నమస్కారం K Prasad గారు, నేను MPV Self-Discovery Engine complete చేశాను. Mentorship గురించి మాట్లాడాలనుకుంటున్నాను.\n\n👤 పేరు: ${formName||''}\n📱 Number: ${formWa||''}`:`Hello K Prasad, I completed the MPV Self-Discovery Engine. I would like to discuss mentorship.\n\n👤 Name: ${formName||''}\n📱 Number: ${formWa||''}`);
     const cMsg=encodeURIComponent(lang==="te"?"నమస్కారం, నేను Mind Power Vaultt Free Community లో join అవ్వాలనుకుంటున్నాను.":"Hello, I would like to join the Mind Power Vaultt Free Community.");
     const socials=[{icon:"▶",label:"YouTube",url:"https://www.youtube.com/@mindpowervaultt66",color:"#FF4444"},{icon:"📸",label:"Instagram",url:"https://www.instagram.com/mindpowervaultt66",color:"#E1306C"},{icon:"𝕏",label:"X",url:"https://x.com/mindpvault",color:G.smoke},{icon:"✈",label:"Telegram",url:"https://t.me/mindpowervaultt",color:"#2AABEE"}];
     return(
@@ -921,8 +912,8 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
           <h2 className={lc} style={{fontFamily:serif,fontSize:"clamp(26px,4vw,46px)",color:G.gold,fontWeight:700,marginBottom:12}}>{CV.h2}</h2>
           <p className={lc} style={{fontSize:12,letterSpacing:2,color:G.mid,textTransform:"uppercase",marginBottom:40}}>{CV.s2}</p>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <button className="bg" onClick={()=>window.open(`https://wa.me/${CHERRY_WA}?text=${mMsg}`,"_blank")} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,cursor:"pointer"}}>{CV.b1}</button>
-            <button className="bo" onClick={()=>window.open(`https://wa.me/${CHERRY_WA}?text=${cMsg}`,"_blank")} style={{...oBtn,width:"100%",padding:"16px",fontSize:12,borderRadius:4,cursor:"pointer"}}>{CV.b2}</button>
+            <button className="bg" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${mMsg}`,"_blank")} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,cursor:"pointer"}}>{CV.b1}</button>
+            <button className="bo" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${cMsg}`,"_blank")} style={{...oBtn,width:"100%",padding:"16px",fontSize:12,borderRadius:4,cursor:"pointer"}}>{CV.b2}</button>
           </div>
           <div style={{marginTop:20,padding:"14px",background:`${G.gold}06`,borderRadius:4,border:`1px solid ${G.goldDim}`}}>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.8}}>{CV.lk}</p>
@@ -934,7 +925,7 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
         <PsychBasics lang={lang} lc={lc}/>
 
         <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
-          <img src={LOGO_B64} alt="MPV" style={{width:56,height:56,objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
+          <img src={LOGO_IMG} alt="MPV" style={{width:56,height:56,objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
             <Tg>K Prasad — Mind Power Vaultt</Tg>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9,marginBottom:8}}>{CV.bio}</p>
@@ -955,21 +946,71 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
           </div>
         </div>
         <p style={{marginTop:8,fontSize:9,color:G.vsoft,letterSpacing:1.5,lineHeight:2,fontFamily:sans}}>Mind Power Vaultt · Trading Psychology Education<br/>{CV.disc}</p>
+        <div style={{marginTop:24,display:"flex",gap:16,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>setShowTerms(true)} style={{background:"none",border:"none",color:`${G.gold}60`,cursor:"pointer",fontSize:10,letterSpacing:1.5,fontFamily:sans,textDecoration:"underline",textUnderlineOffset:3}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</button>
+          <span style={{color:`${G.gold}20`}}>·</span>
+          <button onClick={()=>setAdminOpen(true)} style={{background:"none",border:"none",color:`${G.smoke}15`,cursor:"pointer",fontSize:9,fontFamily:sans,letterSpacing:1}}>⚙</button>
+        </div>
       </div>
     );
   };
 
-  const phases=[<Ritual/>,<Hero/>,<Mirror/>,<Intro/>,<Scenario/>,<Result/>,<LeadCapture/>,<Conversion/>];
+  const phases=[<Ritual/>,<Hero/>,<Mirror/>,<Intro/>,<Scenario/>,<Result/>,leadCaptureJSX(),<Conversion/>];
   const navStyle={position:"fixed",top:0,left:0,right:0,zIndex:300,padding:"14px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",background:scrolled?"rgba(5,5,10,0.97)":"transparent",borderBottom:scrolled?`1px solid ${G.goldDim}`:"none",transition:"all 0.4s"};
 
   return(
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
       <style>{css}</style>
       <div ref={topRef}/>
+      {/* ── Terms & Conditions Modal ── */}
+      {showTerms && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,overflow:"auto",padding:"20px"}}>
+          <div style={{maxWidth:720,margin:"40px auto",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"40px 32px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
+              <div>
+                <p style={{fontSize:11,letterSpacing:4,color:G.gold,textTransform:"uppercase",fontFamily:sans}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</p>
+                <h2 style={{color:G.smoke,fontSize:22,fontFamily:serif,marginTop:6}}>Mind Power Vaultt</h2>
+              </div>
+              <button onClick={()=>setShowTerms(false)} style={{background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,padding:"6px 16px",borderRadius:4,cursor:"pointer",fontFamily:sans}}>✕ {lang==="te"?"మూసివేయి":"Close"}</button>
+            </div>
+            {(lang==="te"?[
+              {h:"1. సేవల స్వభావం (Nature of Services)",p:"Mind Power Vaultt అనేది trading psychology education platform. మేము trading psychology, discipline, మరియు self-awareness గురించి educational content మరియు mentorship అందిస్తాము. ఇది investment advisory service కాదు. మేము ఏ stock, commodity, లేదా financial instrument buy/sell చేయమని recommend చేయము."},
+              {h:"2. Investment Advice కాదు (No Investment Advice)",p:"ఈ website లో ఉన్న content educational purposes కోసం మాత్రమే. ఇది SEBI registered investment advice కాదు. Trading లో risk ఉంటుంది. మీ investment decisions మీవి మాత్రమే. మీ financial decisions కి మేము బాధ్యులము కాదు."},
+              {h:"3. మీ సమాచార భద్రత (Data Privacy)",p:"మీరు provide చేసిన personal information (పేరు, WhatsApp number, trading experience) — ఇవి exclusively K Prasad గారు మీ analysis review చేయడానికి మాత్రమే ఉపయోగిస్తారు. మీ details ఎవరికీ sell చేయము, share చేయము. Spam messages పంపము. మీ privacy మాకు చాలా important."},
+              {h:"4. User Consent (వినియోగదారు అంగీకారం)",p:"ఈ website ఉపయోగించడం ద్వారా, మీరు ఈ Terms & Conditions చదివి, అర్థం చేసుకుని, అంగీకరించినట్లు భావిస్తాము. మీ WhatsApp number provide చేయడం ద్వారా, K Prasad గారు మీ analysis report పంపడానికి మీరు consent ఇస్తున్నారు."},
+              {h:"5. బాధ్యత పరిమితి (Limitation of Liability)",p:"Trading psychology education వల్ల మీ trading results improve అవుతాయని guarantee ఇవ్వము. Market లో profit లేదా loss — ఇవి multiple factors మీద depend అవుతాయి. మీ trading decisions వల్ల వచ్చే ఏ financial loss కి Mind Power Vaultt బాధ్యత వహించదు."},
+              {h:"6. Mentorship Program",p:"Mentorship seats limited. K Prasad గారు personally review చేసి select చేస్తారు. Mentorship program details, duration, మరియు fees — apply చేసిన తర్వాత personally discuss చేయబడతాయి."},
+              {h:"7. Content Ownership",p:"ఈ website లో ఉన్న అన్ని content — text, analysis engine, psychology framework — Mind Power Vaultt కి చెందినవి. Permission లేకుండా copy, reproduce, లేదా distribute చేయడం నిషేధించబడింది."},
+              {h:"8. మార్పులు (Changes)",p:"ఈ Terms & Conditions ని మేము ఎప్పుడైనా update చేయవచ్చు. Website ఉపయోగిస్తూ ఉన్నారంటే latest terms కి agree అవుతున్నట్లు భావిస్తాము."},
+            ]:[
+              {h:"1. Nature of Services",p:"Mind Power Vaultt is a trading psychology education platform. We provide educational content and mentorship about trading psychology, discipline, and self-awareness. This is NOT an investment advisory service. We do not recommend buying or selling any stock, commodity, or financial instrument."},
+              {h:"2. No Investment Advice",p:"All content on this website is for educational purposes only. This is not SEBI registered investment advice. Trading involves risk. Your investment decisions are yours alone. We are not responsible for your financial decisions."},
+              {h:"3. Data Privacy",p:"Your personal information (name, WhatsApp number, trading experience) is used exclusively by K Prasad to review your analysis. We will never sell or share your details with anyone. We do not send spam messages. Your privacy is very important to us."},
+              {h:"4. User Consent",p:"By using this website, you acknowledge that you have read, understood, and agreed to these Terms & Conditions. By providing your WhatsApp number, you consent to K Prasad sending your analysis report."},
+              {h:"5. Limitation of Liability",p:"We do not guarantee that trading psychology education will improve your trading results. Profit or loss in the market depends on multiple factors. Mind Power Vaultt is not liable for any financial loss resulting from your trading decisions."},
+              {h:"6. Mentorship Program",p:"Mentorship seats are limited. K Prasad personally reviews and selects applicants. Program details, duration, and fees are discussed personally after application."},
+              {h:"7. Content Ownership",p:"All content on this website — text, analysis engine, psychology framework — belongs to Mind Power Vaultt. Copying, reproducing, or distributing without permission is prohibited."},
+              {h:"8. Changes to Terms",p:"We may update these Terms & Conditions at any time. Continued use of the website constitutes acceptance of the latest terms."},
+            ]).map((s,i)=>(
+              <div key={i} style={{marginBottom:24}}>
+                <h3 className={lc} style={{fontSize:16,color:G.gold,fontWeight:600,marginBottom:10,fontFamily:sans}}>{s.h}</h3>
+                <p className={lc} style={{fontSize:14,color:G.mid,lineHeight:2.1}}>{s.p}</p>
+              </div>
+            ))}
+            <div style={{marginTop:32,padding:"20px 24px",background:`${G.gold}08`,border:`1px solid ${G.goldDim}`,borderRadius:6,textAlign:"center"}}>
+              <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9}}>{lang==="te"?"ఏవైనా questions ఉంటే K Prasad గారిని WhatsApp లో contact చేయండి.":"For any questions, contact K Prasad on WhatsApp."}</p>
+              <p style={{fontSize:12,color:G.soft,marginTop:8,fontFamily:sans}}>GST: 37DLNPM0984C1ZU</p>
+            </div>
+            <div style={{textAlign:"center",marginTop:24}}>
+              <button className="bg" onClick={()=>setShowTerms(false)} style={{padding:"12px 36px",background:`linear-gradient(135deg,${G.gold},#9A7020)`,color:G.black,border:"none",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans,cursor:"pointer"}}>{lang==="te"?"అర్థమైంది ✓":"I Understand ✓"}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {adminOpen && !adminAuth && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{background:"#0F0F16",border:"1px solid rgba(201,168,76,0.4)",borderRadius:12,padding:"40px 36px",width:340,textAlign:"center"}}>
-            <img src={LOGO_B64} alt="MPV" style={{width:60,height:60,borderRadius:10,objectFit:"contain",margin:"0 auto 20px",display:"block"}}/>
+            <img src={LOGO_IMG} alt="MPV" style={{width:60,height:60,borderRadius:10,objectFit:"contain",margin:"0 auto 20px",display:"block"}}/>
             <p style={{fontSize:11,letterSpacing:4,color:"rgba(201,168,76,0.8)",textTransform:"uppercase",marginBottom:8,fontFamily:"'DM Sans',sans-serif"}}>Mind Power Vaultt</p>
             <h3 style={{color:"#F5F2EA",fontSize:18,fontFamily:"'DM Sans',sans-serif",marginBottom:6}}>Admin Access</h3>
             <p style={{color:"#A8A498",fontSize:12,marginBottom:24,fontFamily:"'DM Sans',sans-serif"}}>Reviews panel — authorized only</p>
@@ -995,7 +1036,7 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
         <nav style={navStyle}>
           <div style={{cursor:"pointer"}} onClick={()=>{setPhase(1);setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);top();}}>
             <div style={{fontFamily:serif,fontSize:22,fontWeight:700,letterSpacing:3,color:G.gold,textTransform:"uppercase",lineHeight:1.2,display:"flex",alignItems:"center",gap:10}}>
-              <img src={LOGO_B64} alt="MPV" style={{width:32,height:32,objectFit:"contain",background:"transparent"}} onError={e=>e.target.style.display="none"}/>
+              <img src={LOGO_IMG} alt="MPV" style={{width:32,height:32,objectFit:"contain",background:"transparent"}} onError={e=>e.target.style.display="none"}/>
               Mind Power Vaultt
             </div>
             <div style={{fontSize:10,letterSpacing:3,color:G.mid,textTransform:"uppercase",marginTop:3,fontFamily:sans}}>Trading Psychology · Discipline · Clarity</div>
