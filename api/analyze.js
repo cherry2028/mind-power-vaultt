@@ -1,74 +1,77 @@
 // /api/analyze.js — Vercel Serverless Function
-// This proxies the Anthropic API call securely from the server side
 // Set ANTHROPIC_API_KEY in Vercel Dashboard → Project Settings → Environment Variables
 
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // CORS headers — allow our website
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  const { choiceDescriptions, lang } = req.body;
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!choiceDescriptions) {
-    return res.status(400).json({ error: 'Missing choiceDescriptions' });
-  }
+  const { choiceDescriptions, lang } = req.body || {};
+  if (!choiceDescriptions) return res.status(400).json({ error: 'Missing data' });
 
   const isTE = lang === 'te';
 
   const systemPrompt = isTE
-    ? `నువ్వు MPV Trading Psychology Expert. ఒక trader యొక్క 4 situation responses deeply analyze చేసి వారి behavioral profile రాయి.
+    ? `నువ్వు ఒక experienced trading psychology mentor. చాలా మంది traders తో పని చేసిన నీకు human behavior బాగా అర్థమవుతుంది.
 
-IMPORTANT: ONLY valid JSON respond చేయి. No extra text. This exact structure:
+ఒక trader యొక్క 4 responses చూసి వారి psychology గురించి రాయి. ఒక friend లా, mentor లా రాయి — clinical గా కాదు.
+
+నీ భాష:
+- Simple, natural Telugu వాడు. Literary కాదు.
+- "మీరు" కాదు, "నువ్వు" వాడు — personally మాట్లాడినట్టు
+- Observations specific గా ఉండాలి — generic phrases వద్దు
+- Warm, honest, caring tone
+- English words natural గా mix చేయవచ్చు (traders తో common)
+
+ONLY valid JSON return చేయి — no extra text, no markdown:
 {
-  "primaryPattern": "2-3 lines Telugu — trader యొక్క core psychological pattern specific గా",
-  "coreInsight": "3-4 sentences Telugu — deep psychological insight, why this pattern formed, what it costs them",
+  "primaryPattern": "2-3 lines — ఈ trader లో కనిపించే main psychological pattern. Specific గా వారి choices కి relate చేసి చెప్పు. Human గా రాయి.",
+  "coreInsight": "3-4 sentences — వారి behavior వెనక ఉన్న real reason ఏమిటో deeply explain చేయి. Why this happens, what drives it. Friend తో మాట్లాడినట్టు రాయి.",
   "behaviorLines": [
-    "S1: Situation 1 లో వారి specific behavior ఎందుకు జరిగిందో explain చేయి — Telugu",
-    "S2: Situation 2 లో వారి specific behavior — Telugu",
-    "S3: Situation 3 లో వారి specific behavior — Telugu",
-    "S4: Situation 4 లో వారి specific behavior — Telugu"
+    "S1: ఈ situation లో వారు ఎంచుకున్న answer వల్ల వారిలో ఏ specific pattern కనపడుతోందో explain చేయి — 1-2 sentences",
+    "S2: Same — S2 choice గురించి specific observation",
+    "S3: Same — S3 choice గురించి",
+    "S4: Same — S4 choice గురించి"
   ],
-  "hiddenStrength": "2 sentences Telugu — వారి choices లో ఉన్న genuine strength",
-  "warningLine": "2 sentences Telugu — ఈ pattern వల్ల specific గా ఏమి జరుగుతోందో warning",
-  "actionStep": "1 specific, practical step Telugu — ఈ వారం నుండి చేయగలిగేది"
-}
+  "hiddenStrength": "1-2 sentences — వారి choices లో genuine గా కనపడే strength ఏదైనా ఉంటే చెప్పు. Forced positivity వద్దు.",
+  "warningLine": "1-2 sentences — ఈ pattern continue అయితే specifically ఏమి జరుగుతుందో honest గా చెప్పు.",
+  "actionStep": "1 concrete, specific action — ఈ వారం నుండి చేయగలిగేది. Vague advice వద్దు."
+}`
+    : `You are an experienced trading psychology mentor who has worked with many traders. You understand human behavior deeply.
 
-Rules:
-- Generic గా రాయకు. Specific గా వారి exact choices కి respond చేయి
-- Empathetic గా ఉండు, judgmental కాదు
-- Simple Telugu వాడు, literary కాదు`
-    : `You are MPV Trading Psychology Expert. Deeply analyze a trader's 4 situation responses and write their behavioral profile.
+Analyze a trader's 4 responses and write about their psychology. Write like a mentor, like a friend — not clinical.
 
-IMPORTANT: ONLY valid JSON. No extra text. This exact structure:
+Your language:
+- Conversational, warm English
+- Direct — "you" not "the trader"
+- Specific observations tied to their exact choices — no generic phrases
+- Honest but caring tone
+
+ONLY valid JSON — no extra text, no markdown:
 {
-  "primaryPattern": "2-3 lines — trader's core psychological pattern, specific to their choices",
-  "coreInsight": "3-4 sentences — deep psychological insight: why this pattern formed, what it costs them in trading",
+  "primaryPattern": "2-3 lines — the main psychological pattern visible in this trader. Specific to their choices. Human tone.",
+  "coreInsight": "3-4 sentences — the real reason behind their behavior. What drives it, why it happens. Write like talking to a friend.",
   "behaviorLines": [
-    "S1: What specifically drove their behavior in situation 1 and why",
-    "S2: What specifically drove their behavior in situation 2 and why",
-    "S3: What specifically drove their behavior in situation 3 and why",
-    "S4: What specifically drove their behavior in situation 4 and why"
+    "S1: What their choice in situation 1 reveals about their pattern — 1-2 specific sentences",
+    "S2: Same for S2",
+    "S3: Same for S3",
+    "S4: Same for S4"
   ],
-  "hiddenStrength": "2 sentences — genuine strength visible in their choices",
-  "warningLine": "2 sentences — specific warning about what this pattern costs them",
-  "actionStep": "1 specific, practical step they can take starting this week"
-}
-
-Rules:
-- Never generic. Respond specifically to their exact choices
-- Empathetic, not judgmental
-- Concrete, actionable language`;
+  "hiddenStrength": "1-2 sentences — genuine strength visible in their choices, if any. No forced positivity.",
+  "warningLine": "1-2 sentences — honestly, what happens if this pattern continues. Be specific.",
+  "actionStep": "1 concrete action they can start this week. No vague advice."
+}`;
 
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'API key not configured. Set ANTHROPIC_API_KEY in Vercel.' });
+      return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in Vercel Environment Variables' });
     }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -80,29 +83,35 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1200,
+        max_tokens: 1400,
         system: systemPrompt,
         messages: [{
           role: 'user',
-          content: `Analyze this trader's responses and provide their psychology profile:\n\n${choiceDescriptions}`
+          content: `Here are the trader's 4 situation responses:\n\n${choiceDescriptions}\n\nAnalyze their trading psychology and return the JSON profile.`
         }]
       })
     });
 
     const data = await response.json();
+
+    if (data.error) {
+      console.error('Anthropic error:', data.error);
+      return res.status(500).json({ error: data.error.message });
+    }
+
     const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
     const match = raw.match(/\{[\s\S]*\}/);
 
     if (!match) {
-      return res.status(500).json({ error: 'Invalid AI response format' });
+      console.error('No JSON in response:', raw);
+      return res.status(500).json({ error: 'Invalid response format' });
     }
 
     const parsed = JSON.parse(match[0]);
     return res.status(200).json(parsed);
 
   } catch (err) {
-    console.error('API error:', err);
+    console.error('Handler error:', err);
     return res.status(500).json({ error: err.message });
   }
 }
-
