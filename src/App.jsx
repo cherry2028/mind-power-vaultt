@@ -743,26 +743,43 @@ function AdminPanel({onClose}) {
     const LL=L.led;
     const valid=()=>{const e={};if(!form.name.trim())e.name=LL.eN;if(form.wa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(!form.level)e.level=LL.eL;return e;};
     const submit=()=>{const e=valid();if(Object.keys(e).length){setErrs(e);return;}setSending(true);
-      const pat=aiProfile?.primaryPattern?.split("\n")[0]||"";
-      const bLines=aiProfile?.behaviorLines||[];
-      const strength=aiProfile?.hiddenStrength||"";
-      const warning=aiProfile?.warningLine||"";
+      const pat   = aiProfile?.primaryPattern  || "";
+      const insight = aiProfile?.coreInsight   || "";
+      const bLines  = aiProfile?.behaviorLines || [];
+      const strength= aiProfile?.hiddenStrength|| "";
+      const warning = aiProfile?.warningLine   || "";
+
+      // Full detailed report — Cherry receives this from user's WhatsApp
       const msg=encodeURIComponent(
-`${form.name} — Trading Psychology Analysis
+`━━━━━━━━━━━━━━━━━━━━━
+🧠 MPV — TRADER ANALYSIS REPORT
+━━━━━━━━━━━━━━━━━━━━━
 
-📊 Level: ${form.level}
-📱 WhatsApp: ${form.wa}
+👤 *Name:* ${form.name}
+📱 *WhatsApp:* ${form.wa}
+📊 *Experience:* ${form.level}
 
-Primary Pattern:
+━━━━━━━━━━━━━━━━━━━━━
+🎯 *PRIMARY PATTERN*
+━━━━━━━━━━━━━━━━━━━━━
 ${pat}
 
-Behaviour Analysis:
-${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
+💡 *Core Insight:*
+${insight}
 
-Hidden Strength: ${strength}
-Key Warning: ${warning}
+━━━━━━━━━━━━━━━━━━━━━
+📋 *BEHAVIOUR — 4 SITUATIONS*
+━━━━━━━━━━━━━━━━━━━━━
+${bLines.map((l,i)=>`*S${i+1}:* ${l}`).join("\n")}
 
-Via mindpowervaultt.com`
+━━━━━━━━━━━━━━━━━━━━━
+✅ *HIDDEN STRENGTH*
+${strength}
+
+⚠️ *KEY WARNING*
+${warning}
+━━━━━━━━━━━━━━━━━━━━━
+_Via mindpowervaultt.com_`
       );
       setTimeout(()=>{setSending(false);window.open(`https://wa.me/${CHERRY_WA}?text=${msg}`,"_blank");goTo(7);},1200);};
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
