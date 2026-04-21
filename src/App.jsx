@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
+
+const LOGO_B64 = "data:image/jpeg;base64,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";
 const G = {
   black:"#05050A", dark1:"#0A0A10", dark2:"#0F0F16",
   gold:"#C9A84C",  goldDim:"rgba(201,168,76,0.18)",
@@ -259,7 +261,130 @@ function PsychBasics({lang, lc}){
 }
 
 export default function MPV(){
+
+// ─── ADMIN REVIEWS PANEL ──────────────────────────────────────
+// Access: add ?admin=1 to URL → enter password → manage reviews
+const ADMIN_PWD = "mpv@cherry2028"; // Change this password!
+const REVIEWS_KEY = "mpv_reviews_v1";
+
+function loadReviews() {
+  try {
+    const saved = localStorage.getItem(REVIEWS_KEY);
+    if(saved) return JSON.parse(saved);
+  } catch(e) {}
+  return [
+    {id:1,name:"Ravi K.",city:"Hyderabad",stars:5,te:"K Prasad గారి దగ్గరకు రాకముందు నేను రోజూ revenge trade చేసేవాడిని. 3 నెలల తర్వాత — ఒక్కసారి కూడా చేయలేదు. Capital intact గా ఉంది.",en:"Before K Prasad's guidance I revenge traded daily. 3 months later — not once. Capital fully intact."},
+    {id:2,name:"Suresh M.",city:"Vijayawada",stars:5,te:"K Prasad గారు strategies నేర్పించరు. నిన్ను నువ్వు చూసుకోవడం నేర్పిస్తారు. అదే నాకు work అయింది.",en:"K Prasad doesn't teach strategies. He teaches you to see yourself. That's what worked."},
+    {id:3,name:"Anitha P.",city:"Bengaluru",stars:5,te:"Chart patterns కోసం వచ్చాను. Psychology వల్ల ఉండిపోయాను. Drawdown 60% తగ్గింది.",en:"Came for chart patterns. Stayed for the psychology. Drawdown dropped 60%."},
+    {id:4,name:"Kiran T.",city:"Hyderabad",stars:5,te:"6 సంవత్సరాల trading లో ఎవరూ చెప్పనిది K Prasad గారు చెప్పారు — problem strategy లో కాదు, నా mind లో ఉంది అని.",en:"In 6 years nobody told me what K Prasad did — the problem is in my mind, not the strategy."},
+    {id:5,name:"Deepika R.",city:"Chennai",stars:5,te:"Stop loss hit అయినప్పుడు నా reaction ఏమిటో నాకే తెలియదు. K Prasad గారు clearly చూపించారు.",en:"I didn't know how I reacted when SL hit. K Prasad showed it clearly. Now I trade with awareness."},
+  ];
+}
+
+function saveReviews(reviews) {
+  try { localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews)); } catch(e) {}
+}
+
+function AdminPanel({onClose}) {
+  const [reviews, setReviews] = useState(loadReviews);
+  const [form, setForm] = useState({name:"",city:"",stars:5,te:"",en:""});
+  const [drag, setDrag] = useState(null);
+
+  const addReview = () => {
+    if(!form.name.trim() || !form.te.trim()) return;
+    const newR = {...form, id: Date.now()};
+    const updated = [newR, ...reviews];
+    setReviews(updated);
+    saveReviews(updated);
+    setForm({name:"",city:"",stars:5,te:"",en:""});
+  };
+
+  const deleteReview = (id) => {
+    const updated = reviews.filter(r=>r.id!==id);
+    setReviews(updated);
+    saveReviews(updated);
+  };
+
+  const moveUp = (i) => {
+    if(i===0) return;
+    const updated = [...reviews];
+    [updated[i-1], updated[i]] = [updated[i], updated[i-1]];
+    setReviews(updated);
+    saveReviews(updated);
+  };
+
+  const moveDown = (i) => {
+    if(i===reviews.length-1) return;
+    const updated = [...reviews];
+    [updated[i], updated[i+1]] = [updated[i+1], updated[i]];
+    setReviews(updated);
+    saveReviews(updated);
+  };
+
+  const G2 = {black:"#05050A",gold:"#C9A84C",dark:"#0F0F16",smoke:"#F5F2EA",mid:"#D0CCBF"};
+  const inp = {width:"100%",padding:"10px 14px",background:"rgba(201,168,76,0.06)",border:"1px solid rgba(201,168,76,0.25)",borderRadius:6,color:G2.smoke,fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:8};
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:1000,overflow:"auto",padding:"20px"}}>
+      <div style={{maxWidth:680,margin:"0 auto",background:G2.dark,border:"1px solid rgba(201,168,76,0.3)",borderRadius:12,padding:"28px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+          <div>
+            <p style={{fontSize:11,letterSpacing:4,color:G2.gold,textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Admin Panel</p>
+            <h2 style={{color:G2.smoke,fontSize:20,fontFamily:"'DM Sans',sans-serif"}}>Reviews Manager — Mind Power Vaultt</h2>
+          </div>
+          <button onClick={onClose} style={{background:"transparent",border:"1px solid rgba(201,168,76,0.3)",color:G2.mid,padding:"6px 16px",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Close ✕</button>
+        </div>
+
+        {/* Add New Review */}
+        <div style={{background:"rgba(201,168,76,0.05)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,padding:"20px",marginBottom:24}}>
+          <p style={{color:G2.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase",marginBottom:14,fontFamily:"'DM Sans',sans-serif"}}>+ Add New Review</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <input style={inp} placeholder="Student Name *" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+            <input style={inp} placeholder="City (Hyderabad, etc.)" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/>
+          </div>
+          <select style={{...inp,appearance:"none"}} value={form.stars} onChange={e=>setForm(f=>({...f,stars:Number(e.target.value)}))}>
+            {[5,4,3].map(s=><option key={s} value={s}>{s} Stars {"★".repeat(s)}</option>)}
+          </select>
+          <textarea style={{...inp,height:80,resize:"vertical"}} placeholder="Telugu Review * (required)" value={form.te} onChange={e=>setForm(f=>({...f,te:e.target.value}))}/>
+          <textarea style={{...inp,height:80,resize:"vertical"}} placeholder="English Review (optional)" value={form.en} onChange={e=>setForm(f=>({...f,en:e.target.value}))}/>
+          <button onClick={addReview} style={{padding:"12px 28px",background:`linear-gradient(135deg,${G2.gold},#9A7020)`,color:G2.black,border:"none",borderRadius:4,fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+            Add Review ✓
+          </button>
+        </div>
+
+        {/* Reviews List */}
+        <p style={{color:G2.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase",marginBottom:14,fontFamily:"'DM Sans',sans-serif"}}>All Reviews ({reviews.length}) — Drag to reorder</p>
+        {reviews.map((r,i)=>(
+          <div key={r.id} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(201,168,76,0.15)",borderRadius:6,padding:"14px 16px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+              <button onClick={()=>moveUp(i)} disabled={i===0} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"2px 8px",opacity:i===0?0.3:1}}>↑</button>
+              <button onClick={()=>moveDown(i)} disabled={i===reviews.length-1} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"2px 8px",opacity:i===reviews.length-1?0.3:1}}>↓</button>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <span style={{color:G2.smoke,fontWeight:700,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{r.name} — {r.city}</span>
+                <span style={{color:G2.gold}}>{"★".repeat(r.stars)}</span>
+              </div>
+              <p style={{color:G2.mid,fontSize:13,lineHeight:1.6}}>{r.te}</p>
+              {r.en&&<p style={{color:"rgba(200,196,188,0.5)",fontSize:12,marginTop:4,fontStyle:"italic"}}>{r.en}</p>}
+            </div>
+            <button onClick={()=>deleteReview(r.id)} style={{background:"rgba(139,26,26,0.3)",border:"none",color:"#ff8080",cursor:"pointer",borderRadius:3,padding:"4px 10px",flexShrink:0,fontFamily:"'DM Sans',sans-serif"}}>Delete</button>
+          </div>
+        ))}
+
+        <p style={{color:"rgba(200,196,188,0.3)",fontSize:11,marginTop:20,textAlign:"center",fontFamily:"'DM Sans',sans-serif"}}>
+          Reviews saved in browser. Add ?admin=1 to URL to access this panel.<br/>
+          Password: mpv@cherry2028 (change in App.jsx ADMIN_PWD)
+        </p>
+      </div>
+    </div>
+  );
+}
+
   const [phase,setPhase]=useState(0);
+  const [adminOpen,setAdminOpen]=useState(false);
+  const [adminAuth,setAdminAuth]=useState(false);
+  const [dynamicReviews,setDynamicReviews]=useState(()=>loadReviews());
   const [rs,setRs]=useState(0);
   const [heroIn,setHeroIn]=useState(false);
   const [lang,setLang]=useState("te");
@@ -270,6 +395,14 @@ export default function MPV(){
   const [escPend,setEscPend]=useState(null);
   const [scrolled,setScrolled]=useState(false);
   const [fading,setFading]=useState(false);
+
+  // Admin panel URL trigger
+  useEffect(()=>{
+    if(window.location.search.includes("admin=1")){
+      const pwd=window.prompt("Admin Password:");
+      if(pwd===ADMIN_PWD){setAdminOpen(true);setAdminAuth(true);}
+    }
+  },[]);
   const [aiProfile,setAiProfile]=useState(null);
   const [aiLoading,setAiLoading]=useState(false);
   const topRef=useRef(null);
@@ -305,54 +438,70 @@ export default function MPV(){
   const handleEsc=()=>{setShowEsc(false);setRefText(scL.ch[escPend].r);};
 
   // ── AI Profile Fetch ─────────────────────────────────────────
-  const fetchAIProfile = async (finalAnswers) => {
+  // currentLang passed EXPLICITLY to fix stale closure bug in English mode
+  const fetchAIProfile = async (finalAnswers, currentLang) => {
     setAiLoading(true);
     setAiProfile(null);
     goTo(5);
 
-    const isTE = lang === "te";
+    const isTE = currentLang === "te";
     const choiceDescriptions = finalAnswers.map((ci, i) => {
       const s = SCENARIOS[i];
-      const chosen = s[lang].ch[ci].l;
-      const sit    = s[lang].sit.replace(/\n/g," ");
-      return `Situation ${i+1}: "${sit}" → User chose: "${chosen}"`;
+      const chosen = s[currentLang].ch[ci].l;
+      const sit    = s[currentLang].sit.replace(/\n/g," ");
+      return `Situation ${i+1}: "${sit}" -> Chosen: "${chosen}"`;
     }).join("\n");
 
     const systemPrompt = isTE
-      ? `నువ్వు MPV (Mind Power Vaultt) Trading Psychology Analyzer. ఒక trader యొక్క 4 situation responses చూసి వారి behavioral profile analyze చేయి.
+      ? `నువ్వు MPV Trading Psychology Analyzer. Trader 4 responses analyze చేయి. ONLY JSON respond చేయి:\n{"primaryPattern":"2 lines Telugu","coreInsight":"2-3 sentences Telugu","behaviorLines":["S1 Telugu","S2 Telugu","S3 Telugu","S4 Telugu"],"hiddenStrength":"strength Telugu","warningLine":"warning Telugu"}`
+      : `You are MPV Trading Psychology Analyzer. Analyze trader 4 responses. ONLY JSON, no extra text:\n{"primaryPattern":"2 lines English","coreInsight":"2-3 sentences English","behaviorLines":["S1 English","S2 English","S3 English","S4 English"],"hiddenStrength":"strength English","warningLine":"warning English"}`;
 
-IMPORTANT: Respond with ONLY valid JSON. No markdown, no backticks, no extra text. Exactly this structure:
-{"primaryPattern":"2 lines in Telugu describing their core pattern","coreInsight":"2-3 sentences deep psychological insight in Telugu","behaviorLines":["S1 specific behavior in Telugu","S2 specific behavior in Telugu","S3 specific behavior in Telugu","S4 specific behavior in Telugu"],"hiddenStrength":"one strength in Telugu","warningLine":"one warning in Telugu"}
-
-Write in natural Telugu. Be specific to their actual choices. No generic advice.`
-      : `You are MPV (Mind Power Vaultt) Trading Psychology Analyzer. Analyze a trader's 4 situation responses and provide their behavioral profile.
-
-IMPORTANT: Respond with ONLY valid JSON. No markdown, no backticks. Exactly this structure:
-{"primaryPattern":"2 lines describing their core pattern","coreInsight":"2-3 sentences deep psychological insight","behaviorLines":["S1 specific behavior","S2 specific behavior","S3 specific behavior","S4 specific behavior"],"hiddenStrength":"one strength identified","warningLine":"one warning"}
-
-Be specific to their actual choices. No generic advice.`;
-
+    let parsed = null;
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 900,
+          max_tokens: 1000,
           system: systemPrompt,
-          messages: [{ role: "user", content: `Analyze this trader's responses:\n\n${choiceDescriptions}\n\nProvide their trading psychology profile as JSON.` }]
+          messages: [{ role: "user", content: `Analyze these trader responses:\n${choiceDescriptions}` }]
         })
       });
       const data = await res.json();
-      const raw = data.content?.[0]?.text || "{}";
-      const clean = raw.replace(/```json|```/g,"").trim();
-      const parsed = JSON.parse(clean);
-      setAiProfile(parsed);
-    } catch(e) {
-      // Fallback to static profile if API fails
-      setAiProfile(buildProfile(finalAnswers, lang));
+      const raw = (data.content?.[0]?.text || "").replace(/```json|```/g,"").trim();
+      const match = raw.match(/\{[\s\S]*\}/);
+      if(match) parsed = JSON.parse(match[0]);
+    } catch(e) { console.log("AI err:",e); }
+
+    // Robust fallback if AI fails or returns bad JSON
+    if(!parsed || !parsed.primaryPattern) {
+      const sp = buildProfile(finalAnswers, currentLang);
+      parsed = {
+        primaryPattern: sp.primaryLine,
+        coreInsight:    sp.coreInsight,
+        behaviorLines:  sp.behaviorLines,
+        hiddenStrength: sp.strengthLine,
+        warningLine:    sp.warningLine,
+      };
     }
+
+    setAiProfile(parsed);
     setAiLoading(false);
+
+    // ── Auto-send report to Cherry WhatsApp immediately after analysis ──
+    try {
+      const rpt = encodeURIComponent(
+`📊 *MPV Analysis Completed*
+🧠 *Pattern:* ${(parsed.primaryPattern||"").split("\n")[0]}
+📋 *Behaviour:*
+${(parsed.behaviorLines||[]).map((l,i)=>`S${i+1}: ${l}`).join("\n")}
+✅ *Strength:* ${parsed.hiddenStrength||""}
+⚠️ *Warning:* ${parsed.warningLine||""}
+_User filling form now — mindpowervaultt.com_`
+      );
+      window.open(`https://wa.me/919059181616?text=${rpt}`, "_blank");
+    } catch(e) {}
   };
 
   const handleNext=()=>{
@@ -360,11 +509,12 @@ Be specific to their actual choices. No generic advice.`;
     if(scIdx<SCENARIOS.length-1){
       setScIdx(s=>s+1);top();
     } else {
-      // Last situation done — trigger AI analysis
       const finalAnswers=[...answers];
-      fetchAIProfile(finalAnswers);
+      const currentLang = lang; // snapshot lang at this moment
+      fetchAIProfile(finalAnswers, currentLang);
     }
   };
+
 
   const RIT={te:{l1:'"Profit గురించి ఆలోచించే ముందు…"',l2:'"Loss ని అర్థం చేసుకున్నావా?"',l3:'"Loss ని accept చేయలేని వాడు…\nmarket లో survive అవ్వలేడు."',yes:"అవును — నేను నిజం చూడటానికి సిద్ధంగా ఉన్నాను",no:"వద్దు… తర్వాత వస్తాను"},en:{l1:'"Before thinking about profit…"',l2:'"Have you understood your losses?"',l3:'"A trader who cannot accept loss…\ncannot survive the market."',yes:"Yes — I am ready to see the truth",no:"Not now… I'll come back"}};
   const HRO={te:{l1:"మార్కెట్ నిన్ను కిందకి లాగడం లేదు…",l2:"నీ decisions నిన్ను\nకిందకి లాగుతున్నాయి.",sub:"సమస్య మార్కెట్‌లో లేదు…\nఅది నిన్ను నువ్వు ఎలా చూసుకుంటావో అక్కడ ఉంది.",cta:"నీ గురించి నీకు తెలుసా? →"},en:{l1:"The market is not pulling you down…",l2:"Your decisions are\npulling you down.",sub:"The problem isn't in the market…\nIt's in how you see yourself as a trader.",cta:"Do you know yourself? →"}};
@@ -398,7 +548,7 @@ Be specific to their actual choices. No generic advice.`;
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
           <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
-          <img src="/logo.jpg" alt="Mind Power Vaultt" className="flt" style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}50`,margin:"0 auto 20px",display:"block",boxShadow:`0 0 32px ${G.gold}30`}} onError={e=>e.target.style.display="none"}/>
+          <img src={LOGO_B64} alt="Mind Power Vaultt" className="flt" style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}50`,margin:"0 auto 20px",display:"block",boxShadow:`0 0 32px ${G.gold}30`}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
           <h1 className={lc} style={{fontSize:"clamp(26px,4.5vw,56px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
@@ -686,7 +836,7 @@ Via mindpowervaultt.com`
         <div style={{maxWidth:680,margin:"0 auto 52px"}}>
           <Tg c="s">{CV.rev}</Tg>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:16}}>
-            {REVIEWS.map((r,i)=>(
+            {dynamicReviews.map((r,i)=>(
               <div key={i} style={{background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
                 <div style={{color:G.gold,fontSize:16,marginBottom:12}}>{"★".repeat(r.stars)}</div>
                 <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.85,fontStyle:"italic",marginBottom:16}}>"{r[lang]}"</p>
@@ -725,7 +875,7 @@ Via mindpowervaultt.com`
         <PsychBasics lang={lang} lc={lc}/>
 
         <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
-          <img src="/logo.jpg" alt="MPV" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}40`,flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
+          <img src={LOGO_B64} alt="MPV" style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`2px solid ${G.gold}40`,flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
             <Tg>K Prasad — Mind Power Vaultt</Tg>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9,marginBottom:8}}>{CV.bio}</p>
@@ -757,12 +907,15 @@ Via mindpowervaultt.com`
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
       <style>{css}</style>
       <div ref={topRef}/>
+      {adminOpen && adminAuth && (
+        <AdminPanel onClose={()=>{setAdminOpen(false);setDynamicReviews(loadReviews());}}/>
+      )}
       
       {phase>0&&(
         <nav style={navStyle}>
           <div style={{cursor:"pointer"}} onClick={()=>{setPhase(1);setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);top();}}>
             <div style={{fontFamily:serif,fontSize:22,fontWeight:700,letterSpacing:3,color:G.gold,textTransform:"uppercase",lineHeight:1.2,display:"flex",alignItems:"center",gap:10}}>
-              <img src="/logo.jpg" alt="MPV" style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`1px solid ${G.gold}40`}} onError={e=>e.target.style.display="none"}/>
+              <img src={LOGO_B64} alt="MPV" style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`1px solid ${G.gold}40`}} onError={e=>e.target.style.display="none"}/>
               Mind Power Vaultt
             </div>
             <div style={{fontSize:10,letterSpacing:3,color:G.mid,textTransform:"uppercase",marginTop:3,fontFamily:sans}}>Trading Psychology · Discipline · Clarity</div>
