@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabase";
+import AdminPanel from "./AdminPanel";
 const LOGO_IMG = "/logo.jpeg";
 
 
@@ -268,134 +270,7 @@ export default function MPV(){
 const ADMIN_PWD = "mpv@kprasad2028"; // Change this password!
 const REVIEWS_KEY = "mpv_reviews_v1";
 
-function loadReviews() {
-  try {
-    const saved = localStorage.getItem(REVIEWS_KEY);
-    if(saved) return JSON.parse(saved);
-  } catch(e) {}
-  return [
-    {id:1,name:"Ravi K.",city:"Hyderabad",stars:5,te:"K Prasad గారి దగ్గరకు రాకముందు నేను రోజూ revenge trade చేసేవాడిని. 3 నెలల తర్వాత — ఒక్కసారి కూడా చేయలేదు. Capital intact గా ఉంది.",en:"Before K Prasad's guidance I revenge traded daily. 3 months later — not once. Capital fully intact."},
-    {id:2,name:"Suresh M.",city:"Vijayawada",stars:5,te:"K Prasad గారు strategies నేర్పించరు. నిన్ను నువ్వు చూసుకోవడం నేర్పిస్తారు. అదే నాకు work అయింది.",en:"K Prasad doesn't teach strategies. He teaches you to see yourself. That's what worked."},
-    {id:3,name:"Anitha P.",city:"Bengaluru",stars:5,te:"Chart patterns కోసం వచ్చాను. Psychology వల్ల ఉండిపోయాను. Drawdown 60% తగ్గింది.",en:"Came for chart patterns. Stayed for the psychology. Drawdown dropped 60%."},
-    {id:4,name:"Kiran T.",city:"Hyderabad",stars:5,te:"6 సంవత్సరాల trading లో ఎవరూ చెప్పనిది K Prasad గారు చెప్పారు — problem strategy లో కాదు, నా mind లో ఉంది అని.",en:"In 6 years nobody told me what K Prasad did — the problem is in my mind, not the strategy."},
-    {id:5,name:"Deepika R.",city:"Chennai",stars:5,te:"Stop loss hit అయినప్పుడు నా reaction ఏమిటో నాకే తెలియదు. K Prasad గారు clearly చూపించారు.",en:"I didn't know how I reacted when SL hit. K Prasad showed it clearly. Now I trade with awareness."},
-  ];
-}
 
-function saveReviews(reviews) {
-  try { localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews)); } catch(e) {}
-}
-
-function AdminPanel({onClose}) {
-  const [reviews, setReviews] = useState(loadReviews);
-  const [form, setForm] = useState({name:"",city:"",stars:5,te:"",en:""});
-  const [drag, setDrag] = useState(null);
-
-  const addReview = () => {
-    if(!form.name.trim() || !form.te.trim()) return;
-    const newR = {...form, id: Date.now()};
-    const updated = [newR, ...reviews];
-    setReviews(updated);
-    saveReviews(updated);
-    setForm({name:"",city:"",stars:5,te:"",en:""});
-  };
-
-  const deleteReview = (id) => {
-    const updated = reviews.filter(r=>r.id!==id);
-    setReviews(updated);
-    saveReviews(updated);
-  };
-
-  const moveUp = (i) => {
-    if(i===0) return;
-    const updated = [...reviews];
-    [updated[i-1], updated[i]] = [updated[i], updated[i-1]];
-    setReviews(updated); saveReviews(updated);
-  };
-  const moveDown = (i) => {
-    if(i===reviews.length-1) return;
-    const updated = [...reviews];
-    [updated[i], updated[i+1]] = [updated[i+1], updated[i]];
-    setReviews(updated); saveReviews(updated);
-  };
-  const handleDragStart = (i) => setDrag(i);
-  const handleDragOver = (e, i) => {
-    e.preventDefault();
-    if(drag === null || drag === i) return;
-    const updated = [...reviews];
-    const item = updated.splice(drag, 1)[0];
-    updated.splice(i, 0, item);
-    setReviews(updated);
-    saveReviews(updated);
-    setDrag(i);
-  };
-  const handleDragEnd = () => setDrag(null);
-
-  const G2 = {black:"#05050A",gold:"#C9A84C",dark:"#0F0F16",smoke:"#F5F2EA",mid:"#D0CCBF"};
-  const inp = {width:"100%",padding:"10px 14px",background:"rgba(201,168,76,0.06)",border:"1px solid rgba(201,168,76,0.25)",borderRadius:6,color:G2.smoke,fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:8};
-
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:1000,overflow:"auto",padding:"20px"}}>
-      <div style={{maxWidth:680,margin:"0 auto",background:G2.dark,border:"1px solid rgba(201,168,76,0.3)",borderRadius:12,padding:"28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-          <div>
-            <p style={{fontSize:11,letterSpacing:4,color:G2.gold,textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Admin Panel</p>
-            <h2 style={{color:G2.smoke,fontSize:20,fontFamily:"'DM Sans',sans-serif"}}>Reviews Manager — Mind Power Vaultt</h2>
-          </div>
-          <button onClick={onClose} style={{background:"transparent",border:"1px solid rgba(201,168,76,0.3)",color:G2.mid,padding:"6px 16px",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Close ✕</button>
-        </div>
-
-        {/* Add New Review */}
-        <div style={{background:"rgba(201,168,76,0.05)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,padding:"20px",marginBottom:24}}>
-          <p style={{color:G2.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase",marginBottom:14,fontFamily:"'DM Sans',sans-serif"}}>+ Add New Review</p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <input style={inp} placeholder="Student Name *" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
-            <input style={inp} placeholder="City (Hyderabad, etc.)" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/>
-          </div>
-          <select style={{...inp,appearance:"none"}} value={form.stars} onChange={e=>setForm(f=>({...f,stars:Number(e.target.value)}))}>
-            {[5,4,3].map(s=><option key={s} value={s}>{s} Stars {"★".repeat(s)}</option>)}
-          </select>
-          <textarea style={{...inp,height:80,resize:"vertical"}} placeholder="Telugu Review * (required)" value={form.te} onChange={e=>setForm(f=>({...f,te:e.target.value}))}/>
-          <textarea style={{...inp,height:80,resize:"vertical"}} placeholder="English Review (optional)" value={form.en} onChange={e=>setForm(f=>({...f,en:e.target.value}))}/>
-          <button onClick={addReview} style={{padding:"12px 28px",background:`linear-gradient(135deg,${G2.gold},#9A7020)`,color:G2.black,border:"none",borderRadius:4,fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-            Add Review ✓
-          </button>
-        </div>
-
-        {/* Reviews List */}
-        <p style={{color:G2.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase",marginBottom:14,fontFamily:"'DM Sans',sans-serif"}}>All Reviews ({reviews.length}) — Drag to reorder</p>
-        {reviews.map((r,i)=>(
-          <div key={r.id}
-            draggable
-            onDragStart={()=>handleDragStart(i)}
-            onDragOver={e=>handleDragOver(e,i)}
-            onDragEnd={handleDragEnd}
-            style={{background:drag===i?"rgba(201,168,76,0.1)":"rgba(255,255,255,0.03)",border:`1px solid ${drag===i?"rgba(201,168,76,0.5)":"rgba(201,168,76,0.15)"}`,borderRadius:6,padding:"14px 16px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start",cursor:"grab",transition:"all 0.15s"}}>
-            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
-              <span style={{fontSize:16,color:"rgba(201,168,76,0.5)",userSelect:"none",lineHeight:1}}>⠿</span>
-              <button onClick={()=>moveUp(i)} disabled={i===0} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"1px 7px",fontSize:11,opacity:i===0?0.3:1}}>↑</button>
-              <button onClick={()=>moveDown(i)} disabled={i===reviews.length-1} style={{background:"rgba(201,168,76,0.15)",border:"none",color:G2.gold,cursor:"pointer",borderRadius:3,padding:"1px 7px",fontSize:11,opacity:i===reviews.length-1?0.3:1}}>↓</button>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                <span style={{color:G2.smoke,fontWeight:700,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{r.name} — {r.city}</span>
-                <span style={{color:G2.gold}}>{"★".repeat(r.stars)}</span>
-              </div>
-              <p style={{color:G2.mid,fontSize:13,lineHeight:1.6}}>{r.te}</p>
-              {r.en&&<p style={{color:"rgba(200,196,188,0.5)",fontSize:12,marginTop:4,fontStyle:"italic"}}>{r.en}</p>}
-            </div>
-            <button onClick={()=>deleteReview(r.id)} style={{background:"rgba(139,26,26,0.3)",border:"none",color:"#ff8080",cursor:"pointer",borderRadius:3,padding:"4px 10px",flexShrink:0,fontFamily:"'DM Sans',sans-serif"}}>Delete</button>
-          </div>
-        ))}
-
-        <p style={{color:"rgba(200,196,188,0.3)",fontSize:11,marginTop:20,textAlign:"center",fontFamily:"'DM Sans',sans-serif"}}>
-          Reviews saved in browser. Add ?admin=1 to URL to access this panel.<br/>
-          Password: mpv@kprasad2028 (change in App.jsx ADMIN_PWD)
-        </p>
-      </div>
-    </div>
-  );
-}
 
   // ── Session persistence — restore state on refresh ───────────
   const SS_KEY = "mpv_session_v1";
@@ -417,16 +292,29 @@ function AdminPanel({onClose}) {
   // Lifted form state — avoids auto-clear bug on re-render
   const [formName,setFormName]   = useState("");
   const [formWa,setFormWa]       = useState("");
+  const [formEmail,setFormEmail] = useState("");
   const [formLevel,setFormLevel] = useState("");
   const [leadErrs,setLeadErrs] = useState({});
   const [leadSending,setLeadSending] = useState(false);
+  const [leadSent,setLeadSent]   = useState(false);
   const [showTerms,setShowTerms] = useState(false);
 
   const [adminOpen,setAdminOpen]       = useState(false);
   const [adminAuth,setAdminAuth]       = useState(false);
   const [adminPwdInput,setAdminPwdInput] = useState("");
   const [adminPwdErr,setAdminPwdErr]   = useState(false);
-  const [dynamicReviews,setDynamicReviews] = useState(()=>loadReviews());
+  const [dynamicReviews,setDynamicReviews] = useState([]);
+  
+  const fetchPublicReviews = async () => {
+    const { data } = await supabase.from('reviews').select('*').order('order_index', {ascending: true});
+    if (data) setDynamicReviews(data);
+  };
+
+  useEffect(() => {
+    if (!adminOpen) {
+      fetchPublicReviews();
+    }
+  }, [adminOpen]);
   const [rs,setRs]           = useState(0);
   const [heroIn,setHeroIn]   = useState(false);
   const [refText,setRefText] = useState(null);
@@ -461,6 +349,7 @@ function AdminPanel({onClose}) {
   const top=()=>topRef.current?.scrollIntoView({behavior:"smooth"});
   const goTo=(p)=>{
     if(p===0){ try{sessionStorage.removeItem(SS_KEY);}catch(e){} }
+    if(p===6){ setLeadSent(false); setLeadErrs({}); setLeadSending(false); }
     setFading(true);setTimeout(()=>{setPhase(p);setFading(false);top();},230);
   };
   const goBack=()=>{
@@ -548,7 +437,7 @@ function AdminPanel({onClose}) {
   const MIR={te:{title:"ఇది నీ కథేనా?",sub:'"చదివేటప్పుడు ఇది నాకే అనిపిస్తే… అదే నీ answer."',close:'"ఇది failure కాదు…\n\nనీ mind ఇంకా అర్థం చేసుకోలేదు.\nఅర్థం అయిన రోజు —\n\nనీ అవగాహన మారదు…\nనీ ఆచరణ మారుతుంది."',prompt:"నీకు నీ గురించి మరింత తెలుసుకోవాలని ఉందా?",cta:"లోపలికి వెళ్ళు →",cards:[{i:"🔄",t:"వారానికోసారి strategy మారుస్తావు — problem system లో ఉందని నమ్ముతావు."},{i:"💢",t:"Loss తర్వాత వెంటనే trade చేస్తావు — money కోసం కాదు, ego కోసం."},{i:"🙏",t:"SL పెట్టావు — అది hit అవ్వకూడదని మనసులో కోరుకుంటున్నావు."},{i:"📱",t:"ఇతరుల trades copy చేస్తావు. Result వేరేగా వస్తుందని ఆశపడతావు."},{i:"🎲",t:"Profit వస్తే నీ తెలివి — loss వస్తే market తప్పు."},{i:"🔒",t:"ఏమి చేయాలో తెలుసు. కానీ ఆ క్షణంలో చేయలేవు."}]},en:{title:"Is this your story?",sub:'"If while reading you think — this is about me… that is your answer."',close:'"This isn\'t failure. This is an untrained mind.\nAnd it can be trained."',prompt:"Do you want to understand yourself better?",cta:"Enter →",cards:[{i:"🔄",t:"You change strategies every week — believing the problem is the system."},{i:"💢",t:"After a loss you trade again immediately — not for money, but for ego."},{i:"🙏",t:"You placed your SL — but deep down you hope it doesn't get hit."},{i:"📱",t:"You copy trades from others and wonder why your results are different."},{i:"🎲",t:"When you profit — you're smart. When you lose — it's the market's fault."},{i:"🔒",t:"You know exactly what to do. But in that moment, you cannot do it."}]}};
   const INT={te:{t1:"ఇది test కాదు.",t2:"ఇది నీ mirror.",p1:"Score రాదు. Marks రావు. Right/Wrong లేదు.",p2:"4 real situations వస్తాయి.\nనీ honest reaction select చేయి.\nనీ behavior ని నేను reflect చేస్తాను.",tags:["4 Situations","నీ Reactions","Behavior Analysis","నీ Profile"],cta:"Start →"},en:{t1:"This is not a test.",t2:"This is your mirror.",p1:"No scores. No marks. No right or wrong.",p2:"4 real trading situations will appear.\nChoose your honest reaction.\nI will reflect your behavior back to you.",tags:["4 Situations","Your Reactions","Behavior Analysis","Your Profile"],cta:"Start →"}};
   const RES={te:{tag:"నీ Behavior Analysis",primary:"Primary Pattern Detected",breakdown:"4 Situations లో నీ Behavior",strength:"Hidden Strength",notice:"Notice చేయి",close:"నువ్వు ఇప్పుడు నీ గురించి చదివావు.",closeg:"ఇప్పటి నుండి నీ trading వేరేగా మొదలవుతుంది.",cta:"నా Analysis Save చేసుకో →"},en:{tag:"Your Behavior Analysis",primary:"Primary Pattern Detected",breakdown:"Your Behavior Across 4 Situations",strength:"Hidden Strength",notice:"Pay Attention",close:"You have now read about yourself.",closeg:"Your trading changes from this point.",cta:"Save My Analysis →"}};
-  const LED={te:{tag:"నీ Analysis Save చేసుకో",th:"నీ analysis నీకు పంపిస్తా.",tg:"నీ పేరు చెప్పు.",sub:"మీ report WhatsApp కి వస్తుంది. K Prasad personal గా review చేస్తారు.",nl:"మీ పేరు",np:"మీ పేరు రాయండి",wl:"WhatsApp Number",wp:"10-digit number రాయండి...",el:"మీ Trading Experience",lvls:[{v:"beginner",l:"Beginner — Trading start చేశాను"},{v:"struggling",l:"Struggling — Losses అవుతున్నాయి"},{v:"inconsistent",l:"Inconsistent — కొన్నిసార్లు profit, కొన్నిసార్లు loss"},{v:"experienced",l:"Experienced — System కోసం వెతుకుతున్నా"}],sub2:"నా Report పంపించు →",send:"పంపిస్తున్నాను...",priv:"మీ details ఎవరికీ share చేయం. Spam రాదు.",eN:"పేరు రాయి",eW:"Valid WhatsApp number రాయి",eL:"Level select చేయి"},en:{tag:"Save Your Analysis",th:"I will send your analysis.",tg:"Tell me who you are.",sub:"Your report comes to WhatsApp. K Prasad personally reviews it.",nl:"Your Name",np:"Enter your name...",wl:"WhatsApp Number",wp:"Enter 10-digit number...",el:"Your Trading Experience",lvls:[{v:"beginner",l:"Beginner — Just started trading"},{v:"struggling",l:"Struggling — Taking regular losses"},{v:"inconsistent",l:"Inconsistent — Sometimes profit, sometimes loss"},{v:"experienced",l:"Experienced — Looking for a system"}],sub2:"Send My Report →",send:"Sending...",priv:"Your details are never shared. No spam.",eN:"Enter your name",eW:"Enter valid WhatsApp number",eL:"Select your level"}};
+  const LED={te:{tag:"నీ Analysis Save చేసుకో",th:"నీ analysis నీకు పంపిస్తా.",tg:"నీ పేరు చెప్పు.",sub:"మీ full report మీ Email కి వస్తుంది. K Prasad personal గా review చేస్తారు.",nl:"మీ పేరు",np:"మీ పేరు రాయండి",wl:"WhatsApp Number",wp:"10-digit number రాయండి...",eml:"Email Address",emp:"మీ email రాయండి...",el:"మీ Trading Experience",lvls:[{v:"beginner",l:"Beginner — Trading start చేశాను"},{v:"struggling",l:"Struggling — Losses అవుతున్నాయి"},{v:"inconsistent",l:"Inconsistent — కొన్నిసార్లు profit, కొన్నిసార్లు loss"},{v:"experienced",l:"Experienced — System కోసం వెతుకుతున్నా"}],sub2:"నా Report పంపించు →",send:"పంపిస్తున్నాను...",sent:"✅ Report పంపించాము! మీ Email check చేయండి.",priv:"మీ details ఎవరికీ share చేయం. Spam రాదు.",eN:"పేరు రాయి",eW:"Valid WhatsApp number రాయి",eE:"Valid email రాయి",eL:"Level select చేయి"},en:{tag:"Save Your Analysis",th:"I will send your analysis.",tg:"Tell me who you are.",sub:"Your full report will be sent to your Email. K Prasad personally reviews it.",nl:"Your Name",np:"Enter your name...",wl:"WhatsApp Number",wp:"Enter 10-digit number...",eml:"Email Address",emp:"Enter your email...",el:"Your Trading Experience",lvls:[{v:"beginner",l:"Beginner — Just started trading"},{v:"struggling",l:"Struggling — Taking regular losses"},{v:"inconsistent",l:"Inconsistent — Sometimes profit, sometimes loss"},{v:"experienced",l:"Experienced — Looking for a system"}],sub2:"Send My Report →",send:"Sending...",sent:"✅ Report sent! Check your Email.",priv:"Your details are never shared. No spam.",eN:"Enter your name",eW:"Enter valid WhatsApp number",eE:"Enter valid email",eL:"Select your level"}};
   const CNV={te:{tag:"నీ తర్వాత Step",h:"మీ problem ఇప్పుడు clearly తెలుసు.",sub:'"Analysis మాత్రమే చాలదు. దాన్ని fix చేయడానికి ఒక system కావాలి."',cards:["నువ్వు chart చదవడం నేర్చుకున్నావు. కానీ chart చూసే moment లో నీ mind ని control చేయడం నేర్చుకోలేదు.","Strategy correct గా ఉంటుంది. కానీ ఆ strategy execute చేసే వ్యక్తి correct గా లేడు — అందుకే results వేరేగా వస్తున్నాయి.","Mind Power Vault లో ఉన్నది strategies కాదు — ఈ gap ని close చేసే system. నీ specific pattern కి specific approach."],k1:"ఇప్పుడైనా…",k2:"random గా trade చేయాలా…",k3:"లేదా conscious గా?",s1:"Strategies అన్ని చోట్లా దొరుకుతాయి.",h2:"Clarity ఇక్కడ మాత్రమే.",s2:"ఇది నీ స్థలం.",b1:"🎯 Mentorship కి Apply చేయి",b2:"Free Community లో Join చేయి",lk:"🔒 Limited seats. K Prasad గారు personally review చేస్తారు.",bio:"11 సంవత్సరాల trading. 7 సంవత్సరాల teaching. చాలా మంది traders ని train చేసిన experience.",q:'"Profit promise చేయను. Clarity ఇస్తాను."',rev:"Real Students",soc:"మాతో Connect అవ్వు",disc:"SEBI registered investment advice కాదు. | GST: 37DLNPM0984C1ZU"},en:{tag:"Your Next Step",h:"Your problem is now clearly visible.",sub:'"Analysis alone isn\'t enough. Fixing it requires a system."',cards:["You learned to read charts. But you haven't learned to control your mind while reading them.","The strategy is correct. But the person executing it isn't — that's why the results are different.","Mind Power Vault doesn't teach strategies — it closes this gap. A specific approach for your specific pattern."],k1:"From this point…",k2:"do you trade randomly…",k3:"or consciously?",s1:"Strategies are everywhere.",h2:"Clarity is rare.",s2:"This is where you find it.",b1:"🎯 Apply for Mentorship",b2:"Join Free Community",lk:"🔒 Limited seats. K Prasad personally reviews each application.",bio:"11 years trading. 7 years teaching. Experience training many traders.",q:'"I don\'t promise profit. I offer clarity."',rev:"Real Students",soc:"Connect With Us",disc:"Not SEBI registered investment advice. | GST: 37DLNPM0984C1ZU"}};
   const L={rit:RIT[lang],hro:HRO[lang],mir:MIR[lang],int:INT[lang],res:RES[lang],led:LED[lang],cnv:CNV[lang]};
 
@@ -773,56 +662,56 @@ function AdminPanel({onClose}) {
 
   const leadCaptureJSX=()=>{
     // form state and hooks LIFTED to parent MPV to prevent focus loss on re-render
-    const form = {name:formName, wa:formWa, level:formLevel};
+    const form = {name:formName, wa:formWa, email:formEmail, level:formLevel};
     const errs = leadErrs;
     const setErrs = setLeadErrs;
     const sending = leadSending;
     const setSending = setLeadSending;
     const LL=L.led;
-    const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(!formLevel)e.level=LL.eL;return e;};
-    const submit=()=>{const e=valid();if(Object.keys(e).length){setErrs(e);return;}setSending(true);
-      const pat    = aiProfile?.primaryPattern  || "";
-      const insight= aiProfile?.coreInsight    || "";
-      const bLines = aiProfile?.behaviorLines  || [];
-      const strength=aiProfile?.hiddenStrength || "";
-      const warning= aiProfile?.warningLine    || "";
-      const action = aiProfile?.actionStep     || "";
+    const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(formEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail))e.email=LL.eE;if(!formLevel)e.level=LL.eL;return e;};
+    const submit=async()=>{const e=valid();if(Object.keys(e).length){setErrs(e);return;}setSending(true);
 
-      const fullMsg = encodeURIComponent(
-`🧠 MPV TRADER REPORT
-━━━━━━━━━━━━━━━━━━━━━
-👤 ${form.name}
-📱 ${form.wa}
-📊 ${form.level}
+      // Send to backend — report goes to user's email + K Prasad's Telegram
+      try {
+        await fetch("/api/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: form.name,
+            phone: form.wa,
+            email: form.email,
+            level: form.level,
+            lang,
+            report: aiProfile
+          })
+        });
+      } catch(err) { console.log("Notify error:", err); }
 
-🎯 PRIMARY PATTERN:
-${pat}
-
-💡 CORE INSIGHT:
-${insight}
-
-📋 4 SITUATIONS:
-${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
-
-✅ STRENGTH: ${strength}
-
-⚠️ WARNING: ${warning}
-
-🔑 ACTION: ${action}
-━━━━━━━━━━━━━━━━━━━━━
-
-నమస్కారం K Prasad గారు,
-నేను MPV website లో నా trading psychology test complete చేశాను.
-నా analysis చూశాను — మీతో మాట్లాడాలనుకుంటున్నాను.`
-      );
-
-      setTimeout(()=>{
-        setSending(false);
-        // Single WhatsApp message with full report to K Prasad
-        window.open(`https://wa.me/${KPRASAD_WA}?text=${fullMsg}`, "_blank");
-        goTo(7);
-      }, 1200);};
+      setSending(false);
+      setLeadSent(true);
+      // Auto-navigate to Conversion page after 2 seconds
+      setTimeout(()=>goTo(7), 2000);
+    };
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
+
+    // Success state — report sent
+    if(leadSent){
+      return(
+        <div style={{...sec,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"50vh"}}>
+          <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(107,142,107,0.15)",border:"2px solid rgba(107,142,107,0.4)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 28px",fontSize:36}}>✅</div>
+          <h2 className={lc} style={{fontSize:"clamp(20px,3vw,32px)",color:G.smoke,marginBottom:16,lineHeight:1.5}}>{LL.sent}</h2>
+          <p className={lc} style={{color:G.mid,fontSize:14,lineHeight:1.9,maxWidth:400}}>
+            {lang==="te"?"మీ full report మీ email కి పంపించాము. K Prasad గారు review చేసి contact చేస్తారు.":"Your full report has been sent to your email. K Prasad will review and contact you."}
+          </p>
+          <div style={{marginTop:32}}>
+            <button className="bg" onClick={()=>goTo(7)} style={gBtn}>
+              {lang==="te"?"Continue →":"Continue →"}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return(
       <div style={sec}>
         <div style={{textAlign:"center",marginBottom:52}}>
@@ -841,6 +730,12 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
             <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.wl}</label>
             <input type="tel" value={form.wa} placeholder={LL.wp} onChange={e=>{setFormWa(e.target.value);setErrs(r=>({...r,wa:""}));}} style={is("wa")}/>
             {errs.wa&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.wa}</p>}
+          </div>
+          <div>
+            <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.eml}</label>
+            <input type="email" value={form.email} placeholder={LL.emp} onChange={e=>{setFormEmail(e.target.value);setErrs(r=>({...r,email:""}));}} style={is("email")}/>
+            {errs.email&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.email}</p>}
+            <p style={{fontSize:11,color:`${G.gold}50`,marginTop:6,fontFamily:sans}}>{lang==="te"?"📧 మీ report ఈ email కి వస్తుంది":"📧 Your report will be sent to this email"}</p>
           </div>
           <div>
             <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.el}</label>
@@ -889,11 +784,27 @@ ${bLines.map((l,i)=>`S${i+1}: ${l}`).join("\n")}
             {dynamicReviews.map((r,i)=>(
               <div key={i} style={{background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
                 <div style={{color:G.gold,fontSize:16,marginBottom:12}}>{"★".repeat(r.stars)}</div>
-                <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.85,fontStyle:"italic",marginBottom:16}}>"{r[lang]}"</p>
+                
+                {/* Text Review */}
+                {r[lang] && r[lang].trim() !== "" && (
+                  <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.85,fontStyle:"italic",marginBottom:16}}>"{r[lang]}"</p>
+                )}
+
+                {/* Audio Review */}
+                {r.type === 'audio' && r.audio_url && (
+                  <div style={{marginBottom: 16}}>
+                    <audio controls src={r.audio_url} style={{height: 36, width: "100%", borderRadius: 4}}></audio>
+                  </div>
+                )}
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <div style={{width:30,height:30,borderRadius:"50%",background:`${G.gold}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:G.gold,fontWeight:700,fontFamily:sans}}>{r.name[0]}</div>
                   <div><div style={{fontSize:12,color:G.smoke,fontFamily:sans,fontWeight:600}}>{r.name}</div><div style={{fontSize:10,color:G.soft,fontFamily:sans,letterSpacing:1}}>{r.city}</div></div>
                 </div>
+                {r.image_url && r.image_url.split(',').map((url, idx) => (
+                  <div key={idx} style={{marginTop: 16, borderRadius: 6, overflow: "hidden", border: `1px solid ${G.goldDim}`}}>
+                    <img src={url} alt={`Review Screenshot ${idx + 1}`} style={{width: "100%", display: "block"}} />
+                  </div>
+                ))}
               </div>
             ))}
           </div>
