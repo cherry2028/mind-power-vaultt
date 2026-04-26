@@ -202,15 +202,19 @@ const REVIEWS = [
 const css = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:#05050A;overflow-x:hidden}
+  body{background:#04040C;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.022;pointer-events:none;z-index:9999}
   ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#08080F}::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);border-radius:2px}
   p,span,h1,h2,h3,div,button{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   .tel{font-family:'Noto Serif Telugu',Georgia,serif}
   .eng{font-family:'Cormorant Garamond',Georgia,serif}
+  h1.tel{zoom:0.65}
+  h2.tel{zoom:0.70}
+  p.tel{zoom:0.88}
 
-  /* ── Choice buttons ── */
-  .bc{width:100%;text-align:left;cursor:pointer;background:rgba(201,168,76,0.03);border:1px solid rgba(201,168,76,0.15);border-radius:10px;padding:20px 22px;display:flex;align-items:center;gap:16px;transition:all 0.25s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .bc:hover{border-color:rgba(201,168,76,0.6);background:rgba(201,168,76,0.09);transform:translateX(7px);box-shadow:0 4px 28px rgba(201,168,76,0.12)}
+  /* ── Choice buttons with 3D ── */
+  .bc{width:100%;text-align:left;cursor:pointer;background:rgba(201,168,76,0.03);border:1px solid rgba(201,168,76,0.14);border-radius:12px;padding:20px 22px;display:flex;align-items:center;gap:16px;transition:all 0.28s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transform-style:preserve-3d;perspective:600px}
+  .bc:hover{border-color:rgba(201,168,76,0.65);background:rgba(201,168,76,0.08);transform:translateX(8px) rotateY(-1deg);box-shadow:0 8px 32px rgba(201,168,76,0.15),inset 0 1px 0 rgba(201,168,76,0.1)}
 
   /* ── Gold CTA button ── */
   .bg{position:relative;overflow:hidden;cursor:pointer;transition:all 0.3s cubic-bezier(.4,0,.2,1)}
@@ -237,8 +241,13 @@ const css = `
   @keyframes orb3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,50px) scale(1.12)}}
   @keyframes waPulse{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,0.5)}60%{box-shadow:0 0 0 14px rgba(37,211,102,0)}}
   @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-  @keyframes meshMove{0%,100%{transform:rotate(0deg)}50%{transform:rotate(0.5deg) scale(1.01)}}
+  @keyframes meshMove{0%,100%{transform:rotate(0deg) scale(1)}50%{transform:rotate(0.4deg) scale(1.015)}}
   @keyframes fadeSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+  @keyframes neonPulse{0%,100%{text-shadow:0 0 20px rgba(201,168,76,0.4),0 0 40px rgba(201,168,76,0.2)}50%{text-shadow:0 0 30px rgba(201,168,76,0.7),0 0 60px rgba(201,168,76,0.35),0 0 100px rgba(201,168,76,0.15)}}
+  @keyframes borderGlow{0%,100%{box-shadow:0 0 12px rgba(201,168,76,0.15),inset 0 1px 0 rgba(201,168,76,0.08)}50%{box-shadow:0 0 24px rgba(201,168,76,0.3),inset 0 1px 0 rgba(201,168,76,0.15)}}
+  @keyframes float3d{0%,100%{transform:translateY(0) rotateX(0deg)}50%{transform:translateY(-10px) rotateX(2deg)}}
+  .neon{animation:neonPulse 3s ease-in-out infinite}
+  .bGlow{animation:borderGlow 3s ease-in-out infinite}
 
   /* ── Animation classes ── */
   .flt{animation:float 4s ease-in-out infinite}
@@ -248,8 +257,10 @@ const css = `
   .lg{animation:lineG 0.7s ease 0.2s forwards;height:0;opacity:0}
   input{outline:none}input:focus{border-color:rgba(201,168,76,0.55)!important;box-shadow:0 0 0 3px rgba(201,168,76,0.07)}
 
-  /* ── Glassmorphism card ── */
-  .gc{background:rgba(13,13,22,0.75);border:1px solid rgba(201,168,76,0.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:12px}
+  /* ── Glassmorphism cards ── */
+  .gc{background:rgba(10,10,20,0.8);border:1px solid rgba(201,168,76,0.13);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:14px;transition:all 0.3s ease}
+  .gc3d{background:rgba(10,10,20,0.8);border:1px solid rgba(201,168,76,0.13);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:14px;transition:all 0.35s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}
+  .gc3d:hover{border-color:rgba(201,168,76,0.4);transform:translateY(-6px) rotateX(2deg);box-shadow:0 20px 60px rgba(201,168,76,0.12),0 0 0 1px rgba(201,168,76,0.08)}
 
   /* ── Floating WhatsApp button ── */
   .wa-float{position:fixed;bottom:28px;right:24px;z-index:500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C4E);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(37,211,102,0.4);animation:waPulse 2.5s ease-in-out infinite;transition:transform 0.2s ease}
@@ -643,7 +654,7 @@ export default function MPV() {
   );
 
   const Hero = () => (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", background: `radial-gradient(ellipse at 50% 60%, rgba(201,168,76,0.05) 0%, transparent 70%), ${G.black}` }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", background: "radial-gradient(ellipse at 30% 20%, rgba(201,168,76,0.07) 0%, transparent 50%), radial-gradient(ellipse at 75% 80%, rgba(150,100,20,0.05) 0%, transparent 50%), #04040C" }}>
       {/* Animated mesh grid */}
       <div className="mesh" style={{ position: "absolute", inset: -20, backgroundImage: `linear-gradient(rgba(201,168,76,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.07) 1px,transparent 1px)`, backgroundSize: "64px 64px" }} />
       {/* 3D Glow Orbs */}
@@ -665,10 +676,10 @@ export default function MPV() {
           </div>
         </div>
         <div style={{ opacity: heroIn ? 1 : 0, transform: heroIn ? "none" : "translateY(22px)", transition: "all 1s cubic-bezier(.4,0,.2,1) 0.4s" }}>
-          <h1 className={lc} style={{ fontSize: "clamp(24px,4.2vw,54px)", fontWeight: 600, fontStyle: "italic", color: G.soft, lineHeight: 1.4, marginBottom: 14 }}>{L.hro.l1}</h1>
+          <h1 className={lc} style={{ fontSize: lang==="te" ? "clamp(16px,2.4vw,28px)" : "clamp(20px,3.2vw,42px)", fontWeight: 600, fontStyle: "italic", color: G.soft, lineHeight: 1.55, marginBottom: 14 }}>{L.hro.l1}</h1>
         </div>
         <div style={{ opacity: heroIn ? 1 : 0, transform: heroIn ? "none" : "translateY(22px)", transition: "all 1s cubic-bezier(.4,0,.2,1) 0.75s" }}>
-          <h2 className={lc} style={{ fontSize: "clamp(28px,5.5vw,70px)", fontWeight: 700, color: G.gold, lineHeight: 1.12, marginBottom: 32, whiteSpace: "pre-line", textShadow: `0 0 60px rgba(201,168,76,0.3)` }}>{L.hro.l2}</h2>
+          <h2 className={`neon ${lc}`} style={{ fontSize: lang==="te" ? "clamp(22px,3.8vw,48px)" : "clamp(30px,5vw,68px)", fontWeight: 700, color: G.gold, lineHeight: 1.25, marginBottom: 32, whiteSpace: "pre-line" }}>{L.hro.l2}</h2>
         </div>
         <div style={{ opacity: heroIn ? 1 : 0, transform: heroIn ? "none" : "translateY(14px)", transition: "all 0.9s cubic-bezier(.4,0,.2,1) 1.1s" }}>
           <p className={lc} style={{ fontSize: "clamp(14px,1.9vw,19px)", fontStyle: "italic", color: G.mid, lineHeight: 2, maxWidth: 560, margin: "0 auto 48px", whiteSpace: "pre-line", opacity: 0.85 }}>{L.hro.sub}</p>
