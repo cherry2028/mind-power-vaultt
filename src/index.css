@@ -1,205 +1,80 @@
 /* ═══════════════════════════════════════════════════
-   MIND POWER VAULTT — Global Design System
-   mindpowervaultt.com
+   MIND POWER VAULTT — Premium Design System
+   Consolidated & Secured for Production
 ═══════════════════════════════════════════════════ */
 
-/* Reset */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 :root {
-  --black:    #05050A;
-  --dark1:    #08080F;
-  --dark2:    #0D0D16;
-  --dark3:    #12121E;
-  --gold:     #C9A84C;
-  --gold-dim: rgba(201,168,76,0.15);
-  --gold-glow:rgba(201,168,76,0.35);
-  --smoke:    #F5F2EA;
-  --mid:      #CCC8BB;
-  --soft:     #A8A498;
-  --vsoft:    rgba(240,237,228,0.28);
-  --glass:    rgba(13,13,22,0.72);
-  --glass-b:  rgba(201,168,76,0.06);
-  --red-dim:  rgba(200,80,80,0.08);
-  --red-brd:  rgba(200,80,80,0.25);
-  --green-dim:rgba(107,200,107,0.08);
-  --green-brd:rgba(107,200,107,0.25);
+  --black: #05050A;
+  --dark1: #0A0A10;
+  --dark2: #0F0F16;
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.18);
+  --smoke: #F5F2EA;
+  --mid: #D0CCBF;
+  --soft: #A8A498;
+  --vsoft: rgba(240,237,228,0.32);
   --serif: 'Cormorant Garamond', Georgia, serif;
-  --sans:  'DM Sans', system-ui, sans-serif;
-  --telugu:'Noto Serif Telugu', Georgia, serif;
-  --radius: 10px;
-  --radius-sm: 6px;
+  --sans: 'DM Sans', sans-serif;
 }
 
-html { scroll-behavior: smooth; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background: var(--black);
   color: var(--smoke);
   font-family: var(--sans);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
   overflow-x: hidden;
-  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-track { background: var(--dark1); }
-::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 2px; }
-
-/* Typography helpers */
-.tel { font-family: var(--telugu) !important; }
-.eng { font-family: var(--serif) !important; }
-
-/* ── Glassmorphism Cards ── */
-.glass-card {
-  background: var(--glass);
-  border: 1px solid var(--gold-dim);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius);
-}
-
-.glass-card-hover {
-  background: var(--glass);
-  border: 1px solid var(--gold-dim);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius);
+/* Base Layout Classes used in Home.jsx */
+.pin { animation: fadeIn 0.8s ease forwards; }
+.bg { 
+  background: linear-gradient(135deg, var(--gold), #9A7020) !important;
+  color: var(--black) !important;
   transition: all 0.3s ease;
   cursor: pointer;
 }
-.glass-card-hover:hover {
-  border-color: var(--gold-glow);
-  background: rgba(201,168,76,0.08);
-  transform: translateY(-3px);
-  box-shadow: 0 16px 48px rgba(201,168,76,0.12);
+.bg:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+
+.bo { 
+  background: transparent !important;
+  border: 1px solid var(--gold-dim) !important;
+  color: var(--gold) !important;
 }
 
-/* ── Choice Button ── */
-.choice-btn {
+.bc {
   width: 100%;
   text-align: left;
-  cursor: pointer;
+  padding: 18px 24px;
   background: rgba(201,168,76,0.03);
   border: 1px solid var(--gold-dim);
-  border-radius: var(--radius-sm);
-  padding: 18px 22px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: all 0.22s ease;
-  backdrop-filter: blur(8px);
-}
-.choice-btn:hover {
-  border-color: rgba(201,168,76,0.55);
-  background: rgba(201,168,76,0.09);
-  transform: translateX(6px);
-  box-shadow: 0 4px 24px rgba(201,168,76,0.1);
-}
-
-/* ── Primary Button (Gold) ── */
-.btn-gold {
-  position: relative;
-  overflow: hidden;
   cursor: pointer;
-  padding: 16px 40px;
-  background: linear-gradient(135deg, #C9A84C, #9A7020);
-  color: #05050A;
-  border: none;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  font-family: var(--sans);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(201,168,76,0.25);
+  transition: all 0.2s ease;
 }
-.btn-gold::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -60%;
-  width: 40%;
-  height: 200%;
-  background: rgba(255,255,255,0.18);
-  transform: skewX(-20deg);
-  transition: left 0.5s ease;
-}
-.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,0.4); }
-.btn-gold:hover::after { left: 130%; }
-
-/* ── Outline Button ── */
-.btn-outline {
-  cursor: pointer;
-  padding: 15px 36px;
-  background: transparent;
-  color: var(--gold);
-  border: 1px solid rgba(201,168,76,0.45);
-  border-radius: 3px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  font-family: var(--sans);
-  transition: all 0.28s ease;
-}
-.btn-outline:hover {
+.bc:hover {
   background: rgba(201,168,76,0.08);
   border-color: var(--gold);
-  transform: translateY(-1px);
+  transform: translateX(5px);
 }
 
-/* ── Animations ── */
-@keyframes fadeUp   { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
-@keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
-@keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-@keyframes breathe  { 0%,100%{opacity:0.06} 50%{opacity:0.16} }
-@keyframes scroll   { 0%,100%{opacity:0.3;transform:translateY(0)} 50%{opacity:0.9;transform:translateY(8px)} }
-@keyframes ritualIn { from{opacity:0;letter-spacing:8px} to{opacity:1;letter-spacing:normal} }
-@keyframes lineGrow { from{height:0;opacity:0} to{height:56px;opacity:1} }
-@keyframes spin     { to{transform:rotate(360deg)} }
-@keyframes dotPulse { 0%,80%,100%{opacity:0.3;transform:scale(1)} 40%{opacity:1;transform:scale(1.4)} }
-@keyframes shimmer  { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-@keyframes pulse    { 0%,100%{transform:scale(1);opacity:0.8} 50%{transform:scale(1.06);opacity:1} }
-@keyframes mesh     { 0%,100%{transform:rotate(0deg) scale(1)} 50%{transform:rotate(180deg) scale(1.1)} }
-@keyframes orb1     { 0%,100%{transform:translate(0,0)} 33%{transform:translate(40px,-30px)} 66%{transform:translate(-20px,20px)} }
-@keyframes orb2     { 0%,100%{transform:translate(0,0)} 33%{transform:translate(-30px,40px)} 66%{transform:translate(30px,-20px)} }
-@keyframes waPulse  { 0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,0.4)} 50%{box-shadow:0 0 0 12px rgba(37,211,102,0)} }
-@keyframes slideIn  { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+.lg { width: 1px; height: 50px; background: linear-gradient(to bottom, transparent, var(--gold)); margin: 0 auto; }
 
-.anim-fade-up  { animation: fadeUp 0.6s ease forwards; }
-.anim-float    { animation: float 4s ease-in-out infinite; }
-.anim-breathe  { animation: breathe 5s ease-in-out infinite; }
-.anim-scroll   { animation: scroll 2.5s ease-in-out infinite; }
-.anim-ritual   { animation: ritualIn 0.9s ease forwards; }
-.anim-line     { animation: lineGrow 0.7s ease 0.2s forwards; height:0; opacity:0; }
-.anim-pulse    { animation: pulse 3s ease-in-out infinite; }
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes orb1 { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(30px, -20px); } }
+@keyframes orb2 { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-30px, 20px); } }
+@keyframes orb3 { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, 20px); } }
 
-/* Staggered entrance */
-.s1 { animation: fadeUp 0.6s ease 0.1s both; }
-.s2 { animation: fadeUp 0.6s ease 0.25s both; }
-.s3 { animation: fadeUp 0.6s ease 0.4s both; }
-.s4 { animation: fadeUp 0.6s ease 0.55s both; }
-.s5 { animation: fadeUp 0.6s ease 0.7s both; }
+.tel { font-family: 'Noto Sans Telugu', sans-serif !important; }
+.eng { font-family: var(--serif) !important; }
 
-/* Input base */
-input, textarea, select {
-  outline: none;
-  background: rgba(201,168,76,0.04);
-  border: 1px solid var(--gold-dim);
-  border-radius: var(--radius-sm);
-  color: var(--smoke);
-  font-family: var(--sans);
-  transition: border-color 0.2s;
-}
-input:focus, textarea:focus, select:focus {
-  border-color: rgba(201,168,76,0.55);
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.06);
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--black); }
+::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 10px; }

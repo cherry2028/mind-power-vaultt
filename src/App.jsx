@@ -7,8 +7,6 @@ import { api } from "./utils/api-client";
 
 const LOGO_B64 = "data:image/jpeg;base64,..."; // Keep existing logo string
 
-const css = `...`; // Keep existing CSS
-
 export default function App() {
   const SS_KEY = "mpv_session_v1";
   const loadSession = () => {
@@ -80,7 +78,6 @@ export default function App() {
 
   return (
     <div style={{ background: G.black, color: G.smoke, fontFamily: sans, minHeight: "100vh" }}>
-      <style>{css}</style>
       <div ref={topRef} />
       
       {adminOpen && !adminAuth && (
