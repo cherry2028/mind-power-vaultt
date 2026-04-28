@@ -9,6 +9,18 @@ export const G = {
 export const serif = "'Cormorant Garamond', Georgia, serif";
 export const sans = "'DM Sans', sans-serif";
 
+export const REVIEWS_KEY = "mpv_reviews_v1";
+
+export const loadReviews = () => {
+  const saved = localStorage.getItem(REVIEWS_KEY);
+  return saved ? JSON.parse(saved) : [
+    { id: 1, name: "Prasad Rao", city: "Vizag", stars: 5, te: "ముందు ఎప్పుడు లాభాల గురించి ఆలోచించేవాడిని. ఇప్పుడు నా ప్రాసెస్ మీద ఫోకస్ చేస్తున్నాను. మార్పు కనిపిస్తోంది.", en: "Earlier I only thought about profits. Now I focus on my process. Seeing the change." },
+    { id: 2, name: "Suresh K.", city: "Hyderabad", stars: 5, te: "రిస్క్ మేనేజ్‌మెంట్ అంటే ఏంటో ఇక్కడ తెలిసింది. కే ప్రసాద్ గారికి ధన్యవాదాలు.", en: "Learned what real risk management is. Thanks to K Prasad." }
+  ];
+};
+
+export const saveReviews = (r) => localStorage.setItem(REVIEWS_KEY, JSON.stringify(r));
+
 export const SCENARIOS = [
   {
     id: 0, escalation: false, showCommunity: false,
