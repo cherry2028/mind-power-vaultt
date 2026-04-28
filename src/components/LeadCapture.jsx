@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { G, sans, lc as getLc } from '../utils/constants';
+import { G, sans } from '../utils/constants';
 import { api } from '../utils/api-client';
 
 export default function LeadCapture({ lang, LL, aiProfile, formLevel, setFormLevel, goTo }) {
