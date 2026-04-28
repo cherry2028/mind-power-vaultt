@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════
-   MIND POWER VAULTT — Premium Design System
-   Consolidated & Secured for Production
+   MIND POWER VAULTT — Royal Gold Design System
+   Restored Premium Aesthetic
 ═══════════════════════════════════════════════════ */
 
 :root {
@@ -8,11 +8,12 @@
   --dark1: #0A0A10;
   --dark2: #0F0F16;
   --gold: #C9A84C;
+  --gold-glow: rgba(201,168,76,0.3);
   --gold-dim: rgba(201,168,76,0.18);
   --smoke: #F5F2EA;
   --mid: #D0CCBF;
   --soft: #A8A498;
-  --vsoft: rgba(240,237,228,0.32);
+  --vsoft: rgba(240,237,228,0.25);
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans: 'DM Sans', sans-serif;
 }
@@ -27,54 +28,86 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Base Layout Classes used in Home.jsx */
+/* Removal of any unwanted blue glows and restoration of gold focus */
 .pin { animation: fadeIn 0.8s ease forwards; }
+
 .bg { 
   background: linear-gradient(135deg, var(--gold), #9A7020) !important;
   color: var(--black) !important;
-  transition: all 0.3s ease;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: none;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.bg:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
-
-.bo { 
-  background: transparent !important;
-  border: 1px solid var(--gold-dim) !important;
-  color: var(--gold) !important;
+.bg:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 10px 30px rgba(201,168,76,0.4); 
 }
 
 .bc {
   width: 100%;
   text-align: left;
-  padding: 18px 24px;
+  padding: 20px 28px;
   background: rgba(201,168,76,0.03);
   border: 1px solid var(--gold-dim);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  color: var(--mid);
 }
 .bc:hover {
   background: rgba(201,168,76,0.08);
   border-color: var(--gold);
-  transform: translateX(5px);
+  transform: translateX(8px);
+  color: var(--smoke);
 }
 
-.lg { width: 1px; height: 50px; background: linear-gradient(to bottom, transparent, var(--gold)); margin: 0 auto; }
+.lg { width: 1px; height: 60px; background: linear-gradient(to bottom, transparent, var(--gold)); margin: 0 auto 32px; }
+
+/* Text Readability Enhancements */
+h1, h2, h3 { font-family: var(--serif); color: var(--smoke); }
+p { line-height: 1.8; }
+
+.tel { font-family: 'Noto Sans Telugu', sans-serif !important; font-size: 1.1em; line-height: 2 !important; }
+.eng { font-family: var(--serif) !important; font-style: italic; }
+
+/* Input Fields (Visibility Fix) */
+input, textarea {
+  width: 100%;
+  padding: 14px 18px;
+  background: #12121A !important;
+  border: 1px solid var(--gold-dim) !important;
+  border-radius: 6px;
+  color: var(--smoke) !important;
+  font-family: var(--sans);
+  font-size: 15px;
+  transition: all 0.3s;
+}
+input:focus {
+  border-color: var(--gold) !important;
+  background: #181822 !important;
+}
 
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-@keyframes orb1 { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(30px, -20px); } }
-@keyframes orb2 { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-30px, 20px); } }
-@keyframes orb3 { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, 20px); } }
-
-.tel { font-family: 'Noto Sans Telugu', sans-serif !important; }
-.eng { font-family: var(--serif) !important; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--black); }
 ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 10px; }
+
+/* ORBS (Clean Gold Orbs) */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+  filter: blur(40px);
+  z-index: 0;
+}

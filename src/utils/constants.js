@@ -29,7 +29,7 @@ export const SCENARIOS = [
       ch: [
         { l: "మళ్ళీ ఇలాంటి setup వస్తుందని wait చేస్తాను", r: "Wait చేయడం తెలుసు అని అనిపిస్తుంది. కానీ screen ముందు కూర్చుని నిజంగా wait చేయగలిగావా? తెలుసు అనడం వేరు. ఆ క్షణంలో execute చేయడం వేరు." },
         { l: "Price వెళ్ళిన direction లోనే enter అవుతాను", r: "Trade miss అవ్వలేదు నువ్వు — opportunity వెళ్ళిపోయిందని feel అయ్యావు. ఆ feeling చాలా తీవ్రంగా ఉంటుంది. Market చూసి చేశావా — లేదా miss అయిన feeling నుండి చేశావా?" },
-        { l: "Frustrate అయి screen నుండి దూరంగా వెళ్తాను", r: "Market నీకు ఇవ్వాలి అనిపిస్తోంది…\nఇవ్వలేదు కాబట్టి frustrate అవుతున్నావు.\nకానీ —\nmarket నీది కాదు.\nఅయితే ఈ expectation…\nనీది ఎలా అయింది?" },
+        { l: "Frustrate అయి screen నుండి దూరంగా వెళ్తాను", r: "Market నీకు ఇవ్వాలి అనిపిస్తోంది…\nఇవ్వలేదు కాట్టి frustrate అవుతున్నావు.\nకానీ —\nmarket నీది కాదు.\nఅయితే ఈ expectation…\nనీది ఎలా అయింది?" },
       ]
     },
     en: {
@@ -125,60 +125,34 @@ export function buildProfile(answers, L) {
   const pos = traits.filter(t => !t.neg);
   const nIds = neg.map(t => t.id);
   const has = (...xs) => xs.every(x => nIds.includes(x));
-  const bLines = answers.map((ci, i) => { const t = TM[`s${i}_${ci}`]; return t ? t[L] : ""; });
+  
   let p = "", c = "", w = "", s = pos.length ? pos[0][L] : "";
+
   if (has("FOMO", "EGO")) {
-    p = L === "te" ? "నువ్వు miss అవ్వడం భరించలేవు. Loss వచ్చినా భరించలేవు.\nఈ రెండూ నిన్ను continuously reactive చేస్తున్నాయి." : "You can't bear missing a trade. You can't bear a loss.\nBoth keep you in a constant state of reaction.";
-    c = L === "te" ? "Market నిన్ను trap చేయడం లేదు — నీ own pattern నిన్ను trap చేస్తోంది. Miss అయినపుడు chase, loss వస్తే immediately recover. ఈ రెండు reactions మధ్య నీ actual edge disappear అవుతోంది." : "The market isn't trapping you — your own pattern is. Miss = chase. Loss = re-enter. Between these two reactions, your actual edge disappears completely.";
-    w = L === "te" ? "ఈ combination లో account quickly erode అవుతుంది — రెండు వేపుల నుండి reactive trades వస్తున్నాయి." : "With this combination, capital erodes quickly — reactive trades are coming from both directions.";
+    p = L === "te" ? "మీరు కేవలం ట్రేడింగ్ చేయడం లేదు, ఒక యుద్ధం చేస్తున్నారు.\nఒకవైపు అవకాశం చేజారిపోతుందనే భయం (FOMO), మరోవైపు ఓటమిని తట్టుకోలేని అహం (EGO).\nఈ రెండూ మిమ్మల్ని మార్కెట్ కి బానిసగా మారుస్తున్నాయి." : "You aren't just trading; you're fighting a war.\nOn one side is the fear of missing out (FOMO), and on the other is an ego that cannot accept defeat.";
+    c = L === "te" ? "ట్రేడింగ్ అనేది లెక్కల ఆట కాదు, అది మీ నిశ్శబ్దాన్ని పరీక్షించే సమయం. మీరు ప్రాఫిట్ కోసం ట్రేడ్ చేయడం లేదు, ఏదో వెలితిని పూడ్చుకోవడానికి చేస్తున్నారు. ఆ వెలితి మార్కెట్ ఇచ్చే డబ్బుతో తీరదు, మీ క్రమశిక్షణతో మాత్రమే తీరుతుంది." : "Trading isn't a game of numbers; it's a test of your silence. You aren't trading for profit; you're trading to fill a void. That void won't be filled by money, only by your discipline.";
+    w = L === "te" ? "హెచ్చరిక: ఈ ప్రయాణం ఇలాగే కొనసాగితే, మీరు డబ్బునే కాదు, మీ మీద మీకు ఉన్న గౌరవాన్ని కూడా కోల్పోయే ప్రమాదం ఉంది." : "Warning: If this journey continues, you risk losing not just money, but your self-respect.";
   } else if (has("FOMO", "OVERCONFIDENT")) {
-    p = L === "te" ? "Loss లో FOMO తో trade చేస్తావు.\nProfit లో process మర్చిపోయి mood తో trade చేస్తావు." : "In losses you trade driven by FOMO.\nIn profits you forget the process and trade on mood.";
-    c = L === "te" ? "రెండు extreme states లో నీ decisions emotion-driven. Loss streak లో chase, win streak లో over-trade. Market neutral గా ఉంటే — నీ decisions ఎప్పుడూ neutral గా ఉండవు." : "In both extreme states your decisions are emotion-driven. Losing streak: chase. Winning streak: over-trade. The market is neutral — your decisions never are.";
-    w = L === "te" ? "Win streaks లో risk పెరుగుతుంది. Loss streaks లో chase అవుతావు. ఇది inconsistent results కి direct reason." : "On winning streaks you increase risk. On losing streaks you chase. This is the direct reason for inconsistent results.";
-  } else if (has("EGO", "DEPENDENT")) {
-    p = L === "te" ? "Loss వస్తే market ని beat చేయాలని try చేస్తావు.\nLosing streak వస్తే వేరేవాళ్ళని follow చేస్తావు." : "When you lose you try to beat the market.\nWhen on a losing streak you follow others.";
-    c = L === "te" ? "నీ confidence unstable. Loss → ego trigger, consecutive losses → external seek. ఈ రెండూ same root cause: clearly defined internal system లేదు." : "Your confidence is unstable. A loss triggers ego. A streak triggers seeking external help. Both come from the same root: no clearly defined internal system.";
-    w = L === "te" ? "System build చేయకపోతే — good days లో ego trade చేస్తుంది, bad days లో others' tips trade చేస్తాయి. నువ్వు ఎప్పుడూ trade చేయవు." : "Without your own system — ego trades on good days, others' tips trade on bad days. You never actually trade.";
-  } else if (has("DEPENDENT", "OVERCONFIDENT")) {
-    p = L === "te" ? "Good days లో నువ్వు genius feel అవుతావు.\nBad days లో వేరేవాళ్ళ advice కోసం వెతుకుతావు." : "On good days you feel like a genius.\nOn bad days you seek advice from others.";
-    c = L === "te" ? "నువ్వు market results ని బట్టి నిన్ను నువ్వు judge చేస్తున్నావు. Win = నా skill. Loss = help కావాలి. Self-trust market outcomes మీద depend చేసినంత కాలం stable అవ్వదు." : "You judge yourself by market results. Win = my skill. Loss = I need help. Self-trust can never be stable when it depends on outcomes.";
-    w = L === "te" ? "External validation depend చేసినంత కాలం నీ decisions నీవి కాదు — market mood వి." : "As long as you depend on external validation, your decisions aren't truly yours.";
+    p = L === "te" ? "మీకు ఆకాశం హద్దు అనిపిస్తుంది, కానీ నేల మీద అడుగులు తడబడుతున్నాయి.\nగెలిచినప్పుడు మీరు దేవుడనుకుంటారు, ఓడిపోయినప్పుడు మళ్ళీ గెలవాలనే ఆత్రుతలో తప్పులు చేస్తారు." : "You feel the sky is the limit, but your feet are faltering on the ground.\nIn victory, you feel invincible; in loss, you're so desperate to win again that you trip over your own feet.";
+    c = L === "te" ? "విజయం అనేది ఒక మత్తు లాంటిది. అది మీ కళ్ళకు గంతలు కడుతుంది. మీరు మార్కెట్ ని చదవడం మానేసి, మీ అదృష్టాన్ని నమ్మడం మొదలుపెట్టారు. అదృష్టం ఒక రోజు ఉంటుంది, కానీ నైపుణ్యం జీవితాంతం తోడుంటుంది." : "Success is like an intoxicant; it blinds you. You've stopped reading the market and started trusting your luck. Luck is for a day; skill is for a lifetime.";
+    w = L === "te" ? "జాగ్రత్త: అతి విశ్వాసం అనేది కనిపించని లోయ లాంటిది. మీరు పడబోయే ముందు వరకు అంతా బాగున్నట్టే అనిపిస్తుంది." : "Caution: Overconfidence is an invisible valley. Everything feels fine until the moment you fall.";
   } else if (has("AVOIDER", "FEAR_STOP")) {
-    p = L === "te" ? "Pressure వచ్చినపుడు — miss, loss, frustration — నువ్వు situation నుండి దూరంగా వెళ్తావు." : "When pressure comes — missed trades, losses, frustration — you step away from the situation.";
-    c = L === "te" ? "ఇది discipline లా కనిపిస్తుంది. కానీ rule-based stopping కాదు — pain-based escape. Pain వల్ల ఆపడం ఆ pain ని next session కి carry చేస్తుంది." : "This looks like discipline but it's pain-based escape. Stopping due to pain carries that pain forward to the next session. It compounds.";
-    w = L === "te" ? "Avoidance చేసిన situations real market లో మళ్ళీ వస్తాయి — prepared గా లేకుండా." : "Avoided situations return in the real market — and you'll be unprepared for them.";
-  } else if (has("FOMO", "DEPENDENT")) {
-    p = L === "te" ? "Miss అవ్వడానికి భయం వస్తే chase చేస్తావు.\nLosing streak వస్తే others' setup follow చేస్తావు." : "Fear of missing out drives you to chase.\nA losing streak drives you to follow others.";
-    c = L === "te" ? "ఈ రెండూ same root: నీ దగ్గర 'ఇది నా trade' అనే clarity లేదు. Clarity లేనపుడు ప్రతి opportunity లాగుతుంది, ప్రతి 'sure' convincing గా అనిపిస్తుంది." : "Both come from the same root: you don't have the clarity of 'this is my trade.' Without clarity, every opportunity pulls you in and every 'sure' sounds convincing.";
-    w = L === "te" ? "Own entry criteria లేకపోతే market నిన్ను random గా move చేస్తుంది. Consistent results impossible." : "Without your own entry criteria, the market moves you randomly. Consistent results are impossible.";
-  } else if (has("EGO", "OVERCONFIDENT")) {
-    p = L === "te" ? "Loss వచ్చినపుడు prove చేయాలని trade చేస్తావు.\nProfit వచ్చినపుడు process మర్చిపోయి trade చేస్తావు." : "When you lose, you trade to prove yourself.\nWhen you profit, you forget the process and keep trading.";
-    c = L === "te" ? "రెండు states లో — loss లో ego, profit లో overconfidence — process follow అవ్వడం లేదు. Market ని నీ identity తో connect చేశావు. Win = right. Loss = wrong. Trading ఆ game కాదు." : "In both states — ego in loss, overconfidence in profit — the process breaks down. You've connected the market to your identity. Win = right. Loss = wrong. Trading is not that game.";
-    w = L === "te" ? "P&L ని ఎప్పుడూ self-worth తో mix చేయకూడదు. అది identity-based trading అవుతుంది — చాలా expensive." : "Never mix P&L with self-worth. That becomes identity-based trading — and it's very expensive.";
-  } else if (has("FEAR_STOP", "OVERCONFIDENT")) {
-    p = L === "te" ? "Losses తో panic అవుతావు — profits తో careless అవుతావు.\nరెండు extremes లో process missing అవుతోంది." : "You panic with losses — you get careless with profits.\nThe process is missing at both extremes.";
-    c = L === "te" ? "Loss వచ్చినపుడు fear వల్ల ఆపుతావు. Profit వచ్చినపుడు overconfidence వల్ల continue చేస్తావు. Opposite directions కానీ same problem — emotional state decisions drive చేస్తోంది." : "Fear stops you when losing. Overconfidence pushes you when winning. Opposite directions, same problem — your emotional state is driving your decisions.";
-    w = L === "te" ? "Consistency అంటే good days లో and bad days లో same process follow చేయడం." : "Consistency means following the same process on both good days and bad days.";
-  } else if (nIds.length === 0) {
-    p = L === "te" ? "నీ 4 choices అన్నీ process-oriented గా ఉన్నాయి.\nకానీ real market లో కూడా ఇలాగే ఉంటావా?" : "Your 4 choices are all process-oriented.\nBut is this how you actually behave in the real market?";
-    c = L === "te" ? "నీకు right answers తెలుసు. ఇది significant. కానీ screen ముందు pressure లో, loss streak లో, profit day లో — అదే clarity maintain చేయగలవా?" : "You know the right answers. That matters. But under pressure, during a losing streak, on a big profit day — can you maintain that same clarity?";
-    w = L === "te" ? "Process తెలిసిన traders కూడా execution లో fail అవుతారు. Knowing and doing మధ్య gap — అక్కడే most traders fail అవుతారు." : "Even traders who know the process fail in execution. The knowing-doing gap is where most traders break down.";
-  } else if (nIds.length === 1) {
-    const n = neg[0];
-    const mp = {
-      FOMO: { te: { p: "నువ్వు trade miss అవ్వడాన్ని tolerate చేయలేవు.\nఆ ఒక్క feeling నీ చాలా decisions drive చేస్తోంది.", c: "FOMO ఒక్కటే ఉన్నపుడు manageable. కానీ acknowledge చేయకపోతే slowly అన్ని decisions లో వస్తుంది. Missed trade అయినపుడు నీ reaction ని notice చేయడం start చేయి.", w: "Entry criteria లేకుండా 'opportunity miss అవుతోంది' అనే feeling నిన్ను market లోకి force చేస్తుంది." }, en: { p: "You can't tolerate missing a trade.\nThat one feeling is driving many of your decisions.", c: "FOMO alone is manageable. But left unacknowledged, it slowly enters all your decisions. Start noticing your reaction when you miss a trade.", w: "Without entry criteria, the feeling of missing out forces you into the market." } },
-      EGO: { te: { p: "Loss తర్వాత నీ immediate reaction re-enter చేయడం.\nఆ moment లో capital కంటే ego priority అవుతోంది.", c: "ఒక్క behavior change: loss వచ్చిన తర్వాత minimum 15 minutes wait rule. ఆ 15 minutes లో re-enter trigger feel అవుతుందా లేదా notice చేయి. అది ego trade ని identify చేసే easiest way.", w: "Loss తర్వాత re-entry — అది winning trade అయినా, habit గా ఉంటే long term లో expensive." }, en: { p: "Your immediate reaction after a loss is to re-enter.\nIn that moment, ego takes priority over capital.", c: "One behavior change: a minimum 15-minute wait rule after every loss. Notice whether the re-entry urge shows up in those 15 minutes. That's the easiest way to identify ego trades.", w: "Re-entering after a loss — even if it wins — becomes expensive as a habit." } },
-      OVERCONFIDENT: { te: { p: "Good days లో నువ్వు process కంటే mood ని follow చేస్తావు.\nProfit నీ judgment కి filter లా work చేస్తోంది.", c: "Good days లో అదనపు trade occasionally work అవుతుంది. కానీ that success reinforces the behavior. Over time good days లో rule-breaking అలవాటు అవుతుంది. Bad months అక్కడ start అవుతాయి.", w: "Target hit అయిన తర్వాత screen వదలడం — simple గా కనిపిస్తుంది కానీ execution లో చాలా difficult." }, en: { p: "On good days you follow mood over process.\nYour profit is acting as a filter on your judgment.", c: "Taking extra trades on good days occasionally works. But that success reinforces the behavior. Over time, rule-breaking on good days becomes a habit. That's where bad months begin.", w: "Stepping away from the screen after hitting your target looks simple — but in execution it's very difficult." } },
-      DEPENDENT: { te: { p: "Losing streak లో నువ్వు others' advice కి vulnerable అవుతావు.\nఆ moment లో judgment temporarily absent అవుతుంది.", c: "3+ losses వచ్చినపుడు external seek చేయడం అర్థమయ్యే behavior. కానీ ఆ moment లో వచ్చే 'sure' tips — అవి నీ system కాదు. Others' system. Others' context.", w: "Losing streaks లో rest తీసుకోవడం — next trade కి fresh గా రావడం — అర్థం చేసుకోవడం easy, చేయడం hard." }, en: { p: "During a losing streak you become vulnerable to others' advice.\nIn that moment your judgment is temporarily absent.", c: "Seeking external input after 3+ losses is understandable. But the 'sure' tips that come in that moment — they're someone else's system, not yours.", w: "Taking rest during a losing streak and coming back fresh — easy to understand, hard to do." } },
-    };
-    if (mp[n.id]) { const d = mp[n.id][L]; p = d.p; c = d.c; w = d.w; }
-    else { p = n[L]; c = pos.length ? pos[0][L] : ""; w = ""; }
+    p = L === "te" ? "మీరు సమస్య నుండి పారిపోతున్నారు, కానీ సమస్య మీ నీడలా మీ వెంటే వస్తోంది.\nనష్టం వస్తే స్క్రీన్ ఆపేయడం క్రమశిక్షణ కాదు, అది మీ భయాన్ని దాచుకోవడం." : "You're running from the problem, but it follows you like a shadow.\nTurning off the screen when you lose isn't discipline; it's hiding your fear.";
+    c = L === "te" ? "ఓటమిని కళ్ళలోకి చూసి అంగీకరించినప్పుడే విజయం తలుపు తడుతుంది. మీరు నొప్పిని తట్టుకోలేక తలుపులు వేసుకుంటున్నారు. కానీ ఆ నొప్పి లోనే మీ ఎదుగుదల దాగి ఉంది. దాన్ని గమనించండి." : "Success only knocks when you look defeat in the eye and accept it. You're closing doors because you can't bear the pain.";
+    w = L === "te" ? "గుర్తుంచుకోండి: మీరు వదిలేసిన ప్రతి పాఠం, రేపు మార్కెట్ లో మరింత ఖరీదైన పరీక్షగా మారుతుంది." : "Remember: Every lesson you avoid today will become a more expensive test in the market tomorrow.";
   } else {
-    p = `${neg[0][L]}\n${neg[1] ? neg[1][L] : ""}`;
-    c = L === "te" ? `ఈ రెండు patterns connected గా ఉన్నాయి. ఒకటి trigger అయినపుడు రెండోది automatically follow అవుతుంది. ఒకటి address చేస్తే రెండోది కూడా improve అవుతుంది.` : `These two patterns are connected. When one is triggered, the other follows automatically. Fix one and the other begins to improve.`;
-    w = L === "te" ? "Combined patterns single pattern కంటే ఎక్కువ impact చేస్తాయి." : "Combined patterns have more impact than a single one — they reinforce each other.";
+    p = traits.map(t => t[L]).join("\n");
+    c = L === "te" ? "మీ ట్రేడింగ్ ప్యాటర్న్స్ ని గమనిస్తే, మీరు చాలా సందర్భాల్లో ఎమోషన్స్ కి లొంగిపోతున్నారు. సరైన సిస్టమ్ లేకపోవడం వల్ల ఈ అయోమయం ఏర్పడుతోంది." : "Observing your patterns, you often succumb to emotions. This confusion stems from a lack of a solid system.";
+    w = L === "te" ? "మీరు మీ ట్రేడింగ్ జర్నల్ ని ప్రతిరోజూ రాసుకోవడం మొదలుపెట్టాలి." : "You must start writing your trading journal every day.";
   }
-  return { primaryLine: p, coreInsight: c, warningLine: w, strengthLine: s, behaviorLines: bLines };
+
+  return { 
+    primaryPattern: p, 
+    coreInsight: c, 
+    warningLine: w, 
+    hiddenStrength: s, 
+    behaviorLines: traits.map(t => t[L]) 
+  };
 }
 
 export const PHASES_TEXT = {
