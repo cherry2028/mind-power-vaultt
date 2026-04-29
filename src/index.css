@@ -8,17 +8,21 @@
   --dark1: #0A0A10;
   --dark2: #0F0F16;
   --gold: #C9A84C;
-  --gold-glow: rgba(201,168,76,0.3);
-  --gold-dim: rgba(201,168,76,0.18);
+  --gold-glow: rgba(201, 168, 76, 0.3);
+  --gold-dim: rgba(201, 168, 76, 0.18);
   --smoke: #F5F2EA;
   --mid: #D0CCBF;
   --soft: #A8A498;
-  --vsoft: rgba(240,237,228,0.25);
+  --vsoft: rgba(240, 237, 228, 0.25);
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans: 'DM Sans', sans-serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background: var(--black);
@@ -29,9 +33,11 @@ body {
 }
 
 /* Removal of any unwanted blue glows and restoration of gold focus */
-.pin { animation: fadeIn 0.8s ease forwards; }
+.pin {
+  animation: fadeIn 0.8s ease forwards;
+}
 
-.bg { 
+.bg {
   background: linear-gradient(135deg, var(--gold), #9A7020) !important;
   color: var(--black) !important;
   font-weight: 700;
@@ -42,16 +48,17 @@ body {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.bg:hover { 
-  transform: translateY(-2px); 
-  box-shadow: 0 10px 30px rgba(201,168,76,0.4); 
+
+.bg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(201, 168, 76, 0.4);
 }
 
 .bc {
   width: 100%;
   text-align: left;
   padding: 20px 28px;
-  background: rgba(201,168,76,0.03);
+  background: rgba(201, 168, 76, 0.03);
   border: 1px solid var(--gold-dim);
   border-radius: 10px;
   display: flex;
@@ -61,24 +68,47 @@ body {
   transition: all 0.25s ease;
   color: var(--mid);
 }
+
 .bc:hover {
-  background: rgba(201,168,76,0.08);
+  background: rgba(201, 168, 76, 0.08);
   border-color: var(--gold);
   transform: translateX(8px);
   color: var(--smoke);
 }
 
-.lg { width: 1px; height: 60px; background: linear-gradient(to bottom, transparent, var(--gold)); margin: 0 auto 32px; }
+.lg {
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, var(--gold));
+  margin: 0 auto 32px;
+}
 
 /* Text Readability Enhancements */
-h1, h2, h3 { font-family: var(--serif); color: var(--smoke); }
-p { line-height: 1.8; }
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  color: var(--smoke);
+}
 
-.tel { font-family: 'Noto Sans Telugu', sans-serif !important; font-size: 1.1em; line-height: 2 !important; }
-.eng { font-family: var(--serif) !important; font-style: italic; }
+p {
+  line-height: 1.8;
+}
+
+.tel {
+  font-family: 'Noto Sans Telugu', sans-serif !important;
+  font-size: 1.1em;
+  line-height: 2 !important;
+}
+
+.eng {
+  font-family: var(--serif) !important;
+  font-style: italic;
+}
 
 /* Input Fields (Visibility Fix) */
-input, textarea {
+input,
+textarea {
   width: 100%;
   padding: 14px 18px;
   background: #12121A !important;
@@ -89,19 +119,48 @@ input, textarea {
   font-size: 15px;
   transition: all 0.3s;
 }
+
 input:focus {
   border-color: var(--gold) !important;
   background: #181822 !important;
 }
 
 /* Animations */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--black); }
-::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 10px; }
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold-dim);
+  border-radius: 10px;
+}
 
 /* ORBS (Clean Gold Orbs) */
 .orb {
