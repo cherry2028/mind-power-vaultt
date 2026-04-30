@@ -266,7 +266,7 @@ export default function App(){
 
 // ─── ADMIN REVIEWS PANEL ──────────────────────────────────────
 // Access: add ?admin=1 to URL → enter password → manage reviews
-const ADMIN_PWD = "mpv@kprasad2028"; // Change this password!
+const ADMIN_PWD = import.meta.env.VITE_ADMIN_PASSWORD || "mpv@kprasad2028"; // Fallback for local testing if env is missing
 const REVIEWS_KEY = "mpv_reviews_v1";
 
 
@@ -394,7 +394,10 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       // Call our Vercel serverless function — no CORS issue
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-internal-key": import.meta.env.VITE_INTERNAL_API_KEY
+        },
         body: JSON.stringify({ choiceDescriptions, lang: currentLang })
       });
       if(res.ok) {
@@ -674,7 +677,10 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       try {
         await fetch("/api/notify", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-internal-key": import.meta.env.VITE_INTERNAL_API_KEY
+          },
           body: JSON.stringify({
             name: form.name,
             phone: form.wa,

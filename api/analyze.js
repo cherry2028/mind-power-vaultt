@@ -10,6 +10,13 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Internal API Protection
+  const internalKey = process.env.INTERNAL_API_KEY;
+  const providedKey = req.headers['x-internal-key'];
+  if (internalKey && providedKey !== internalKey) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   const { choiceDescriptions, lang } = req.body || {};
   if (!choiceDescriptions) return res.status(400).json({ error: 'Missing data' });
 
