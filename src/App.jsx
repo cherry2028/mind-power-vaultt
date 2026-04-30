@@ -197,14 +197,14 @@ const css=`
 
 const GL=()=>(
   <div style={{display:"flex",alignItems:"center",gap:10,margin:"0 auto",width:130}}>
-    <div style={{flex:1,height:1,background:\`linear-gradient(to right,transparent,\${G.gold})\`}}/>
+    <div style={{flex:1,height:1,background:`linear-gradient(to right,transparent,${G.gold})`}}/>
     <div style={{width:5,height:5,background:G.gold,transform:"rotate(45deg)",flexShrink:0}}/>
-    <div style={{flex:1,height:1,background:\`linear-gradient(to left,transparent,\${G.gold})\`}}/>
+    <div style={{flex:1,height:1,background:`linear-gradient(to left,transparent,${G.gold})`}}/>
   </div>
 );
 
 const Tg=({c,ch})=>(
-  <p style={{fontSize:11,letterSpacing:5,color:c==="s"?\`\${G.smoke}60\`:\`\${G.gold}90\`,textTransform:"uppercase",marginBottom:14,fontFamily:sans}}>{ch}</p>
+  <p style={{fontSize:11,letterSpacing:5,color:c==="s"?`${G.smoke}60`:`${G.gold}90`,textTransform:"uppercase",marginBottom:14,fontFamily:sans}}>{ch}</p>
 );
 
 
@@ -233,7 +233,7 @@ function PsychBasics({lang, lc}){
   const topics = PSYCH_TOPICS[lang] || PSYCH_TOPICS.te;
   return(
     <div style={{maxWidth:620,margin:"0 auto 52px",textAlign:"left"}}>
-      <p style={{fontSize:11,letterSpacing:5,color:\`rgba(201,168,76,0.7)\`,textTransform:"uppercase",marginBottom:6,fontFamily:"'DM Sans',sans-serif",textAlign:"center"}}>
+      <p style={{fontSize:11,letterSpacing:5,color:`rgba(201,168,76,0.7)`,textTransform:"uppercase",marginBottom:6,fontFamily:"'DM Sans',sans-serif",textAlign:"center"}}>
         {lang==="te"?"Trading Psychology — Basic Concepts":"Trading Psychology — Basic Concepts"}
       </p>
       <p style={{fontSize:12,color:"rgba(240,237,228,0.4)",textAlign:"center",marginBottom:20,fontFamily:"'DM Sans',sans-serif"}}>
@@ -366,8 +366,8 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   const KPRASAD_WA="919059181616";
   const lc=lang==="te"?"tel":"eng";
   const sec={padding:"108px 0 72px"};
-  const gBtn={padding:"15px 36px",background:\`linear-gradient(135deg,\${G.gold},#9A7020)\`,color:G.black,border:"none",borderRadius:2,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans};
-  const oBtn={padding:"15px 36px",background:"transparent",color:G.gold,border:\`1px solid \${G.gold}48\`,borderRadius:2,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans};
+  const gBtn={padding:"15px 36px",background:`linear-gradient(135deg,${G.gold},#9A7020)`,color:G.black,border:"none",borderRadius:2,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans};
+  const oBtn={padding:"15px 36px",background:"transparent",color:G.gold,border:`1px solid ${G.gold}48`,borderRadius:2,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans};
 
   const handleChoice=(ci)=>{
     if(sc.escalation&&escPend===null){setEscPend(ci);setAnswers(a=>[...a,ci]);setShowEsc(true);return;}
@@ -386,7 +386,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       const s = SCENARIOS[i];
       const chosen = s[currentLang].ch[ci].l;
       const sit    = s[currentLang].sit.replace(/\n/g," ");
-      return \`Situation \${i+1}: "\${sit}" → User chose: "\${chosen}"\`;
+      return `Situation ${i+1}: "${sit}" → User chose: "${chosen}"`;
     }).join("\n");
 
     let parsed = null;
@@ -443,10 +443,10 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   const Ritual=()=>(
     <div style={{minHeight:"100vh",background:G.black,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"0 24px"}}>
       <div style={{maxWidth:560}}>
-        {rs>=1&&<p className={\`rit \${lc}\`} style={{fontSize:"clamp(16px,2.4vw,22px)",color:G.soft,fontStyle:"italic",lineHeight:2.1,marginBottom:32}}>{L.rit.l1}</p>}
-        {rs>=2&&<p className={\`pin \${lc}\`} style={{fontSize:"clamp(18px,2.8vw,26px)",color:G.smoke,lineHeight:1.95,marginBottom:32}}>{L.rit.l2}</p>}
+        {rs>=1&&<p className={`rit ${lc}`} style={{fontSize:"clamp(16px,2.4vw,22px)",color:G.soft,fontStyle:"italic",lineHeight:2.1,marginBottom:32}}>{L.rit.l1}</p>}
+        {rs>=2&&<p className={`pin ${lc}`} style={{fontSize:"clamp(18px,2.8vw,26px)",color:G.smoke,lineHeight:1.95,marginBottom:32}}>{L.rit.l2}</p>}
         {rs>=3&&<>
-          <p className={\`pin \${lc}\`} style={{fontSize:"clamp(18px,2.8vw,26px)",color:G.gold,fontWeight:600,lineHeight:1.9,marginBottom:52,whiteSpace:"pre-line"}}>{L.rit.l3}</p>
+          <p className={`pin ${lc}`} style={{fontSize:"clamp(18px,2.8vw,26px)",color:G.gold,fontWeight:600,lineHeight:1.9,marginBottom:52,whiteSpace:"pre-line"}}>{L.rit.l3}</p>
           <div className="pin" style={{display:"flex",flexDirection:"column",gap:14,alignItems:"center"}}>
             <button className="bg" onClick={()=>goTo(1)} style={{...gBtn,width:"100%",maxWidth:420}}>{L.rit.yes}</button>
             <button className="bo" onClick={()=>{}} style={{...oBtn,width:"100%",maxWidth:420,fontSize:11}}>{L.rit.no}</button>
@@ -458,11 +458,11 @@ const REVIEWS_KEY = "mpv_reviews_v1";
 
   const Hero=()=>(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",inset:0,backgroundImage:\`linear-gradient(\${G.goldDim} 1px,transparent 1px),linear-gradient(90deg,\${G.goldDim} 1px,transparent 1px)\`,backgroundSize:"58px 58px",opacity:0.7}}/>
+      <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(${G.goldDim} 1px,transparent 1px),linear-gradient(90deg,${G.goldDim} 1px,transparent 1px)`,backgroundSize:"58px 58px",opacity:0.7}}/>
       <div className="brth" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:540,height:540,background:"radial-gradient(circle,rgba(201,168,76,0.11) 0%,transparent 65%)"}}/>
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
-          <p style={{fontSize:11,letterSpacing:6,color:\`\${G.gold}75\`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
+          <p style={{fontSize:11,letterSpacing:6,color:`${G.gold}75`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>Mind Power Vaultt</p>
           <img src={LOGO_IMG} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
@@ -480,8 +480,8 @@ const REVIEWS_KEY = "mpv_reviews_v1";
         </div>
       </div>
       <div className="scrl" style={{position:"absolute",bottom:36,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-        <div style={{width:1,height:36,background:\`linear-gradient(to bottom,transparent,\${G.gold}70)\`}}/>
-        <span style={{fontSize:8,letterSpacing:4,color:\`\${G.gold}55\`,textTransform:"uppercase",fontFamily:sans}}>scroll</span>
+        <div style={{width:1,height:36,background:`linear-gradient(to bottom,transparent,${G.gold}70)`}}/>
+        <span style={{fontSize:8,letterSpacing:4,color:`${G.gold}55`,textTransform:"uppercase",fontFamily:sans}}>scroll</span>
       </div>
     </div>
   );
@@ -495,13 +495,13 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:14,marginBottom:44}}>
         {L.mir.cards.map((c,i)=>(
-          <div key={i} style={{background:\`\${G.gold}04\`,border:\`1px solid \${G.goldDim}\`,borderRadius:7,padding:"22px 18px",display:"flex",gap:14,alignItems:"flex-start"}}>
+          <div key={i} style={{background:`${G.gold}04`,border:`1px solid ${G.goldDim}`,borderRadius:7,padding:"22px 18px",display:"flex",gap:14,alignItems:"flex-start"}}>
             <span style={{fontSize:24,flexShrink:0}}>{c.i}</span>
             <p className={lc} style={{color:G.mid,fontSize:14,lineHeight:1.9}}>{c.t}</p>
           </div>
         ))}
       </div>
-      <div style={{textAlign:"center",padding:"28px 24px",border:\`1px solid \${G.goldDim}\`,borderRadius:7,background:\`\${G.gold}04\`,marginBottom:52}}>
+      <div style={{textAlign:"center",padding:"28px 24px",border:`1px solid ${G.goldDim}`,borderRadius:7,background:`${G.gold}04`,marginBottom:52}}>
         <p className={lc} style={{fontSize:"clamp(17px,2.2vw,24px)",fontStyle:"italic",color:G.gold,lineHeight:1.9,whiteSpace:"pre-line"}}>{L.mir.close}</p>
       </div>
       <div style={{textAlign:"center"}}>
@@ -514,7 +514,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   const Intro=()=>(
     <div style={{...sec,textAlign:"center"}}>
       <Tg>Self-Discovery Engine</Tg>
-      <div className="lg" style={{width:1,background:\`linear-gradient(to bottom,transparent,\${G.gold})\`,margin:"0 auto 32px"}}/>
+      <div className="lg" style={{width:1,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto 32px"}}/>
       <h2 className={lc} style={{fontSize:"clamp(24px,4vw,48px)",color:G.smoke,marginBottom:20,lineHeight:1.3}}>
         {L.int.t1}<br/><span style={{color:G.gold,fontStyle:"italic"}}>{L.int.t2}</span>
       </h2>
@@ -522,7 +522,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       <p className={lc} style={{color:G.soft,fontSize:14,lineHeight:2,maxWidth:480,margin:"0 auto 48px",whiteSpace:"pre-line"}}>{L.int.p2}</p>
       <GL/>
       <div style={{marginTop:44,display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
-        {L.int.tags.map((s,i)=><span key={i} style={{padding:"7px 16px",border:\`1px solid \${G.goldDim}\`,borderRadius:2,fontSize:9,letterSpacing:2,color:G.mid,textTransform:"uppercase",fontFamily:sans}}>{s}</span>)}
+        {L.int.tags.map((s,i)=><span key={i} style={{padding:"7px 16px",border:`1px solid ${G.goldDim}`,borderRadius:2,fontSize:9,letterSpacing:2,color:G.mid,textTransform:"uppercase",fontFamily:sans}}>{s}</span>)}
       </div>
       <div style={{marginTop:52}}>
         <button className="bg" onClick={()=>{setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);goTo(4);}} style={gBtn}>{L.int.cta}</button>
@@ -536,21 +536,21 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       <div style={sec}>
         <div style={{marginBottom:44}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}>
-            <span style={{fontSize:10,letterSpacing:3,color:\`\${G.gold}65\`,textTransform:"uppercase",fontFamily:sans}}>Situation {scIdx+1} / {SCENARIOS.length}</span>
+            <span style={{fontSize:10,letterSpacing:3,color:`${G.gold}65`,textTransform:"uppercase",fontFamily:sans}}>Situation {scIdx+1} / {SCENARIOS.length}</span>
             <span style={{fontSize:10,color:G.soft,fontFamily:sans}}>{Math.round(prg)}%</span>
           </div>
-          <div style={{height:1,background:G.goldDim}}><div style={{height:"100%",width:\`\${prg}%\`,background:\`linear-gradient(to right,\${G.gold}70,\${G.gold})\`,transition:"width 0.5s ease"}}/></div>
+          <div style={{height:1,background:G.goldDim}}><div style={{height:"100%",width:`${prg}%`,background:`linear-gradient(to right,${G.gold}70,${G.gold})`,transition:"width 0.5s ease"}}/></div>
         </div>
         {showEsc&&(
-          <div className="pin" style={{padding:"40px 28px",background:G.dark2,border:\`1px solid \${G.gold}35\`,borderRadius:8,textAlign:"center"}}>
-            <div style={{width:1,height:40,background:\`linear-gradient(to bottom,transparent,\${G.gold})\`,margin:"0 auto 28px"}}/>
+          <div className="pin" style={{padding:"40px 28px",background:G.dark2,border:`1px solid ${G.gold}35`,borderRadius:8,textAlign:"center"}}>
+            <div style={{width:1,height:40,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto 28px"}}/>
             <p className={lc} style={{fontSize:"clamp(18px,2.5vw,26px)",color:G.smoke,lineHeight:2.1,whiteSpace:"pre-line",marginBottom:20}}>{sc.escLine[lang]}</p>
-            <p className={lc} style={{fontSize:14,color:\`\${G.gold}85\`,fontStyle:"italic",marginBottom:36}}>{sc.escNote[lang]}</p>
+            <p className={lc} style={{fontSize:14,color:`${G.gold}85`,fontStyle:"italic",marginBottom:36}}>{sc.escNote[lang]}</p>
             <button className="bg" onClick={handleEsc} style={gBtn}>{sc.escBtn[lang]}</button>
           </div>
         )}
         {!showEsc&&!refText&&<>
-          <div style={{marginBottom:36,padding:"28px 26px",background:G.dark2,border:\`1px solid \${G.goldDim}\`,borderRadius:8}}>
+          <div style={{marginBottom:36,padding:"28px 26px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
             <Tg>{lang==="te"?"Situation":"Situation"}</Tg>
             <p className={lc} style={{fontSize:"clamp(17px,2.3vw,24px)",color:G.smoke,lineHeight:1.95}}>{scL.sit}</p>
           </div>
@@ -558,8 +558,8 @@ const REVIEWS_KEY = "mpv_reviews_v1";
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {scL.ch.map((c,i)=>(
               <button key={i} className="bc" onClick={()=>handleChoice(i)}>
-                <div style={{width:28,height:28,borderRadius:"50%",border:\`1px solid \${G.goldDim}\`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  <span style={{fontSize:10,color:\`\${G.gold}80\`,fontWeight:600,fontFamily:sans}}>{String.fromCharCode(65+i)}</span>
+                <div style={{width:28,height:28,borderRadius:"50%",border:`1px solid ${G.goldDim}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <span style={{fontSize:10,color:`${G.gold}80`,fontWeight:600,fontFamily:sans}}>{String.fromCharCode(65+i)}</span>
                 </div>
                 <span className={lc} style={{color:G.mid,fontSize:15,lineHeight:1.8}}>{c.l}</span>
               </button>
@@ -571,13 +571,13 @@ const REVIEWS_KEY = "mpv_reviews_v1";
           <div className="pin">
             <div style={{textAlign:"center",marginBottom:28}}>
               <Tg>Mirror</Tg>
-              <div style={{width:1,height:40,background:\`linear-gradient(to bottom,transparent,\${G.gold})\`,margin:"0 auto"}}/>
+              <div style={{width:1,height:40,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto"}}/>
             </div>
-            <div style={{padding:"32px 28px",background:G.dark2,border:\`1px solid \${G.gold}25\`,borderRadius:8,marginBottom:20}}>
+            <div style={{padding:"32px 28px",background:G.dark2,border:`1px solid ${G.gold}25`,borderRadius:8,marginBottom:20}}>
               <p className={lc} style={{fontSize:"clamp(16px,2.3vw,22px)",color:G.smoke,lineHeight:2.05,fontStyle:"italic"}}>"{refText}"</p>
             </div>
             {sc.showCommunity&&(
-              <div style={{padding:"16px 20px",background:\`\${G.gold}07\`,border:\`1px solid \${G.goldDim}\`,borderRadius:5,display:"flex",alignItems:"center",gap:14,marginBottom:20}}>
+              <div style={{padding:"16px 20px",background:`${G.gold}07`,border:`1px solid ${G.goldDim}`,borderRadius:5,display:"flex",alignItems:"center",gap:14,marginBottom:20}}>
                 <span style={{fontSize:22,flexShrink:0}}>👥</span>
                 <p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{sc.commLine[lang]}</p>
               </div>
@@ -613,7 +613,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
           </div>
           <div style={{display:"flex",gap:10,marginTop:8}}>
             {[0,1,2].map(i=>(
-              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:G.gold,animation:\`dotPulse 1.4s ease-in-out \${i*0.2}s infinite\`}}/>
+              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:G.gold,animation:`dotPulse 1.4s ease-in-out ${i*0.2}s infinite`}}/>
             ))}
           </div>
         </div>
@@ -623,26 +623,26 @@ const REVIEWS_KEY = "mpv_reviews_v1";
     return(
       <div style={{...sec,textAlign:"center"}}>
         <Tg>{L.res.tag}</Tg>
-        <div style={{width:1,height:52,background:\`linear-gradient(to bottom,transparent,\${G.gold})\`,margin:"0 auto 32px"}}/>
+        <div style={{width:1,height:52,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto 32px"}}/>
         <div style={{display:"flex",justifyContent:"center",gap:10,marginBottom:40}}>
           {[0,1,2,3].map(i=>(
             <div key={i} style={{textAlign:"center"}}>
-              <div style={{width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,0.12)",border:\`2px solid \${G.gold}50\`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 6px",fontSize:16,color:G.gold}}>✦</div>
+              <div style={{width:46,height:46,borderRadius:"50%",background:"rgba(201,168,76,0.12)",border:`2px solid ${G.gold}50`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 6px",fontSize:16,color:G.gold}}>✦</div>
               <div style={{fontSize:9,color:G.soft,letterSpacing:1,fontFamily:sans}}>S{i+1}</div>
             </div>
           ))}
         </div>
-        <div style={{padding:"32px 28px",background:G.dark2,border:\`1px solid \${G.gold}30\`,borderRadius:8,marginBottom:20,maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
-          <p style={{fontSize:10,letterSpacing:4,color:\`\${G.gold}80\`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>{L.res.primary}</p>
+        <div style={{padding:"32px 28px",background:G.dark2,border:`1px solid ${G.gold}30`,borderRadius:8,marginBottom:20,maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
+          <p style={{fontSize:10,letterSpacing:4,color:`${G.gold}80`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>{L.res.primary}</p>
           <h2 className={lc} style={{fontSize:"clamp(17px,2.5vw,26px)",color:G.smoke,lineHeight:1.8,marginBottom:16,whiteSpace:"pre-line"}}>{primaryPattern}</h2>
           <p className={lc} style={{fontSize:"clamp(14px,1.9vw,18px)",color:G.mid,lineHeight:2,fontStyle:"italic"}}>"{coreInsight}"</p>
         </div>
         {behaviorLines.length>0&&(
           <div style={{maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
-            <p style={{fontSize:10,letterSpacing:4,color:\`\${G.gold}70\`,textTransform:"uppercase",marginBottom:16,textAlign:"center",fontFamily:sans}}>{L.res.breakdown}</p>
+            <p style={{fontSize:10,letterSpacing:4,color:`${G.gold}70`,textTransform:"uppercase",marginBottom:16,textAlign:"center",fontFamily:sans}}>{L.res.breakdown}</p>
             {behaviorLines.map((line,i)=>line?(
-              <div key={i} style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:12,padding:"14px 18px",background:\`\${G.gold}04\`,border:\`1px solid \${G.goldDim}\`,borderRadius:6}}>
-                <span style={{fontSize:11,color:\`\${G.gold}85\`,fontWeight:700,flexShrink:0,marginTop:2,fontFamily:sans}}>S{i+1}</span>
+              <div key={i} style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:12,padding:"14px 18px",background:`${G.gold}04`,border:`1px solid ${G.goldDim}`,borderRadius:6}}>
+                <span style={{fontSize:11,color:`${G.gold}85`,fontWeight:700,flexShrink:0,marginTop:2,fontFamily:sans}}>S{i+1}</span>
                 <p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{line}</p>
               </div>
             ):null)}
@@ -650,8 +650,8 @@ const REVIEWS_KEY = "mpv_reviews_v1";
         )}
         {hiddenStrength&&<div style={{maxWidth:620,margin:"0 auto 16px",padding:"18px 22px",background:"rgba(107,142,107,0.07)",border:"1px solid rgba(107,142,107,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(107,142,107,0.85)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.strength}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{hiddenStrength}</p></div>}
         {warningLine&&<div style={{maxWidth:620,margin:"0 auto 16px",padding:"18px 22px",background:"rgba(139,26,26,0.07)",border:"1px solid rgba(139,26,26,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(200,80,80,0.8)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.notice}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{warningLine}</p></div>}
-        {actionStep&&<div style={{maxWidth:620,margin:"0 auto 32px",padding:"18px 22px",background:"rgba(201,168,76,0.06)",border:\`1px solid \${G.gold}30\`,borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:\`\${G.gold}90\`,textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{lang==="te"?"ఈ వారం నుండి చేయి":"Start This Week"}</p><p className={lc} style={{fontSize:14,color:G.smoke,lineHeight:1.8,fontWeight:600}}>{actionStep}</p></div>}
-        <div style={{maxWidth:580,margin:"0 auto 40px",padding:"26px 28px",border:\`1px solid \${G.gold}35\`,borderRadius:7,background:\`\${G.gold}06\`}}>
+        {actionStep&&<div style={{maxWidth:620,margin:"0 auto 32px",padding:"18px 22px",background:"rgba(201,168,76,0.06)",border:`1px solid ${G.gold}30`,borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:`${G.gold}90`,textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{lang==="te"?"ఈ వారం నుండి చేయి":"Start This Week"}</p><p className={lc} style={{fontSize:14,color:G.smoke,lineHeight:1.8,fontWeight:600}}>{actionStep}</p></div>}
+        <div style={{maxWidth:580,margin:"0 auto 40px",padding:"26px 28px",border:`1px solid ${G.gold}35`,borderRadius:7,background:`${G.gold}06`}}>
           <p className={lc} style={{fontSize:"clamp(16px,2vw,21px)",color:G.smoke,lineHeight:2}}>"{L.res.close}<br/><span style={{color:G.gold}}>{L.res.closeg}"</span></p>
         </div>
         <button className="bg" onClick={()=>goTo(6)} style={gBtn}>{L.res.cta}</button>
@@ -691,7 +691,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       // Auto-navigate to Conversion page after 2 seconds
       setTimeout(()=>goTo(7), 2000);
     };
-    const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:\`1px solid \${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}\`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
+    const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
 
     // Success state — report sent
     if(leadSent){
@@ -715,34 +715,34 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       <div style={sec}>
         <div style={{textAlign:"center",marginBottom:52}}>
           <Tg>{LL.tag}</Tg>
-          <div style={{width:1,height:40,background:\`linear-gradient(to bottom,transparent,\${G.gold})\`,margin:"0 auto 28px"}}/>
+          <div style={{width:1,height:40,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto 28px"}}/>
           <h2 className={lc} style={{fontSize:"clamp(24px,3.5vw,44px)",color:G.smoke,marginBottom:16,lineHeight:1.4}}>"{LL.th}<br/><span style={{color:G.gold}}>{LL.tg}"</span></h2>
           <p className={lc} style={{color:G.mid,fontSize:14,lineHeight:1.9}}>{LL.sub}</p>
         </div>
         <div style={{maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",gap:24}}>
           <div>
-            <label style={{fontSize:10,letterSpacing:3,color:\`\${G.gold}80\`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.nl}</label>
+            <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.nl}</label>
             <input type="text" value={form.name} placeholder={LL.np} onChange={e=>{setFormName(e.target.value);setErrs(r=>({...r,name:""}));}} style={is("name")}/>
             {errs.name&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.name}</p>}
           </div>
           <div>
-            <label style={{fontSize:10,letterSpacing:3,color:\`\${G.gold}80\`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.wl}</label>
+            <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.wl}</label>
             <input type="tel" value={form.wa} placeholder={LL.wp} onChange={e=>{setFormWa(e.target.value);setErrs(r=>({...r,wa:""}));}} style={is("wa")}/>
             {errs.wa&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.wa}</p>}
           </div>
           <div>
-            <label style={{fontSize:10,letterSpacing:3,color:\`\${G.gold}80\`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.eml}</label>
+            <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.eml}</label>
             <input type="email" value={form.email} placeholder={LL.emp} onChange={e=>{setFormEmail(e.target.value);setErrs(r=>({...r,email:""}));}} style={is("email")}/>
             {errs.email&&<p style={{color:"rgba(200,80,80,0.8)",fontSize:12,marginTop:6,fontFamily:sans}}>{errs.email}</p>}
-            <p style={{fontSize:11,color:\`\${G.gold}50\`,marginTop:6,fontFamily:sans}}>{lang==="te"?"📧 మీ report ఈ email కి వస్తుంది":"📧 Your report will be sent to this email"}</p>
+            <p style={{fontSize:11,color:`${G.gold}50`,marginTop:6,fontFamily:sans}}>{lang==="te"?"📧 మీ report ఈ email కి వస్తుంది":"📧 Your report will be sent to this email"}</p>
           </div>
           <div>
-            <label style={{fontSize:10,letterSpacing:3,color:\`\${G.gold}80\`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.el}</label>
+            <label style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",display:"block",marginBottom:8,fontFamily:sans}}>{LL.el}</label>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {LL.lvls.map(l=>(
                 <button key={l.v} onClick={()=>{setFormLevel(l.v);setErrs(r=>({...r,level:""}));}}
-                  style={{padding:"14px 18px",textAlign:"left",cursor:"pointer",background:form.level===l.v?\`rgba(201,168,76,0.12)\`:\`rgba(201,168,76,0.03)\`,border:\`1px solid \${form.level===l.v?G.gold:G.goldDim}\`,borderRadius:6,color:form.level===l.v?G.smoke:G.mid,fontSize:14,fontFamily:sans,transition:"all 0.2s",display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,border:\`2px solid \${form.level===l.v?G.gold:G.goldDim}\`,background:form.level===l.v?G.gold:"transparent",transition:"all 0.2s"}}/>
+                  style={{padding:"14px 18px",textAlign:"left",cursor:"pointer",background:form.level===l.v?`rgba(201,168,76,0.12)`:`rgba(201,168,76,0.03)`,border:`1px solid ${form.level===l.v?G.gold:G.goldDim}`,borderRadius:6,color:form.level===l.v?G.smoke:G.mid,fontSize:14,fontFamily:sans,transition:"all 0.2s",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,border:`2px solid ${form.level===l.v?G.gold:G.goldDim}`,background:form.level===l.v?G.gold:"transparent",transition:"all 0.2s"}}/>
                   <span className={lc}>{l.l}</span>
                 </button>
               ))}
@@ -760,19 +760,19 @@ const REVIEWS_KEY = "mpv_reviews_v1";
 
   const Conversion=()=>{
     const CV=L.cnv;
-    const mMsg=encodeURIComponent(lang==="te"?\`నమస్కారం K Prasad గారు, నేను MPV Self-Discovery Engine complete చేశాను. Mentorship గురించి మాట్లాడాలనుకుంటున్నాను.\n\n👤 పేరు: \${formName||''}\n📱 Number: \${formWa||''}\`:\`Hello K Prasad, I completed the MPV Self-Discovery Engine. I would like to discuss mentorship.\n\n👤 Name: \${formName||''}\n📱 Number: \${formWa||''}\`);
+    const mMsg=encodeURIComponent(lang==="te"?`నమస్కారం K Prasad గారు, నేను MPV Self-Discovery Engine complete చేశాను. Mentorship గురించి మాట్లాడాలనుకుంటున్నాను.\n\n👤 పేరు: ${formName||''}\n📱 Number: ${formWa||''}`:`Hello K Prasad, I completed the MPV Self-Discovery Engine. I would like to discuss mentorship.\n\n👤 Name: ${formName||''}\n📱 Number: ${formWa||''}`);
     const cMsg=encodeURIComponent(lang==="te"?"నమస్కారం, నేను Mind Power Vaultt Free Community లో join అవ్వాలనుకుంటున్నాను.":"Hello, I would like to join the Mind Power Vaultt Free Community.");
     const socials=[{icon:"▶",label:"YouTube",url:"https://www.youtube.com/@mindpowervaultt66",color:"#FF4444"},{icon:"📸",label:"Instagram",url:"https://www.instagram.com/mindpowervaultt66",color:"#E1306C"},{icon:"𝕏",label:"X",url:"https://x.com/mindpvault",color:G.smoke},{icon:"✈",label:"Telegram",url:"https://t.me/mindpowervaultt",color:"#2AABEE"}];
     return(
       <div style={{...sec,textAlign:"center"}}>
         <Tg>{CV.tag}</Tg>
-        <div style={{width:1,height:40,background:\`linear-gradient(to bottom,transparent,\${G.gold})\`,margin:"0 auto 32px"}}/>
+        <div style={{width:1,height:40,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto 32px"}}/>
         <h2 className={lc} style={{fontSize:"clamp(26px,3.5vw,46px)",color:G.smoke,lineHeight:1.4,marginBottom:20,maxWidth:620,margin:"0 auto 20px"}}>{CV.h}</h2>
         <p className={lc} style={{fontSize:"clamp(16px,2vw,22px)",color:G.mid,lineHeight:1.9,fontStyle:"italic",maxWidth:560,margin:"0 auto 52px"}}>{CV.sub}</p>
         <div style={{maxWidth:620,margin:"0 auto 52px",display:"flex",flexDirection:"column",gap:16}}>
           {CV.cards.map((c,i)=>(
-            <div key={i} style={{display:"flex",gap:20,alignItems:"flex-start",padding:"22px 24px",background:G.dark2,border:\`1px solid \${G.goldDim}\`,borderRadius:8,textAlign:"left"}}>
-              <span style={{fontFamily:serif,fontSize:32,color:\`\${G.gold}35\`,fontWeight:700,flexShrink:0,lineHeight:1}}>0{i+1}</span>
+            <div key={i} style={{display:"flex",gap:20,alignItems:"flex-start",padding:"22px 24px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,textAlign:"left"}}>
+              <span style={{fontFamily:serif,fontSize:32,color:`${G.gold}35`,fontWeight:700,flexShrink:0,lineHeight:1}}>0{i+1}</span>
               <p className={lc} style={{fontFamily:serif,fontSize:"clamp(14px,1.8vw,18px)",color:G.mid,lineHeight:1.9,fontStyle:"italic"}}>{c}</p>
             </div>
           ))}
@@ -781,7 +781,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
           <Tg c="s">{CV.rev}</Tg>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:16}}>
             {dynamicReviews.map((r,i)=>(
-              <div key={i} style={{background:G.dark2,border:\`1px solid \${G.goldDim}\`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
+              <div key={i} style={{background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
                 <div style={{color:G.gold,fontSize:16,marginBottom:12}}>{"★".repeat(r.stars)}</div>
                 
                 {/* Text Review */}
@@ -796,12 +796,12 @@ const REVIEWS_KEY = "mpv_reviews_v1";
                   </div>
                 )}
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:30,height:30,borderRadius:"50%",background:\`\${G.gold}20\`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:G.gold,fontWeight:700,fontFamily:sans}}>{r.name[0]}</div>
+                  <div style={{width:30,height:30,borderRadius:"50%",background:`${G.gold}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:G.gold,fontWeight:700,fontFamily:sans}}>{r.name[0]}</div>
                   <div><div style={{fontSize:12,color:G.smoke,fontFamily:sans,fontWeight:600}}>{r.name}</div><div style={{fontSize:10,color:G.soft,fontFamily:sans,letterSpacing:1}}>{r.city}</div></div>
                 </div>
                 {r.image_url && r.image_url.split(',').map((url, idx) => (
-                  <div key={idx} style={{marginTop: 16, borderRadius: 6, overflow: "hidden", border: \`1px solid \${G.goldDim}\`}}>
-                    <img src={url} alt={\`Review Screenshot \${idx + 1}\`} style={{width: "100%", display: "block"}} />
+                  <div key={idx} style={{marginTop: 16, borderRadius: 6, overflow: "hidden", border: `1px solid ${G.goldDim}`}}>
+                    <img src={url} alt={`Review Screenshot ${idx + 1}`} style={{width: "100%", display: "block"}} />
                   </div>
                 ))}
               </div>
@@ -816,25 +816,25 @@ const REVIEWS_KEY = "mpv_reviews_v1";
             <p className={lc} style={{fontFamily:serif,fontSize:"clamp(22px,3vw,36px)",color:G.gold,lineHeight:1.75,fontWeight:700}}>{CV.k3}</p>
           </div>
         </div>
-        <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"48px 32px",background:G.dark2,border:\`1px solid \${G.goldDim}\`,borderRadius:8}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:\`linear-gradient(to right,transparent,\${G.gold},transparent)\`}}/>
+        <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"48px 32px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold},transparent)`}}/>
           <p className={lc} style={{fontSize:12,letterSpacing:2,color:G.mid,textTransform:"uppercase",marginBottom:12}}>{CV.s1}</p>
           <h2 className={lc} style={{fontFamily:serif,fontSize:"clamp(26px,4vw,46px)",color:G.gold,fontWeight:700,marginBottom:12}}>{CV.h2}</h2>
           <p className={lc} style={{fontSize:12,letterSpacing:2,color:G.mid,textTransform:"uppercase",marginBottom:40}}>{CV.s2}</p>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <button className="bg" onClick={()=>window.open(\`https://wa.me/\${KPRASAD_WA}?text=\${mMsg}\`,"_blank")} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,cursor:"pointer"}}>{CV.b1}</button>
-            <button className="bo" onClick={()=>window.open(\`https://wa.me/\${KPRASAD_WA}?text=\${cMsg}\`,"_blank")} style={{...oBtn,width:"100%",padding:"16px",fontSize:12,borderRadius:4,cursor:"pointer"}}>{CV.b2}</button>
+            <button className="bg" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${mMsg}`,"_blank")} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,cursor:"pointer"}}>{CV.b1}</button>
+            <button className="bo" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${cMsg}`,"_blank")} style={{...oBtn,width:"100%",padding:"16px",fontSize:12,borderRadius:4,cursor:"pointer"}}>{CV.b2}</button>
           </div>
-          <div style={{marginTop:20,padding:"14px",background:\`\${G.gold}06\`,borderRadius:4,border:\`1px solid \${G.goldDim}\`}}>
+          <div style={{marginTop:20,padding:"14px",background:`${G.gold}06`,borderRadius:4,border:`1px solid ${G.goldDim}`}}>
             <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.8}}>{CV.lk}</p>
           </div>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:\`linear-gradient(to right,transparent,\${G.gold}35,transparent)\`}}/>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold}35,transparent)`}}/>
         </div>
 
         {/* Psychology Basics */}
         <PsychBasics lang={lang} lc={lc}/>
 
-        <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:\`1px solid \${G.goldDim}\`,borderRadius:8}}>
+        <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
           <img src={LOGO_IMG} alt="MPV" style={{width:56,height:56,objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
             <Tg>K Prasad — Mind Power Vaultt</Tg>
@@ -857,16 +857,16 @@ const REVIEWS_KEY = "mpv_reviews_v1";
         </div>
         <p style={{marginTop:8,fontSize:9,color:G.vsoft,letterSpacing:1.5,lineHeight:2,fontFamily:sans}}>Mind Power Vaultt · Trading Psychology Education<br/>{CV.disc}</p>
         <div style={{marginTop:24,display:"flex",gap:16,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
-          <button onClick={()=>setShowTerms(true)} style={{background:"none",border:"none",color:\`\${G.gold}60\`,cursor:"pointer",fontSize:10,letterSpacing:1.5,fontFamily:sans,textDecoration:"underline",textUnderlineOffset:3}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</button>
-          <span style={{color:\`\${G.gold}20\`}}>·</span>
-          <button onClick={()=>setAdminOpen(true)} style={{background:"none",border:"none",color:\`\${G.smoke}15\`,cursor:"pointer",fontSize:9,fontFamily:sans,letterSpacing:1}}>⚙</button>
+          <button onClick={()=>setShowTerms(true)} style={{background:"none",border:"none",color:`${G.gold}60`,cursor:"pointer",fontSize:10,letterSpacing:1.5,fontFamily:sans,textDecoration:"underline",textUnderlineOffset:3}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</button>
+          <span style={{color:`${G.gold}20`}}>·</span>
+          <button onClick={()=>setAdminOpen(true)} style={{background:"none",border:"none",color:`${G.smoke}15`,cursor:"pointer",fontSize:9,fontFamily:sans,letterSpacing:1}}>⚙</button>
         </div>
       </div>
     );
   };
 
   const phases=[<Ritual/>,<Hero/>,<Mirror/>,<Intro/>,<Scenario/>,<Result/>,leadCaptureJSX(),<Conversion/>];
-  const navStyle={position:"fixed",top:0,left:0,right:0,zIndex:300,padding:"14px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",background:scrolled?"rgba(5,5,10,0.97)":"transparent",borderBottom:scrolled?\`1px solid \${G.goldDim}\`:"none",transition:"all 0.4s"};
+  const navStyle={position:"fixed",top:0,left:0,right:0,zIndex:300,padding:"14px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",background:scrolled?"rgba(5,5,10,0.97)":"transparent",borderBottom:scrolled?`1px solid ${G.goldDim}`:"none",transition:"all 0.4s"};
 
   return(
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
@@ -875,13 +875,13 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       {/* ── Terms & Conditions Modal ── */}
       {showTerms && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,overflow:"auto",padding:"20px"}}>
-          <div style={{maxWidth:720,margin:"40px auto",background:G.dark2,border:\`1px solid \${G.goldDim}\`,borderRadius:12,padding:"40px 32px"}}>
+          <div style={{maxWidth:720,margin:"40px auto",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"40px 32px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
               <div>
                 <p style={{fontSize:11,letterSpacing:4,color:G.gold,textTransform:"uppercase",fontFamily:sans}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</p>
                 <h2 style={{color:G.smoke,fontSize:22,fontFamily:serif,marginTop:6}}>Mind Power Vaultt</h2>
               </div>
-              <button onClick={()=>setShowTerms(false)} style={{background:"transparent",border:\`1px solid \${G.goldDim}\`,color:G.mid,padding:"6px 16px",borderRadius:4,cursor:"pointer",fontFamily:sans}}>✕ {lang==="te"?"మూసివేయి":"Close"}</button>
+              <button onClick={()=>setShowTerms(false)} style={{background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,padding:"6px 16px",borderRadius:4,cursor:"pointer",fontFamily:sans}}>✕ {lang==="te"?"మూసివేయి":"Close"}</button>
             </div>
             {(lang==="te"?[
               {h:"1. సేవల స్వభావం (Nature of Services)",p:"Mind Power Vaultt అనేది trading psychology education platform. మేము trading psychology, discipline, మరియు self-awareness గురించి educational content మరియు mentorship అందిస్తాము. ఇది investment advisory service కాదు. మేము ఏ stock, commodity, లేదా financial instrument buy/sell చేయమని recommend చేయము."},
@@ -907,12 +907,12 @@ const REVIEWS_KEY = "mpv_reviews_v1";
                 <p className={lc} style={{fontSize:14,color:G.mid,lineHeight:2.1}}>{s.p}</p>
               </div>
             ))}
-            <div style={{marginTop:32,padding:"20px 24px",background:\`\${G.gold}08\`,border:\`1px solid \${G.goldDim}\`,borderRadius:6,textAlign:"center"}}>
+            <div style={{marginTop:32,padding:"20px 24px",background:`${G.gold}08`,border:`1px solid ${G.goldDim}`,borderRadius:6,textAlign:"center"}}>
               <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.9}}>{lang==="te"?"ఏవైనా questions ఉంటే K Prasad గారిని WhatsApp లో contact చేయండి.":"For any questions, contact K Prasad on WhatsApp."}</p>
               <p style={{fontSize:12,color:G.soft,marginTop:8,fontFamily:sans}}>GST: 37DLNPM0984C1ZU</p>
             </div>
             <div style={{textAlign:"center",marginTop:24}}>
-              <button className="bg" onClick={()=>setShowTerms(false)} style={{padding:"12px 36px",background:\`linear-gradient(135deg,\${G.gold},#9A7020)\`,color:G.black,border:"none",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans,cursor:"pointer"}}>{lang==="te"?"అర్థమైంది ✓":"I Understand ✓"}</button>
+              <button className="bg" onClick={()=>setShowTerms(false)} style={{padding:"12px 36px",background:`linear-gradient(135deg,${G.gold},#9A7020)`,color:G.black,border:"none",borderRadius:4,fontSize:12,fontWeight:700,letterSpacing:2,textTransform:"uppercase",fontFamily:sans,cursor:"pointer"}}>{lang==="te"?"అర్థమైంది ✓":"I Understand ✓"}</button>
             </div>
           </div>
         </div>
@@ -927,7 +927,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
             <input type="password" value={adminPwdInput} placeholder="Enter password"
               onChange={e=>{setAdminPwdInput(e.target.value);setAdminPwdErr(false);}}
               onKeyDown={e=>e.key==="Enter"&&handleAdminLogin()}
-              style={{width:"100%",padding:"12px 16px",background:"rgba(201,168,76,0.06)",border:\`1px solid \${adminPwdErr?"rgba(200,80,80,0.6)":"rgba(201,168,76,0.25)"}\`,borderRadius:6,color:"#F5F2EA",fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:adminPwdErr?6:16,outline:"none",textAlign:"center"}}
+              style={{width:"100%",padding:"12px 16px",background:"rgba(201,168,76,0.06)",border:`1px solid ${adminPwdErr?"rgba(200,80,80,0.6)":"rgba(201,168,76,0.25)"}`,borderRadius:6,color:"#F5F2EA",fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:adminPwdErr?6:16,outline:"none",textAlign:"center"}}
             />
             {adminPwdErr&&<p style={{color:"rgba(200,80,80,0.9)",fontSize:12,marginBottom:12,fontFamily:"'DM Sans',sans-serif"}}>Incorrect password. Try again.</p>}
             <div style={{display:"flex",gap:10}}>
@@ -952,15 +952,15 @@ const REVIEWS_KEY = "mpv_reviews_v1";
             <div style={{fontSize:10,letterSpacing:3,color:G.mid,textTransform:"uppercase",marginTop:3,fontFamily:sans}}>Trading Psychology · Discipline · Clarity</div>
           </div>
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <div style={{display:"flex",background:"rgba(201,168,76,0.08)",border:\`1px solid \${G.goldDim}\`,borderRadius:40,padding:"3px"}}>
+            <div style={{display:"flex",background:"rgba(201,168,76,0.08)",border:`1px solid ${G.goldDim}`,borderRadius:40,padding:"3px"}}>
               {["te","en"].map(l=>(
-                <button key={l} onClick={()=>setLang(l)} style={{padding:"5px 14px",borderRadius:30,border:"none",cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:1,fontFamily:sans,background:lang===l?G.gold:"transparent",color:lang===l?G.black:\`\${G.smoke}55\`,transition:"all 0.3s"}}>
+                <button key={l} onClick={()=>setLang(l)} style={{padding:"5px 14px",borderRadius:30,border:"none",cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:1,fontFamily:sans,background:lang===l?G.gold:"transparent",color:lang===l?G.black:`${G.smoke}55`,transition:"all 0.3s"}}>
                   {l==="te"?"తె":"EN"}
                 </button>
               ))}
             </div>
             {phase>1&&(
-              <button className="bo" onClick={goBack} style={{background:"transparent",border:\`1px solid \${G.goldDim}\`,color:G.mid,padding:"6px 16px",borderRadius:2,fontSize:10,letterSpacing:2,textTransform:"uppercase",fontFamily:sans}}>
+              <button className="bo" onClick={goBack} style={{background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,padding:"6px 16px",borderRadius:2,fontSize:10,letterSpacing:2,textTransform:"uppercase",fontFamily:sans}}>
                 {lang==="te"?"← వెనక్కి":"← Back"}
               </button>
             )}
