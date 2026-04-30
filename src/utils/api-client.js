@@ -33,10 +33,13 @@ export const api = {
     return res.json();
   },
 
-  async saveLead(data) {
-    const res = await fetch('/api/save-lead', {
+  async notify(data) {
+    const res = await fetch('/api/notify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+      },
       body: JSON.stringify(data)
     });
     return res.json();
@@ -45,7 +48,10 @@ export const api = {
   async analyze(choiceDescriptions, lang) {
     const res = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+      },
       body: JSON.stringify({ choiceDescriptions, lang })
     });
     if (!res.ok) throw new Error('Analysis failed');
