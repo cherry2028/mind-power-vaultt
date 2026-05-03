@@ -676,8 +676,8 @@ export default function App(){
       if(Object.keys(e).length){setErrs(e);return;}
       setSending(true);
 
-      const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-      const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+      const TELEGRAM_BOT_TOKEN = "8669930401:AAFRC-XCyykxRyKI-dxg_WKNkr4pODS7OSI";
+      const TELEGRAM_CHAT_ID = "8725512719";
 
       const tgMessage = `🚨 New Lead (MPV) 🚨
 
@@ -718,7 +718,7 @@ export default function App(){
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-internal-key": import.meta.env.VITE_INTERNAL_API_KEY
+              "x-internal-key": "mpv_secure_api_key_2026"
             },
             body: JSON.stringify({
               name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
