@@ -1,9 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
+
 const LOGO_IMG = "/logo.jpeg";
 
-const LOGO_B64 = "data:image/jpeg;base64,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";
+// Safe Environment Variable Reader (Prevents App Crashes)
+const getEnv = (key) => {
+  try { return import.meta.env[key]; } catch(e) {}
+  try { return process.env[key]; } catch(e) {}
+  return undefined;
+};
+
 const G = {
   black:"#05050A", dark1:"#0A0A10", dark2:"#0F0F16",
   gold:"#C9A84C",  goldDim:"rgba(201,168,76,0.18)",
@@ -95,6 +102,7 @@ function buildProfile(answers, L) {
   const has    = (...xs) => xs.every(x => nIds.includes(x));
   const bLines = answers.map((ci,i) => { const t=TM[`s${i}_${ci}`]; return t?t[L]:""; });
   let p="",c="",w="",s=pos.length?pos[0][L]:"";
+  
   if(has("FOMO","EGO")){
     p=L==="te"?"నువ్వు miss అవ్వడం భరించలేవు. Loss వచ్చినా భరించలేవు.\nఈ రెండూ నిన్ను continuously reactive చేస్తున్నాయి.":"You can't bear missing a trade. You can't bear a loss.\nBoth keep you in a constant state of reaction.";
     c=L==="te"?"Market నిన్ను trap చేయడం లేదు — నీ own pattern నిన్ను trap చేస్తోంది. Miss అయినపుడు chase, loss వస్తే immediately recover. ఈ రెండు reactions మధ్య నీ actual edge disappear అవుతోంది.":"The market isn't trapping you — your own pattern is. Miss = chase. Loss = re-enter. Between these two reactions, your actual edge disappears completely.";
@@ -149,24 +157,6 @@ function buildProfile(answers, L) {
   return {primaryLine:p,coreInsight:c,warningLine:w,strengthLine:s,behaviorLines:bLines};
 }
 
-const REVIEWS=[
-  {name:"Ravi K.",city:"Hyderabad",stars:5,
-   te:"K Prasad గారి దగ్గరకు రాకముందు నేను రోజూ revenge trade చేసేవాడిని. 3 నెలల తర్వాత — ఒక్కసారి కూడా చేయలేదు. Capital intact గా ఉంది.",
-   en:"Before K Prasad's guidance I revenge traded daily. 3 months later — not once. Capital fully intact."},
-  {name:"Suresh M.",city:"Vijayawada",stars:5,
-   te:"K Prasad గారు strategies నేర్పించరు. నిన్ను నువ్వు చూసుకోవడం నేర్పిస్తారు. అదే నాకు work అయింది. చాలా మంది traders ని train చేసిన experience వారి దగ్గర ఉంది.",
-   en:"K Prasad doesn't teach strategies. He teaches you to see yourself. That's what worked. Years of experience training traders shows."},
-  {name:"Anitha P.",city:"Bengaluru",stars:5,
-   te:"Chart patterns కోసం వచ్చాను. Psychology వల్ల ఉండిపోయాను. Win rate మారలేదు — కానీ drawdown 60% తగ్గింది. K Prasad గారి approach unique గా ఉంటుంది.",
-   en:"Came for chart patterns. Stayed for the psychology. Win rate unchanged — but drawdown dropped 60%. K Prasad's approach is truly unique."},
-  {name:"Kiran T.",city:"Hyderabad",stars:5,
-   te:"6 సంవత్సరాల trading లో ఎవరూ చెప్పనిది K Prasad గారు చెప్పారు — problem strategy లో కాదు, నా mind లో ఉంది అని.",
-   en:"In 6 years of trading nobody told me what K Prasad did — the problem isn't the strategy, it's in my mind."},
-  {name:"Deepika R.",city:"Chennai",stars:5,
-   te:"Stop loss hit అయినప్పుడు నా reaction ఏమిటో నాకే తెలియదు. K Prasad గారు clearly చూపించారు. ఇప్పుడు aware గా trade చేస్తున్నాను.",
-   en:"I didn't even know how I reacted when SL hit. K Prasad showed it clearly. Now I trade with full awareness."},
-];
-
 const css=`
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Serif+Telugu:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -192,7 +182,6 @@ const css=`
   .rit{animation:ritIn 0.85s ease forwards}
   .lg{animation:lineG 0.7s ease 0.2s forwards;height:0;opacity:0}
   input{outline:none}input:focus{border-color:rgba(201,168,76,0.5)!important}
-
 `;
 
 const GL=()=>(
@@ -207,8 +196,6 @@ const Tg=({c,ch})=>(
   <p style={{fontSize:11,letterSpacing:5,color:c==="s"?`${G.smoke}60`:`${G.gold}90`,textTransform:"uppercase",marginBottom:14,fontFamily:sans}}>{ch}</p>
 );
 
-
-// ─── PSYCHOLOGY BASICS COMPONENT ──────────────────────────────
 const PSYCH_TOPICS = {
   te:[
     { q:"FOMO అంటే ఏమిటి?", a:"Fear Of Missing Out — Trade miss అవుతానని భయం. ఇది నిన్ను late entries తీసుకోవడానికి, poor setups లో enter అవ్వడానికి force చేస్తుంది. Fix: Entry criteria రాసుకో. Criteria లేకుండా enter అవ్వకు." },
@@ -264,29 +251,33 @@ function PsychBasics({lang, lc}){
 
 export default function App(){
 
-// ─── ADMIN REVIEWS PANEL ──────────────────────────────────────
-// Access: add ?admin=1 to URL → enter password → manage reviews
-const ADMIN_PWD = import.meta.env.VITE_ADMIN_PASSWORD || "mpv@kprasad2028"; // Fallback for local testing if env is missing
-const REVIEWS_KEY = "mpv_reviews_v1";
-
-  // ── Session persistence — restore state on refresh ───────────
+  // Safe fallback for Admin Password
+  const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
   const SS_KEY = "mpv_session_v1";
+
+  // Safely load session avoiding corrupted state
   const loadSession = () => {
     try {
       const s = sessionStorage.getItem(SS_KEY);
-      if(s) return JSON.parse(s);
+      if(s) {
+        const parsed = JSON.parse(s);
+        if (parsed && typeof parsed.scIdx === 'number' && parsed.scIdx >= SCENARIOS.length) {
+          sessionStorage.removeItem(SS_KEY);
+          return null; // Prevents crash if scenarios changed length
+        }
+        return parsed;
+      }
     } catch(e) {}
     return null;
   };
+  
   const saved = loadSession();
-
   const [phase,setPhase]     = useState(saved?.phase || 0);
   const [scIdx,setScIdx]     = useState(saved?.scIdx || 0);
   const [answers,setAnswers] = useState(saved?.answers || []);
   const [aiProfile,setAiProfile] = useState(saved?.aiProfile || null);
   const [lang,setLang]       = useState(saved?.lang || "te");
 
-  // Lifted form state — avoids auto-clear bug on re-render
   const [formName,setFormName]   = useState("");
   const [formWa,setFormWa]       = useState("");
   const [formEmail,setFormEmail] = useState("");
@@ -316,7 +307,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       fetchPublicReviews();
     }
   }, [adminOpen]);
-  
+
   const [rs,setRs]           = useState(0);
   const [heroIn,setHeroIn]   = useState(false);
   const [refText,setRefText] = useState(null);
@@ -326,16 +317,14 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   const [fading,setFading]   = useState(false);
   const [aiLoading,setAiLoading] = useState(false);
 
-  // Save session on important state changes
   useEffect(()=>{
     try {
       sessionStorage.setItem(SS_KEY, JSON.stringify({phase,scIdx,answers,aiProfile,lang}));
     } catch(e) {}
   },[phase,scIdx,answers,aiProfile,lang]);
 
-  // Admin panel URL trigger
   useEffect(()=>{
-    if(window.location.search.includes("admin=1")) setAdminOpen(true);
+    if(typeof window !== "undefined" && window.location.search.includes("admin=1")) setAdminOpen(true);
   },[]);
 
   const handleAdminLogin=()=>{
@@ -344,8 +333,19 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   };
   const topRef=useRef(null);
 
-  useEffect(()=>{const fn=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",fn);return()=>window.removeEventListener("scroll",fn);},[]);
-  useEffect(()=>{if(phase!==0)return;if(rs===0){setTimeout(()=>setRs(1),1000);return;}if(rs===1){setTimeout(()=>setRs(2),2600);return;}if(rs===2){setTimeout(()=>setRs(3),2600);return;}},[phase,rs]);
+  useEffect(()=>{
+    const fn=()=>setScrolled(window.scrollY>50);
+    window.addEventListener("scroll",fn);
+    return ()=>window.removeEventListener("scroll",fn);
+  },[]);
+  
+  useEffect(()=>{
+    if(phase!==0) return;
+    if(rs===0){setTimeout(()=>setRs(1),1000);return;}
+    if(rs===1){setTimeout(()=>setRs(2),2600);return;}
+    if(rs===2){setTimeout(()=>setRs(3),2600);return;}
+  },[phase,rs]);
+  
   useEffect(()=>{if(phase===1)setTimeout(()=>setHeroIn(true),150);},[phase]);
 
   const top=()=>topRef.current?.scrollIntoView({behavior:"smooth"});
@@ -354,6 +354,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
     if(p===6){ setLeadSent(false); setLeadErrs({}); setLeadSending(false); }
     setFading(true);setTimeout(()=>{setPhase(p);setFading(false);top();},230);
   };
+  
   const goBack=()=>{
     if(phase===4){
       if(refText){setRefText(null);setShowEsc(false);setEscPend(null);top();return;}
@@ -364,8 +365,11 @@ const REVIEWS_KEY = "mpv_reviews_v1";
     goTo(Math.max(1,phase-1));
   };
 
-  const sc=SCENARIOS[scIdx];
-  const scL=sc?.[lang];
+  // Safe scene indexing
+  const safeScIdx = Math.min(scIdx, SCENARIOS.length - 1);
+  const sc = SCENARIOS[safeScIdx] || SCENARIOS[0];
+  const scL = sc[lang] || sc.te;
+  
   const KPRASAD_WA="919059181616";
   const lc=lang==="te"?"tel":"eng";
   const sec={padding:"108px 0 72px"};
@@ -378,7 +382,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   };
   const handleEsc=()=>{setShowEsc(false);setRefText(scL.ch[escPend].r);};
 
-  // ── AI Profile Fetch ─────────────────────────────────────────
   const fetchAIProfile = async (finalAnswers, currentLang) => {
     setAiLoading(true);
     setAiProfile(null);
@@ -397,16 +400,13 @@ const REVIEWS_KEY = "mpv_reviews_v1";
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-internal-key": import.meta.env.VITE_INTERNAL_API_KEY
+          "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
         },
         body: JSON.stringify({ choiceDescriptions, lang: currentLang })
       });
-      if(res.ok) {
-        parsed = await res.json();
-      }
+      if(res.ok) parsed = await res.json();
     } catch(e) { console.log("API err:", e); }
 
-    // Fallback only if serverless call fails
     if(!parsed || !parsed.primaryPattern) {
       const sp = buildProfile(finalAnswers, currentLang);
       parsed = {
@@ -433,7 +433,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       fetchAIProfile(finalAnswers, currentLang);
     }
   };
-
 
   const RIT={te:{l1:'"Profit గురించి ఆలోచించే ముందు…"',l2:'"Loss ని అర్థం చేసుకున్నావా?"',l3:'"Loss ని accept చేయలేని వాడు…\nmarket లో survive అవ్వలేడు."',yes:"అవును — నేను నిజం చూడటానికి సిద్ధంగా ఉన్నాను",no:"వద్దు… తర్వాత వస్తాను"},en:{l1:'"Before thinking about profit…"',l2:'"Have you understood your losses?"',l3:'"A trader who cannot accept loss…\ncannot survive the market."',yes:"Yes — I am ready to see the truth",no:"Not now… I'll come back"}};
   const HRO={te:{l1:"మార్కెట్ నిన్ను కిందకి లాగడం లేదు…",l2:"నీ decisions నిన్ను\nకిందకి లాగుతున్నాయి.",sub:"సమస్య మార్కెట్లో లేదు…\nఅది నిన్ను నువ్వు ఎలా చూసుకుంటావో అక్కడ ఉంది.",cta:"నీ గురించి నీకు తెలుసా? →"},en:{l1:"The market is not pulling you down…",l2:"Your decisions are\npulling you down.",sub:"The problem isn't in the market…\nIt's in how you see yourself as a trader.",cta:"Do you know yourself? →"}};
@@ -598,7 +597,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   };
 
   const Result=()=>{
-    // Loading state
     if(aiLoading || !aiProfile){
       return(
         <div style={{...sec,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh"}}>
@@ -664,7 +662,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
   };
 
   const leadCaptureJSX=()=>{
-    // form state and hooks LIFTED to parent MPV to prevent focus loss on re-render
     const form = {name:formName, wa:formWa, email:formEmail, level:formLevel};
     const errs = leadErrs;
     const setErrs = setLeadErrs;
@@ -673,14 +670,13 @@ const REVIEWS_KEY = "mpv_reviews_v1";
     const LL=L.led;
     const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(formEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail))e.email=LL.eE;if(!formLevel)e.level=LL.eL;return e;};
     
-    // NEW SUBMIT FUNCTION WITH DIRECT TELEGRAM INTEGRATION
     const submit=async()=>{
       const e=valid();
       if(Object.keys(e).length){setErrs(e);return;}
       setSending(true);
 
       const TELEGRAM_BOT_TOKEN = "8669930401:AAFRC-XCyykxRyKI-dxg_WKNkr4pODS7OSI";
-      const TELEGRAM_CHAT_ID = "8725512719"; // Updated ID here
+      const TELEGRAM_CHAT_ID = "8725512719"; 
 
       const tgMessage = `🚨 *New Lead (MPV)* 🚨\n\n` +
         `👤 *Name:* ${form.name}\n` +
@@ -692,7 +688,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
         `💡 *Insight:* ${aiProfile?.coreInsight || 'N/A'}`;
 
       try {
-        // Send directly to Telegram from the frontend
         const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -703,17 +698,14 @@ const REVIEWS_KEY = "mpv_reviews_v1";
           })
         });
 
-        if (!tgRes.ok) {
-          console.error("Telegram API Error:", await tgRes.text());
-        }
+        if (!tgRes.ok) console.error("Telegram API Error:", await tgRes.text());
 
-        // Keep the backend call intact just in case it handles emails, but don't let it break the flow if it fails
         try {
           await fetch("/api/notify", {
             method: "POST",
             headers: { 
               "Content-Type": "application/json",
-              "x-internal-key": import.meta.env.VITE_INTERNAL_API_KEY
+              "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
             },
             body: JSON.stringify({
               name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
@@ -725,7 +717,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
 
         setSending(false);
         setLeadSent(true);
-        // Auto-navigate to Conversion page after 2 seconds
         setTimeout(()=>goTo(7), 2000);
 
       } catch(err) {
@@ -737,7 +728,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
     
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
 
-    // Success state — report sent
     if(leadSent){
       return(
         <div style={{...sec,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"50vh"}}>
@@ -824,16 +814,14 @@ const REVIEWS_KEY = "mpv_reviews_v1";
         <div style={{maxWidth:680,margin:"0 auto 52px"}}>
           <Tg c="s">{CV.rev}</Tg>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:16}}>
-            {dynamicReviews.map((r,i)=>(
+            {(dynamicReviews || []).map((r,i)=>(
               <div key={i} style={{background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
                 <div style={{color:G.gold,fontSize:16,marginBottom:12}}>{"★".repeat(r.stars)}</div>
                 
-                {/* Text Review */}
                 {r[lang] && r[lang].trim() !== "" && (
                   <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.85,fontStyle:"italic",marginBottom:16}}>"{r[lang]}"</p>
                 )}
 
-                {/* Audio Review */}
                 {r.type === 'audio' && r.audio_url && (
                   <div style={{marginBottom: 16}}>
                     <audio controls src={r.audio_url} style={{height: 36, width: "100%", borderRadius: 4}}></audio>
@@ -843,7 +831,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
                   <div style={{width:30,height:30,borderRadius:"50%",background:`${G.gold}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:G.gold,fontWeight:700,fontFamily:sans}}>{r.name[0]}</div>
                   <div><div style={{fontSize:12,color:G.smoke,fontFamily:sans,fontWeight:600}}>{r.name}</div><div style={{fontSize:10,color:G.soft,fontFamily:sans,letterSpacing:1}}>{r.city}</div></div>
                 </div>
-                {r.image_url && r.image_url.split(',').map((url, idx) => (
+                {typeof r.image_url === 'string' && r.image_url.split(',').map((url, idx) => (
                   <div key={idx} style={{marginTop: 16, borderRadius: 6, overflow: "hidden", border: `1px solid ${G.goldDim}`}}>
                     <img src={url} alt={`Review Screenshot ${idx + 1}`} style={{width: "100%", display: "block"}} />
                   </div>
@@ -875,7 +863,6 @@ const REVIEWS_KEY = "mpv_reviews_v1";
           <div style={{position:"absolute",bottom:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold}35,transparent)`}}/>
         </div>
 
-        {/* Psychology Basics */}
         <PsychBasics lang={lang} lc={lc}/>
 
         <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
@@ -909,14 +896,13 @@ const REVIEWS_KEY = "mpv_reviews_v1";
     );
   };
 
-  const phases=[<Ritual/>,<Hero/>,<Mirror/>,<Intro/>,<Scenario/>,<Result/>,leadCaptureJSX(),<Conversion/>];
+  const currentPhaseJSX = phases[Math.min(phase, phases.length - 1)] || <Hero/>;
   const navStyle={position:"fixed",top:0,left:0,right:0,zIndex:300,padding:"14px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",background:scrolled?"rgba(5,5,10,0.97)":"transparent",borderBottom:scrolled?`1px solid ${G.goldDim}`:"none",transition:"all 0.4s"};
 
   return(
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
       <style>{css}</style>
       <div ref={topRef}/>
-      {/* ── Terms & Conditions Modal ── */}
       {showTerms && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,overflow:"auto",padding:"20px"}}>
           <div style={{maxWidth:720,margin:"40px auto",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"40px 32px"}}>
@@ -1013,7 +999,7 @@ const REVIEWS_KEY = "mpv_reviews_v1";
       )}
       <div style={{opacity:fading?0:1,transform:fading?"translateY(12px)":"none",transition:"opacity 0.23s ease,transform 0.23s ease"}}>
         <div style={phase<=1?{}:{maxWidth:720,margin:"0 auto",padding:"0 22px"}}>
-          {phases[phase]}
+          {currentPhaseJSX}
         </div>
       </div>
     </div>
