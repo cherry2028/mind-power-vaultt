@@ -1,0 +1,5 @@
+## 2025-05-03 - [CRITICAL] Fix Exposed API Keys and Credentials in Frontend
+
+**Vulnerability:** Found hardcoded Telegram API keys (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) and an internal API authentication key (`mpv_secure_api_key_2026`) directly embedded in the frontend code (`src/App.jsx`). This allowed the API token and secret internal endpoint keys to be fully exposed to all end-users.
+**Learning:** Hardcoded credentials should never be in client-side code because it is easily inspected by users, leading to malicious impersonation and unauthorized API access. The original author seemingly attempted to expedite development or didn't realize the implications of including secrets in the bundle. Additionally, there's a custom helper `getEnv` already in `src/App.jsx` that is used to retrieve env variables safely.
+**Prevention:** Always delegate secure operations (like sending Telegram messages) to the backend or serverless functions (`/api/notify`) and never hardcode secrets. Ensure frontend-to-backend communication utilizes correctly loaded, hidden environment variables (e.g., via `VITE_INTERNAL_API_KEY`) rather than hardcoded plain-text tokens.

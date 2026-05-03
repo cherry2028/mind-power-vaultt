@@ -676,57 +676,17 @@ export default function App(){
       if(Object.keys(e).length){setErrs(e);return;}
       setSending(true);
 
-      const TELEGRAM_BOT_TOKEN = "8669930401:AAFRC-XCyykxRyKI-dxg_WKNkr4pODS7OSI";
-      const TELEGRAM_CHAT_ID = "8725512719";
-
-      const tgMessage = `🚨 New Lead (MPV) 🚨
-
-` +
-        `👤 Name: ${form.name}
-` +
-        `📱 WhatsApp: ${form.wa}
-` +
-        `📧 Email: ${form.email || "N/A"}
-` +
-        `📊 Level: ${form.level}
-` +
-        `🌐 Language: ${lang.toUpperCase()}
-
-` +
-        `🧠 Primary Pattern: ${aiProfile?.primaryPattern || 'N/A'}
-` +
-        `💡 Insight: ${aiProfile?.coreInsight || 'N/A'}`;
-
       try {
-        // Send directly to Telegram from the frontend
-        const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        await fetch("/api/notify", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+          },
           body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: tgMessage
+            name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
           })
         });
-
-        if (!tgRes.ok) {
-          console.error("Telegram API Error:", await tgRes.text());
-        }
-
-        // Keep the backend call intact just in case it handles emails, but don't let it break the flow if it fails
-        try {
-          await fetch("/api/notify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-internal-key": "mpv_secure_api_key_2026"
-            },
-            body: JSON.stringify({
-              name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
-            })
-          });
-        } catch(backendErr) {
-          console.warn("Backend notify failed but Telegram sent.", backendErr);
-        }
 
         setSending(false);
         setLeadSent(true);
