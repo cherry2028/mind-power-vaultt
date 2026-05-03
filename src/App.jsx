@@ -670,42 +670,55 @@ export default function App(){
     const LL=L.led;
     const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(formEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail))e.email=LL.eE;if(!formLevel)e.level=LL.eL;return e;};
     
+    // NEW SUBMIT FUNCTION WITH DIRECT TELEGRAM INTEGRATION
     const submit=async()=>{
       const e=valid();
       if(Object.keys(e).length){setErrs(e);return;}
       setSending(true);
 
-      const TELEGRAM_BOT_TOKEN = "8669930401:AAFRC-XCyykxRyKI-dxg_WKNkr4pODS7OSI";
-      const TELEGRAM_CHAT_ID = "8725512719"; 
+      const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
 
-      const tgMessage = `🚨 *New Lead (MPV)* 🚨\n\n` +
-        `👤 *Name:* ${form.name}\n` +
-        `📱 *WhatsApp:* ${form.wa}\n` +
-        `📧 *Email:* ${form.email || "N/A"}\n` +
-        `📊 *Level:* ${form.level}\n` +
-        `🌐 *Language:* ${lang.toUpperCase()}\n\n` +
-        `🧠 *Primary Pattern:* ${aiProfile?.primaryPattern || 'N/A'}\n` +
-        `💡 *Insight:* ${aiProfile?.coreInsight || 'N/A'}`;
+      const tgMessage = `🚨 New Lead (MPV) 🚨
+
+` +
+        `👤 Name: ${form.name}
+` +
+        `📱 WhatsApp: ${form.wa}
+` +
+        `📧 Email: ${form.email || "N/A"}
+` +
+        `📊 Level: ${form.level}
+` +
+        `🌐 Language: ${lang.toUpperCase()}
+
+` +
+        `🧠 Primary Pattern: ${aiProfile?.primaryPattern || 'N/A'}
+` +
+        `💡 Insight: ${aiProfile?.coreInsight || 'N/A'}`;
 
       try {
+        // Send directly to Telegram from the frontend
         const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: TELEGRAM_CHAT_ID,
-            text: tgMessage,
-            parse_mode: "Markdown"
+            text: tgMessage
           })
         });
 
-        if (!tgRes.ok) console.error("Telegram API Error:", await tgRes.text());
+        if (!tgRes.ok) {
+          console.error("Telegram API Error:", await tgRes.text());
+        }
 
+        // Keep the backend call intact just in case it handles emails, but don't let it break the flow if it fails
         try {
           await fetch("/api/notify", {
             method: "POST",
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
-              "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+              "x-internal-key": import.meta.env.VITE_INTERNAL_API_KEY
             },
             body: JSON.stringify({
               name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
@@ -717,6 +730,7 @@ export default function App(){
 
         setSending(false);
         setLeadSent(true);
+        // Auto-navigate to Conversion page after 2 seconds
         setTimeout(()=>goTo(7), 2000);
 
       } catch(err) {
@@ -724,8 +738,7 @@ export default function App(){
         setSending(false);
         alert(lang === "te" ? "Submission failed. Please try again." : "Submission failed. Please try again.");
       }
-    };
-    
+    };    
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
 
     if(leadSent){

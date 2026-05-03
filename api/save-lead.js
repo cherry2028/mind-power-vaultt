@@ -5,6 +5,10 @@ export default async function handler(req, res) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
+  if (!token || !chatId) {
+    return res.status(500).json({ error: 'Telegram configuration missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env.' });
+  }
+
   const message = `
 <b>New Lead Captured!</b>
 ━━━━━━━━━━━━━━━━━━━━━
@@ -17,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     // 1. Send to Telegram
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const telegramRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -26,6 +30,10 @@ export default async function handler(req, res) {
         parse_mode: 'HTML'
       })
     });
+    const telegramData = await telegramRes.json();
+    if (!telegramData.ok) {
+      return res.status(500).json({ error: telegramData.description || 'Telegram sendMessage failed' });
+    }
 
     // 2. Placeholder for DB storage (e.g. Supabase, Firebase, Google Sheets)
     // console.log("Lead data:", { name, phone, experience, profile });

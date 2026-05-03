@@ -7,10 +7,19 @@
 //   TELEGRAM_CHAT_ID    — K Prasad's chat ID
 //   RESEND_API_KEY      — from resend.com (free 100 emails/day)
 
+function escapeHTML(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Internal-Key');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -152,46 +161,32 @@ export default async function handler(req, res) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
-  if (botToken && chatId) {
-    const tgMessage = `🧠 *NEW MPV LEAD*
-━━━━━━━━━━━━━━━━━━━━━
-👤 *Name:* ${name}
-📱 *Phone:* ${phone}
-📧 *Email:* ${email || 'Not provided'}
-📊 *Level:* ${level || 'Not specified'}
+  if (!botToken || !chatId) {
+    console.error('Telegram configuration missing');
+    return res.status(500).json({ error: 'Telegram configuration missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.' });
+  }
 
-🎯 *PRIMARY PATTERN:*
-${report?.primaryPattern || 'N/A'}
+  const tgMessage = `🧠 NEW MPV LEAD\n━━━━━━━━━━━━━━━━━━━━━\n👤 Name: ${escapeHTML(name)}\n📱 Phone: ${escapeHTML(phone)}\n📧 Email: ${escapeHTML(email || 'Not provided')}\n📊 Level: ${escapeHTML(level || 'Not specified')}\n\n🎯 PRIMARY PATTERN:\n${escapeHTML(report?.primaryPattern || 'N/A')}\n\n💡 CORE INSIGHT:\n${escapeHTML(report?.coreInsight || 'N/A')}\n\n📋 SITUATIONS:\n${(report?.behaviorLines || []).map((l, i) => `S${i + 1}: ${escapeHTML(l)}`).join('\n')}\n\n✅ STRENGTH: ${escapeHTML(report?.hiddenStrength || 'N/A')}\n⚠️ WARNING: ${escapeHTML(report?.warningLine || 'N/A')}\n🔑 ACTION: ${escapeHTML(report?.actionStep || 'N/A')}\n━━━━━━━━━━━━━━━━━━━━━\n📅 ${escapeHTML(timestamp)}\n📨 Report ${emailSent ? 'sent to ' + escapeHTML(email) : 'email not configured'}`;
 
-💡 *CORE INSIGHT:*
-${report?.coreInsight || 'N/A'}
-
-📋 *SITUATIONS:*
-${(report?.behaviorLines || []).map((l, i) => `S${i + 1}: ${l}`).join('\n')}
-
-✅ *STRENGTH:* ${report?.hiddenStrength || 'N/A'}
-⚠️ *WARNING:* ${report?.warningLine || 'N/A'}
-🔑 *ACTION:* ${report?.actionStep || 'N/A'}
-━━━━━━━━━━━━━━━━━━━━━
-📅 ${timestamp}
-📨 Report ${emailSent ? 'sent to ' + email : 'email not configured'}`;
-
-    try {
-      const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: tgMessage,
-          parse_mode: 'Markdown'
-        })
-      });
-      const tgData = await tgRes.json();
-      if (tgData.ok) telegramSent = true;
-      else console.error('Telegram error:', tgData);
-    } catch (e) {
-      console.error('Telegram send error:', e);
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: tgMessage
+      })
+    });
+    const tgData = await tgRes.json();
+    if (tgData.ok) {
+      telegramSent = true;
+    } else {
+      console.error('Telegram error:', tgData);
+      return res.status(500).json({ error: tgData.description || 'Telegram send failed' });
     }
+  } catch (e) {
+    console.error('Telegram send error:', e);
+    return res.status(500).json({ error: e.message || 'Telegram request failed' });
   }
 
   // Always log the lead (viewable in Vercel logs)

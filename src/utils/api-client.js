@@ -21,6 +21,20 @@ export const api = {
     } catch { return { valid: false }; }
   },
 
+  async saveLead(payload) {
+    const res = await fetch('/api/save-lead', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Lead submission failed');
+    return data;
+  },
+
   async sendTelegram(message) {
     const res = await fetch('/api/send-telegram', {
       method: 'POST',
@@ -42,7 +56,9 @@ export const api = {
       },
       body: JSON.stringify(data)
     });
-    return res.json();
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Notify request failed');
+    return json;
   },
 
   async analyze(choiceDescriptions, lang) {
