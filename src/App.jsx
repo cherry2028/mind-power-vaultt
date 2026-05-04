@@ -909,6 +909,7 @@ export default function App(){
     );
   };
 
+  const phases=[<Ritual/>,<Hero/>,<Mirror/>,<Intro/>,<Scenario/>,<Result/>,leadCaptureJSX(),<Conversion/>];
   const currentPhaseJSX = phases[Math.min(phase, phases.length - 1)] || <Hero/>;
   const navStyle={position:"fixed",top:0,left:0,right:0,zIndex:300,padding:"14px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",background:scrolled?"rgba(5,5,10,0.97)":"transparent",borderBottom:scrolled?`1px solid ${G.goldDim}`:"none",transition:"all 0.4s"};
 
