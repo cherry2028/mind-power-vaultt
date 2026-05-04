@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const internalKey = req.headers['x-internal-key'];
   const { INTERNAL_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } = process.env;
 
-  if (INTERNAL_API_KEY && internalKey !== INTERNAL_API_KEY) {
+  if (!INTERNAL_API_KEY || internalKey !== INTERNAL_API_KEY) {
     logEvent('telegram_unauthorized', { ip });
     return res.status(403).json({ error: 'Unauthorized' });
   }

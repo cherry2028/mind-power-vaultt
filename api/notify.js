@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   // Internal API Protection
   const internalKey = process.env.INTERNAL_API_KEY;
   const providedKey = req.headers['x-internal-key'];
-  if (internalKey && providedKey !== internalKey) {
+  if (!internalKey || providedKey !== internalKey) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
