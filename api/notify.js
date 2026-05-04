@@ -166,7 +166,28 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Telegram configuration missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.' });
   }
 
-  const tgMessage = `🧠 NEW MPV LEAD\n━━━━━━━━━━━━━━━━━━━━━\n👤 Name: ${escapeHTML(name)}\n📱 Phone: ${escapeHTML(phone)}\n📧 Email: ${escapeHTML(email || 'Not provided')}\n📊 Level: ${escapeHTML(level || 'Not specified')}\n\n🎯 PRIMARY PATTERN:\n${escapeHTML(report?.primaryPattern || 'N/A')}\n\n💡 CORE INSIGHT:\n${escapeHTML(report?.coreInsight || 'N/A')}\n\n📋 SITUATIONS:\n${(report?.behaviorLines || []).map((l, i) => `S${i + 1}: ${escapeHTML(l)}`).join('\n')}\n\n✅ STRENGTH: ${escapeHTML(report?.hiddenStrength || 'N/A')}\n⚠️ WARNING: ${escapeHTML(report?.warningLine || 'N/A')}\n🔑 ACTION: ${escapeHTML(report?.actionStep || 'N/A')}\n━━━━━━━━━━━━━━━━━━━━━\n📅 ${escapeHTML(timestamp)}\n📨 Report ${emailSent ? 'sent to ' + escapeHTML(email) : 'email not configured'}`;
+  const tgMessage = `🧠 *NEW MPV LEAD*
+━━━━━━━━━━━━━━━━━━━━━
+👤 *Name:* ${name}
+📱 *Phone:* ${phone}
+📧 *Email:* ${email || 'Not provided'}
+📊 *Level:* ${level || 'Not specified'}
+
+🎯 *PRIMARY PATTERN:*
+${report?.primaryPattern || 'N/A'}
+
+💡 *CORE INSIGHT:*
+${report?.coreInsight || 'N/A'}
+
+📋 *SITUATIONS:*
+${(report?.behaviorLines || []).map((l, i) => `S${i + 1}: ${l}`).join('\n')}
+
+✅ *STRENGTH:* ${report?.hiddenStrength || 'N/A'}
+⚠️ *WARNING:* ${report?.warningLine || 'N/A'}
+🔑 *ACTION:* ${report?.actionStep || 'N/A'}
+━━━━━━━━━━━━━━━━━━━━━
+📅 ${timestamp}
+📨 Report ${emailSent ? 'sent to ' + email : 'email not configured'}`;
 
   try {
     const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -174,7 +195,8 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: tgMessage
+        text: tgMessage,
+        parse_mode: 'Markdown'
       })
     });
     const tgData = await tgRes.json();
