@@ -12,7 +12,7 @@ const getEnv = (key) => {
 };
 
 const G = {
-  black:"#05050A", dark1:"#0A0A10", dark2:"rgba(15, 15, 24, 0.55)",
+  black:"#05050A", dark1:"#0A0A10", dark2:"#0F0F16",
   gold:"#C9A84C",  goldDim:"rgba(201,168,76,0.18)",
   smoke:"#F5F2EA", mid:"#D0CCBF",   soft:"#A8A498",
   vsoft:"rgba(240,237,228,0.32)",
@@ -461,7 +461,7 @@ export default function App(){
 
   const Hero=()=>(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(${G.goldDim} 1px,transparent 1px),linear-gradient(90deg,${G.goldDim} 1px,transparent 1px)`,backgroundSize:"58px 58px",opacity:0.15}}/>
+      <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(${G.goldDim} 1px,transparent 1px),linear-gradient(90deg,${G.goldDim} 1px,transparent 1px)`,backgroundSize:"58px 58px",opacity:0.7}}/>
       <div className="brth" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:540,height:540,background:"radial-gradient(circle,rgba(201,168,76,0.11) 0%,transparent 65%)"}}/>
       <div style={{position:"relative",zIndex:1,padding:"0 24px",maxWidth:760,margin:"0 auto"}}>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 0.1s"}}>
@@ -545,7 +545,7 @@ export default function App(){
           <div style={{height:1,background:G.goldDim}}><div style={{height:"100%",width:`${prg}%`,background:`linear-gradient(to right,${G.gold}70,${G.gold})`,transition:"width 0.5s ease"}}/></div>
         </div>
         {showEsc&&(
-          <div className="pin" style={{padding:"40px 28px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.gold}35`,borderRadius:8,textAlign:"center"}}>
+          <div className="pin" style={{padding:"40px 28px",background:G.dark2,border:`1px solid ${G.gold}35`,borderRadius:8,textAlign:"center"}}>
             <div style={{width:1,height:40,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto 28px"}}/>
             <p className={lc} style={{fontSize:"clamp(18px,2.5vw,26px)",color:G.smoke,lineHeight:2.1,whiteSpace:"pre-line",marginBottom:20}}>{sc.escLine[lang]}</p>
             <p className={lc} style={{fontSize:14,color:`${G.gold}85`,fontStyle:"italic",marginBottom:36}}>{sc.escNote[lang]}</p>
@@ -553,7 +553,7 @@ export default function App(){
           </div>
         )}
         {!showEsc&&!refText&&<>
-          <div style={{marginBottom:36,padding:"28px 26px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.goldDim}`,borderRadius:8}}>
+          <div style={{marginBottom:36,padding:"28px 26px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
             <Tg>{lang==="te"?"Situation":"Situation"}</Tg>
             <p className={lc} style={{fontSize:"clamp(17px,2.3vw,24px)",color:G.smoke,lineHeight:1.95}}>{scL.sit}</p>
           </div>
@@ -576,7 +576,7 @@ export default function App(){
               <Tg>Mirror</Tg>
               <div style={{width:1,height:40,background:`linear-gradient(to bottom,transparent,${G.gold})`,margin:"0 auto"}}/>
             </div>
-            <div style={{padding:"32px 28px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.gold}25`,borderRadius:8,marginBottom:20}}>
+            <div style={{padding:"32px 28px",background:G.dark2,border:`1px solid ${G.gold}25`,borderRadius:8,marginBottom:20}}>
               <p className={lc} style={{fontSize:"clamp(16px,2.3vw,22px)",color:G.smoke,lineHeight:2.05,fontStyle:"italic"}}>"{refText}"</p>
             </div>
             {sc.showCommunity&&(
@@ -634,7 +634,7 @@ export default function App(){
             </div>
           ))}
         </div>
-        <div style={{padding:"32px 28px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.gold}30`,borderRadius:8,marginBottom:20,maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
+        <div style={{padding:"32px 28px",background:G.dark2,border:`1px solid ${G.gold}30`,borderRadius:8,marginBottom:20,maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
           <p style={{fontSize:10,letterSpacing:4,color:`${G.gold}80`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>{L.res.primary}</p>
           <h2 className={lc} style={{fontSize:"clamp(17px,2.5vw,26px)",color:G.smoke,lineHeight:1.8,marginBottom:16,whiteSpace:"pre-line"}}>{primaryPattern}</h2>
           <p className={lc} style={{fontSize:"clamp(14px,1.9vw,18px)",color:G.mid,lineHeight:2,fontStyle:"italic"}}>"{coreInsight}"</p>
@@ -818,7 +818,7 @@ export default function App(){
         <p className={lc} style={{fontSize:"clamp(16px,2vw,22px)",color:G.mid,lineHeight:1.9,fontStyle:"italic",maxWidth:560,margin:"0 auto 52px"}}>{CV.sub}</p>
         <div style={{maxWidth:620,margin:"0 auto 52px",display:"flex",flexDirection:"column",gap:16}}>
           {CV.cards.map((c,i)=>(
-            <div key={i} style={{display:"flex",gap:20,alignItems:"flex-start",padding:"22px 24px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.goldDim}`,borderRadius:8,textAlign:"left"}}>
+            <div key={i} style={{display:"flex",gap:20,alignItems:"flex-start",padding:"22px 24px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,textAlign:"left"}}>
               <span style={{fontFamily:serif,fontSize:32,color:`${G.gold}35`,fontWeight:700,flexShrink:0,lineHeight:1}}>0{i+1}</span>
               <p className={lc} style={{fontFamily:serif,fontSize:"clamp(14px,1.8vw,18px)",color:G.mid,lineHeight:1.9,fontStyle:"italic"}}>{c}</p>
             </div>
@@ -828,7 +828,7 @@ export default function App(){
           <Tg c="s">{CV.rev}</Tg>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:16}}>
             {(dynamicReviews || []).map((r,i)=>(
-              <div key={i} style={{background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
+              <div key={i} style={{background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
                 <div style={{color:G.gold,fontSize:16,marginBottom:12}}>{"★".repeat(r.stars)}</div>
                 
                 {r[lang] && r[lang].trim() !== "" && (
@@ -861,7 +861,7 @@ export default function App(){
             <p className={lc} style={{fontFamily:serif,fontSize:"clamp(22px,3vw,36px)",color:G.gold,lineHeight:1.75,fontWeight:700}}>{CV.k3}</p>
           </div>
         </div>
-        <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"48px 32px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.goldDim}`,borderRadius:8}}>
+        <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"48px 32px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold},transparent)`}}/>
           <p className={lc} style={{fontSize:12,letterSpacing:2,color:G.mid,textTransform:"uppercase",marginBottom:12}}>{CV.s1}</p>
           <h2 className={lc} style={{fontFamily:serif,fontSize:"clamp(26px,4vw,46px)",color:G.gold,fontWeight:700,marginBottom:12}}>{CV.h2}</h2>
@@ -878,7 +878,7 @@ export default function App(){
 
         <PsychBasics lang={lang} lc={lc}/>
 
-        <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.goldDim}`,borderRadius:8}}>
+        <div style={{maxWidth:560,margin:"0 auto 48px",display:"grid",gridTemplateColumns:"auto 1fr",gap:22,alignItems:"center",textAlign:"left",padding:"28px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
           <img src={LOGO_IMG} alt="MPV" style={{width:56,height:56,objectFit:"contain",background:"transparent",flexShrink:0}} onError={e=>{e.target.style.display="none";}}/>
           <div>
             <Tg>K Prasad — Mind Power Vaultt</Tg>
@@ -918,7 +918,7 @@ export default function App(){
       <div ref={topRef}/>
       {showTerms && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,overflow:"auto",padding:"20px"}}>
-          <div style={{maxWidth:720,margin:"40px auto",background:G.dark2, backdropFilter:"blur(12px)", boxShadow:"0 8px 32px 0 rgba(0,0,0,0.3)",border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"40px 32px"}}>
+          <div style={{maxWidth:720,margin:"40px auto",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"40px 32px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
               <div>
                 <p style={{fontSize:11,letterSpacing:4,color:G.gold,textTransform:"uppercase",fontFamily:sans}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</p>
