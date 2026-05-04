@@ -469,13 +469,13 @@ export default function App(){
           <img src={LOGO_IMG} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
-          <h1 className={lc} style={{fontSize:"clamp(26px,4.5vw,56px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
+          <h1 className={lc} style={{fontSize:"clamp(22px,3.5vw,42px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.85s"}}>
-          <h2 className={lc} style={{fontSize:"clamp(30px,5vw,66px)",fontWeight:700,color:G.gold,lineHeight:1.15,marginBottom:28,whiteSpace:"pre-line"}}>{L.hro.l2}</h2>
+          <h2 className={lc} style={{fontSize:"clamp(24px,4vw,48px)",fontWeight:700,color:G.gold,lineHeight:1.15,marginBottom:28,whiteSpace:"pre-line"}}>{L.hro.l2}</h2>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(14px)",transition:"all 0.8s ease 1.2s"}}>
-          <p className={lc} style={{fontSize:"clamp(14px,2vw,20px)",fontStyle:"italic",color:G.mid,lineHeight:1.9,marginBottom:44,maxWidth:540,margin:"0 auto 44px",whiteSpace:"pre-line"}}>{L.hro.sub}</p>
+          <p className={lc} style={{fontSize:"clamp(13px,1.8vw,17px)",fontStyle:"italic",color:G.mid,lineHeight:1.9,marginBottom:44,maxWidth:540,margin:"0 auto 44px",whiteSpace:"pre-line"}}>{L.hro.sub}</p>
         </div>
         <div style={{opacity:heroIn?1:0,transition:"all 0.8s ease 1.5s"}}>
           <GL/>
