@@ -47,15 +47,6 @@ export default function StudentPortal() {
     setError('');
 
     try {
-      // 🚀 EMERGENCY BYPASS LOGIC 🚀
-      if (otp.trim() === '777888') {
-        // FULL OVERRIDE FOR EMERGENCY (Bypasses RLS which is currently blocking)
-        sessionStorage.setItem('mpv_journal_token', 'EMERGENCY_VALID_TOKEN_1234567890qwertyuiop');
-        sessionStorage.setItem('mpv_journal_access', 'MPV-' + email.trim().substring(0, 5).toUpperCase());
-        navigate('/journal');
-        return;
-      }
-
       // Normal Auth Flow
       const { data: authData, error: verifyError } = await supabase.auth.verifyOtp({
         email: email.trim(),
