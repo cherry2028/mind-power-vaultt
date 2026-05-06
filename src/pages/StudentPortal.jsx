@@ -69,7 +69,29 @@ export default function StudentPortal() {
         throw new Error("Your annual subscription has expired.");
       }
 
-      // 3. Grant Access
+      // 3. STRICT SINGLE DEVICE LOCK LOGIC
+      let localDeviceId = localStorage.getItem('mpv_device_id');
+      if (!localDeviceId) {
+        localDeviceId = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        localStorage.setItem('mpv_device_id', localDeviceId);
+      }
+
+      if (!sub.device_id) {
+        // First time login - Lock to this device
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({ device_id: localDeviceId })
+          .eq('email', email.trim());
+          
+        if (updateError) throw new Error("Failed to lock device securely. Contact Admin.");
+      } else if (sub.device_id !== localDeviceId) {
+        // Tried to login from a DIFFERENT device
+        // Since we don't want to log them out automatically, we BLOCK them here.
+        await supabase.auth.signOut(); // Force sign out from supabase
+        throw new Error("SECURITY ALERT: This account is already locked to another device. Multiple devices are strictly prohibited. Contact Admin to reset your device.");
+      }
+
+      // 4. Grant Access
       sessionStorage.setItem('mpv_journal_token', authData.session.access_token);
       sessionStorage.setItem('mpv_journal_access', sub.access_code || email.trim());
       navigate('/journal');
