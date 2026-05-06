@@ -984,6 +984,8 @@ function App(){
                 {lang==="te"?"← వెనక్కి":"← Back"}
               </button>
             )}
+            <a href="/portal" target="_blank" rel="noopener noreferrer" style={{padding:"6px 14px",background:`${G.gold}15`,border:`1px solid ${G.gold}40`,color:G.gold,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:700,textDecoration:"none",textTransform:"uppercase"}}>🎓 {lang==="te"?"Portal":"Portal"}</a>
+            <button onClick={()=>setAdminOpen(true)} style={{padding:"6px 14px",background:"transparent",border:`1px solid ${G.goldDim}`,color:`${G.smoke}60`,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer"}}>⚙</button>
           </div>
         </nav>
       )}

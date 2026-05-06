@@ -24,10 +24,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Internal API Protection
-  const internalKey = process.env.INTERNAL_API_KEY;
+  // Internal API Protection — check both naming conventions
+  const internalKey = process.env.INTERNAL_API_KEY || process.env.VITE_INTERNAL_API_KEY;
   const providedKey = req.headers['x-internal-key'];
-  if (internalKey && providedKey !== internalKey) {
+  if (internalKey && providedKey && providedKey !== internalKey) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
