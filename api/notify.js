@@ -140,7 +140,7 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${resendKey}`
         },
         body: JSON.stringify({
-          from: 'Mind Power Vaultt <kprasad@mindpowervaultt.com>',
+          from: 'Mind Power Vaultt <onboarding@resend.dev>', // Changed to Default Resend email to avoid blocking
           to: email,
           subject: `🧠 ${name}, Your Trading Psychology Report — Mind Power Vaultt`,
           html: emailHtml
@@ -166,40 +166,56 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Telegram configuration missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.' });
   }
 
-  const tgMessage = `🧠 *NEW MPV LEAD*
+  // Changed Markdown to HTML format to prevent Telegram blocking special characters
+  const tgMessage = `<b>🧠 NEW MPV LEAD</b>
 ━━━━━━━━━━━━━━━━━━━━━
-👤 *Name:* ${name}
-📱 *Phone:* ${phone}
-📧 *Email:* ${email || 'Not provided'}
-📊 *Level:* ${level || 'Not specified'}
+👤 <b>Name:</b> ${escapeHTML(name)}
+📱 <b>Phone:</b> ${escapeHTML(phone)}
+📧 <b>Email:</b> ${escapeHTML(email) || 'Not provided'}
+📊 <b>Level:</b> ${escapeHTML(level) || 'Not specified'}
 
-🎯 *PRIMARY PATTERN:*
-${report?.primaryPattern || 'N/A'}
+🎯 <b>PRIMARY PATTERN:</b>
+${escapeHTML(report?.primaryPattern || 'N/A')}
 
-💡 *CORE INSIGHT:*
-${report?.coreInsight || 'N/A'}
+💡 <b>CORE INSIGHT:</b>
+${escapeHTML(report?.coreInsight || 'N/A')}
 
-📋 *SITUATIONS:*
-${(report?.behaviorLines || []).map((l, i) => `S${i + 1}: ${l}`).join('\n')}
+📋 <b>SITUATIONS:</b>
+${(report?.behaviorLines || []).map((l, i) => `<b>S${i + 1}:</b> ${escapeHTML(l)}`).join('\n')}
 
-✅ *STRENGTH:* ${report?.hiddenStrength || 'N/A'}
-⚠️ *WARNING:* ${report?.warningLine || 'N/A'}
-🔑 *ACTION:* ${report?.actionStep || 'N/A'}
+✅ <b>STRENGTH:</b> ${escapeHTML(report?.hiddenStrength || 'N/A')}
+⚠️ <b>WARNING:</b> ${escapeHTML(report?.warningLine || 'N/A')}
+🔑 <b>ACTION:</b> ${escapeHTML(report?.actionStep || 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━
 📅 ${timestamp}
-📨 Report ${emailSent ? 'sent to ' + email : 'email not configured'}`;
+📨 Report ${emailSent ? 'sent to ' + escapeHTML(email) : 'email not configured'}`;
 
   try {
-    const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    let tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
         text: tgMessage,
-        parse_mode: 'Markdown'
+        parse_mode: 'HTML' // Changed to HTML
       })
     });
-    const tgData = await tgRes.json();
+    
+    let tgData = await tgRes.json();
+    
+    // Fallback: If it still fails, send as plain text
+    if (!tgData.ok) {
+       tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: tgMessage.replace(/<[^>]*>?/gm, '') // Strip HTML tags for plain text
+        })
+      });
+      tgData = await tgRes.json();
+    }
+
     if (tgData.ok) {
       telegramSent = true;
     } else {

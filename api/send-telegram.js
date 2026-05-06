@@ -6,13 +6,11 @@ export default async function handler(req, res) {
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
 
-  // Rate limit: 10 Telegram messages per IP per hour
   if (!checkSimpleLimit(ip, 10)) {
     logEvent('telegram_rate_blocked', { ip });
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
-  // Internal API key check
   const internalKey = req.headers['x-internal-key'];
   const { INTERNAL_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } = process.env;
 
@@ -27,14 +25,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' })
-    });
-    const data = await response.json();
-    if (data.ok) return res.status(200).json({ success: true });
-    return res.status(500).json({ error: data.description });
+    const MAX_LENGTH = 4000;
+    let isSuccess = true;
+    let errorMessage = '';
+
+    for (let i = 0; i < message.length; i += MAX_LENGTH) {
+      const chunk = message.substring(i, i + MAX_LENGTH);
+      
+      // FIX: Send as Absolute Plain Text (Removed parse_mode completely)
+      // This guarantees Telegram won't reject it due to special characters.
+      const response = await fetch(`[https://api.telegram.org/bot$](https://api.telegram.org/bot$){TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: chunk })
+      });
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        isSuccess = false;
+        errorMessage = data.description;
+        break; 
+      }
+    }
+
+    if (isSuccess) {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(500).json({ error: errorMessage });
+    }
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

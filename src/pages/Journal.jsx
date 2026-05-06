@@ -1,405 +1,1277 @@
-import { useState, useEffect } from 'react';
-import { api } from '../utils/api-client';
-import { G, serif, sans } from '../utils/constants';
 
-const DB_KEY = "mpv_journal_v3";
-const SESSION_KEY = "mpv_session_jwt"; // JWT token
-const ALLOWED_DOMAIN = "mindpowervaultt.com";
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-// ── Security Layer 1: Domain Lock ─────────────────────────────────────────────
-function isDomainAllowed() {
-  const host = window.location.hostname;
-  return host === ALLOWED_DOMAIN || host === "localhost" || host === "127.0.0.1";
+export default function Journal() {
+    const containerRef = useRef(null);
+    const navigate = useNavigate();
+    const [accessGranted, setAccessGranted] = useState(false);
+
+    useEffect(() => {
+        // Validation check (basic client side gate)
+        const code = sessionStorage.getItem('mpv_journal_access');
+        if (!code) {
+            navigate('/portal');
+            return;
+        }
+        setAccessGranted(true);
+    }, [navigate]);
+
+    useEffect(() => {
+        if (!accessGranted || !containerRef.current) return;
+
+        // Execute the inline script logic
+        try {
+            
+var MEM={};
+function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return MEM[k]||null;}}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;}
+function ge(id){return containerRef.current.querySelector(id);}
+
+var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{}};
+
+function loadDB(){
+  var keys=[['mpvf','f'],['mpvpm','pm'],['mpvtr','tr'],['mpveod','eod'],['mpvh','h'],['mpvpsyd','psyday'],['mpvmir','mirror'],['mpvwk','weekly'],['mpvmn','monthly'],['mpvrules','rules'],['mpvstrat','strategy']];
+  for(var i=0;i<keys.length;i++){var a=lg(keys[i][0]);if(a)DB[keys[i][1]]=a;}
 }
 
-// ── Security Layer 2: Device Fingerprint ──────────────────────────────────────
-function getDeviceFingerprint() {
-  try {
-    const nav = window.navigator;
-    const parts = [
-      nav.language, nav.platform, nav.hardwareConcurrency || 0,
-      screen.width, screen.height, screen.colorDepth,
-      Intl.DateTimeFormat().resolvedOptions().timeZone,
-      nav.vendor || "", nav.maxTouchPoints || 0
-    ];
-    const str = parts.join("|");
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
+function td(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fi(n){return Math.abs(Number(n||0)).toLocaleString('en-IN');}
+function pc(v){return Number(v)>=0?'#4CAF82':'#CF6679';}
+function ps2(v){var n=Number(v||0);return(n>=0?'+':'-')+'₹'+fi(n);}
+var tt;
+function toast(m){var t=ge('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none';},2500);}
+var ft2;
+function showFeedback(msg,col){var p=ge('feedbackPopup');p.textContent=msg;p.style.color=col||'#E2C97A';p.style.borderColor=col||'#7A6530';p.classList.add('show');clearTimeout(ft2);ft2=setTimeout(function(){p.classList.remove('show');},3500);}
+
+// ────── PIN SYSTEM ──────
+function hashPin(p){var h=0;for(var i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return h.toString();}
+function checkPin(){
+  var p=ge('pinInput').value;
+  var stored=lg('mpvPin');
+  if(!stored){ls('mpvPin',hashPin(p));ge('pinScreen').classList.add('hidden');startApp();return;}
+  if(hashPin(p)===stored){ge('pinScreen').classList.add('hidden');startApp();}
+  else{ge('pinErr').textContent='Wrong PIN. Try again.';ge('pinInput').value='';}
+}
+function showPinSet(){
+  var np=prompt('New PIN enter చేయి (4-6 digits):');
+  if(!np||np.length<4){alert('Minimum 4 digits అవసరం.');return;}
+  var cp=prompt('Confirm PIN:');
+  if(np!==cp){alert('PINs match కాలేదు.');return;}
+  ls('mpvPin',hashPin(np));toast('PIN updated ✦');
+}
+
+// ────── ONBOARDING ──────
+function obNext(step,skipPin){
+  if(step===3){
+    // Save pin from step 2
+    if(!skipPin){
+      var p1=ge('ob-pin1').value,p2=ge('ob-pin2').value;
+      if(p1.length<4){ge('ob-pin-err').textContent='Minimum 4 digits.';return;}
+      if(p1!==p2){ge('ob-pin-err').textContent='PINs match కాలేదు.';return;}
+      ls('mpvPin',hashPin(p1));
     }
-    return Math.abs(hash).toString(36);
-  } catch { return "unknown"; }
+  }
+  for(var i=1;i<=3;i++){ge('ob'+i).classList.remove('on');}
+  ge('ob'+step).classList.add('on');
+  var dots=ge('obDots').children;
+  for(var i=0;i<dots.length;i++)dots[i].classList.toggle('on',i===step-1);
+}
+function skipOnboarding(){ls('mpvOnboarded','1');ge('onboarding').classList.add('hidden');startApp();}
+function finishOnboarding(){
+  // Save foundation from step 1
+  var why=ge('ob-why').value,day=ge('ob-day').value;
+  if(why){DB.f.why=why;}
+  if(day){DB.f.day=day;}
+  ls('mpvf',DB.f);
+  ls('mpvOnboarded','1');
+  ge('onboarding').classList.add('hidden');
+  startApp();
 }
 
-// ── Security Layer 3: Anti-DevTools + Anti-Clone ───────────────────────────────
-function applyAntiClone() {
-  document.addEventListener("contextmenu", e => e.preventDefault());
-  document.addEventListener("keydown", e => {
-    if (
-      e.key === "F12" ||
-      (e.ctrlKey && ["u","s","p"].includes(e.key.toLowerCase())) ||
-      (e.ctrlKey && e.shiftKey && ["i","j","c"].includes(e.key.toLowerCase()))
-    ) { e.preventDefault(); e.stopPropagation(); }
-  });
-  document.addEventListener("selectstart", e => e.preventDefault());
-  const threshold = 160;
-  setInterval(() => {
-    if (window.outerWidth - window.innerWidth > threshold ||
-        window.outerHeight - window.innerHeight > threshold) {
-      document.body.innerHTML = `<div style="background:#05050A;color:#C9A84C;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:20px;text-align:center;">⚠️<br/>Unauthorized Access Detected.<br/>Session Terminated.</div>`;
-    }
-  }, 1000);
+// ────── IDENTITY ──────
+function calcIdentity(){
+  var T=DB.tr,tot=T.length;if(!tot)return'emotional';
+  var pln=0;for(var i=0;i<T.length;i++){if(T[i].pln)pln++;}
+  var pct=pln/tot;
+  var eods=DB.eod.slice(-10);var avgP=0;for(var i=0;i<eods.length;i++)avgP+=(eods[i].proc||0);if(eods.length)avgP=avgP/eods.length;
+  var imp=tot-pln;
+  if(pct>=0.85&&avgP>=7&&imp<=1)return'professional';
+  if(pct>=0.70&&avgP>=5)return'consistent';
+  if(pct>=0.50)return'aware';
+  return'emotional';
+}
+function calcDisciplineScore(){
+  var score=0;
+  for(var i=0;i<DB.tr.length;i++){var t=DB.tr[i];if(t.pln)score+=1;else score-=2;if(t.mist==='ignored_sl')score-=1;}
+  return score;
+}
+function updHdr(){
+  var tp=0,imp=0;for(var i=0;i<DB.tr.length;i++){tp+=Number(DB.tr[i].pnl||0);if(!DB.tr[i].pln)imp++;}
+  var pe=ge('hpnl');pe.textContent=(tp>=0?'+':'-')+'₹'+fi(tp);pe.style.color=pc(tp);
+  ge('htrades').textContent=DB.tr.length;
+  var disc=calcDisciplineScore();var hd=ge('hdisc');hd.textContent=disc;hd.style.color=disc>=0?'#C9A84C':'#CF6679';
+  var id=calcIdentity();var hid=ge('hidentity');hid.textContent=id.toUpperCase();hid.className='identity-badge id-'+id;
+  var t=td(),has=false;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t){has=true;break;}}
+  var r=ge('hritual');if(has){r.textContent='✦ Done';r.className='rbadge rd';}else{r.textContent='⚡ Pending';r.className='rbadge rp';}
 }
 
-function loadDB() {
-  try { const s = localStorage.getItem(DB_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
-}
-function saveDB(db) {
-  try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch {}
+function checkKillSwitch(){var f=DB.f||{};var maxDay=Number(f.day||0);if(!maxDay)return false;var t=td(),todayLoss=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)todayLoss+=Number(DB.tr[i].pnl||0);}return todayLoss<=-maxDay;}
+function checkOvertrading(){var f=DB.f||{};var ota=Number(f.ota||3);var t=td(),cnt=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)cnt++;}return cnt>=ota;}
+function pmDone(){var t=td();for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t)return true;}return false;}
+function daysSinceFirst(){var f=DB.f._firstDay;if(!f)return 999;return Math.floor((new Date()-new Date(f))/(1000*60*60*24));}
+function mirrorMandatory(){return daysSinceFirst()>=7;}
+
+function goToSection(id){var btns=document.querySelectorAll('.nb');for(var i=0;i<btns.length;i++){if(btns[i].getAttribute('onclick')&&btns[i].getAttribute('onclick').indexOf("'"+id+"'")>-1){gS(id,btns[i]);return;}}}
+var sbo=true;
+function toggleSB(){sbo=!sbo;var s=ge('sb');s.classList.toggle('cl',!sbo);var ls2=document.querySelectorAll('.nl');for(var i=0;i<ls2.length;i++)ls2[i].style.display=sbo?'':'none';var tip=ge('stip');if(tip)tip.style.display=sbo?'':'none';}
+
+function gS(id,btn){
+  var ss=document.querySelectorAll('.sec');for(var i=0;i<ss.length;i++)ss[i].classList.remove('on');
+  var ns=document.querySelectorAll('.nb');for(var i=0;i<ns.length;i++)ns[i].classList.remove('on');
+  var s=ge('sec-'+id);if(s)s.classList.add('on');if(btn)btn.classList.add('on');
+  if(id==='tradelog'){
+    if(!pmDone()){ge('lockTitle').textContent='YOU ARE NOT PREPARED';ge('lockMsg').textContent='Pre-Market ritual complete చేయకుండా trade log చేయడం allowed కాదు.';ge('lockBtn').textContent='Ritual Complete చేయి →';ge('lockBtn').onclick=function(){ge('lockOverlay').classList.add('hidden');goToSection('premarket');};ge('lockOverlay').classList.remove('hidden');return;}
+    if(checkKillSwitch())ge('killBanner').classList.add('show');else ge('killBanner').classList.remove('show');
+    if(checkOvertrading())ge('otAlert').classList.add('show');else ge('otAlert').classList.remove('show');
+    rTr();
+  }
+  if(id==='checklist'){if(!pmDone()){ge('lockTitle').textContent='CHECKLIST BLOCKED';ge('lockMsg').textContent='Pre-Market ritual complete చేయకుండా checklist allowed కాదు.';ge('lockBtn').textContent='Pre-Market చేయి →';ge('lockBtn').onclick=function(){ge('lockOverlay').classList.add('hidden');goToSection('premarket');};ge('lockOverlay').classList.remove('hidden');return;}}
+  if(id==='psych'){rPs();ge('psy-dt').value=td();}
+  if(id==='weekly')rWk();
+  if(id==='monthly')rMn();
+  if(id==='habits')rHb();
+  if(id==='eod'){rEC();updateMirrorUI();}
+  if(id==='strategy')rStrategy();
+  if(id==='history')showHist('premarket',ge('hist-tabs').querySelector('.on'));
 }
 
-const EMPTY_DB = {
-  f: {}, pm: [], tr: [], eod: [], psyday: [], weekly: [], monthly: [],
-  rules: [], strategy: {}, h: { g: {}, s: 0, b: 0 }
+function updateMirrorUI(){
+  var mandatory=mirrorMandatory();
+  var note=ge('mirrorNote');
+  if(note)note.textContent=mandatory?'ఈ questions skip చేయడం EOD save కి allow కాదు. Honest గా చెప్పు.':'First 7 days: Mirror questions optional. తర్వాత mandatory అవుతాయి.';
+}
+
+function uSl(el,vi,ni,col){var v=el.value;var pct=(v-1)/9*100;el.style.background='linear-gradient(to right,'+col+' '+pct+'%,#222 '+pct+'%)';var a=ge(vi);if(a)a.textContent=v;var b=ge(ni);if(b)b.textContent=v;}
+var EC={calm:'#4CAF82',anxious:'#E0A84C',confident:'#5B8FD4',fearful:'#CF6679',angry:'#CF6679',greedy:'#CF6679',neutral:'#9A8870'};
+function pEmo(wid,hid,btn,val){var w=ge(wid);if(!w)return;var bs=w.querySelectorAll('.eb');for(var i=0;i<bs.length;i++){bs[i].classList.remove('on');bs[i].style.color='';bs[i].style.borderColor='';bs[i].style.background='';}btn.classList.add('on');var c=EC[val]||'#9A8870';btn.style.color=c;btn.style.borderColor=c;btn.style.background='rgba(255,255,255,0.04)';var h=ge(hid);if(h)h.value=val;}
+function pBias(wid,hid,btn,val){var w=ge(wid);if(w){var bs=w.querySelectorAll('.bb');for(var i=0;i<bs.length;i++)bs[i].classList.remove('on');}btn.classList.add('on');var h=ge(hid);if(h)h.value=val;}
+function sMis(show){var e=ge('trmw');if(e)e.style.display=show?'':'none';}
+function showMistFeedback(val){var ids=['mf-revenge','mf-fomo','mf-ignored_sl'];for(var i=0;i<ids.length;i++){var el=ge(ids[i]);if(el)el.classList.remove('show');}if(!val)return;var el=ge('mf-'+val);if(el)el.classList.add('show');}
+var MC={green:'#4CAF82',yellow:'#E0A84C',red:'#CF6679'};
+function pMood(m){var map={green:'mg',yellow:'my',red:'mr'};var ids=['green','yellow','red'];for(var i=0;i<ids.length;i++){var b=ge(map[ids[i]]);if(!b)continue;b.classList.remove('on');b.style.color='';b.style.borderColor='';b.style.background='';}var btn=ge(map[m]);if(btn){btn.classList.add('on');btn.style.color=MC[m];btn.style.borderColor=MC[m];btn.style.background='rgba(255,255,255,0.04)';}var h=ge('eod-m');if(h)h.value=m;}
+
+// ────── VOICE NOTE ──────
+var recognition=null,voiceActive=false;
+function toggleVoice(){
+  // Voice requires https:// - not available in file:// protocol
+  if(location.protocol==='file:'){
+    toast('Voice కి website (https://) లో open చేయాలి. ఇప్పుడు manually type చేయి.');
+    ge('tr-voice').focus();
+    return;
+  }
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    toast('Voice Chrome browser లో మాత్రమే work అవుతుంది.');
+    return;
+  }
+  if(voiceActive){if(recognition)recognition.stop();return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.lang='te-IN';recognition.continuous=false;recognition.interimResults=false;
+  recognition.onstart=function(){voiceActive=true;ge('voiceBtn').classList.add('recording');ge('voiceTxt').textContent='🔴 Recording... Click to stop';};
+  recognition.onresult=function(e){var txt=e.results[0][0].transcript;var ta=ge('tr-voice');ta.value=(ta.value?ta.value+' ':'')+txt;};
+  recognition.onend=function(){voiceActive=false;ge('voiceBtn').classList.remove('recording');ge('voiceTxt').textContent='🎙 Voice record చేయి';};
+  recognition.onerror=function(){voiceActive=false;ge('voiceBtn').classList.remove('recording');ge('voiceTxt').textContent='🎙 Voice record చేయి';toast('Voice error. Retry చేయి.');};
+  recognition.start();
+}
+
+// ────── FOUNDATION ──────
+function loadF(){var f=DB.f||{};var mp=[['why','f-why'],['con','f-con'],['edge','f-edge'],['vis','f-vis'],['cap','f-cap'],['day','f-day'],['wk','f-wk'],['maxt','f-maxt'],['ota','f-ota']];for(var i=0;i<mp.length;i++){var el=ge(mp[i][1]);if(el&&f[mp[i][0]])el.value=f[mp[i][0]];}}
+function saveF(){
+  if(!DB.f._firstDay)DB.f._firstDay=td();
+  DB.f.why=ge('f-why').value;DB.f.con=ge('f-con').value;DB.f.edge=ge('f-edge').value;DB.f.vis=ge('f-vis').value;DB.f.cap=ge('f-cap').value;DB.f.day=ge('f-day').value;DB.f.wk=ge('f-wk').value;DB.f.maxt=ge('f-maxt').value;DB.f.ota=ge('f-ota').value;
+  ls('mpvf',DB.f);toast('Foundation save అయింది ✦');
+}
+
+// ────── PRE-MARKET ──────
+function loadPMA(){var t=td(),found=null;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t){found=DB.pm[i];break;}}var al=ge('pm-alert'),als=ge('pm-alts');if(found){al.style.display='';if(als)als.textContent='Bias: '+found.bias+' | Focus: '+(found.foc||'');}else{al.style.display='none';}}
+function savePM(){
+  if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
+  var d={id:Date.now(),date:td(),sl:ge('sl1').value,st:ge('sl2').value,di:ge('sl3').value,emo:ge('pmev').value,bias:ge('pmbv').value,lev:ge('pm-lev').value,news:ge('pm-news').value,ml:ge('pm-ml').value,foc:ge('pm-foc').value};
+  var f=[];for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date!==d.date)f.push(DB.pm[i]);}f.push(d);DB.pm=f;ls('mpvpm',DB.pm);updHdr();loadPMA();toast('Ritual complete ✦');showFeedback('✦ Ritual complete. Now you are prepared to trade.','#4CAF82');
+}
+
+// ────── CHECKLIST ──────
+var CKS=['Setup chart లో clearly visible గా ఉందా?','Risk:Reward minimum 1:2 ఉందా?','Stop Loss entry కి ముందే define అయిందా?','Position size calculate చేశావా?','Emotional state లో లేవా?','Revenge trading చేయడం లేదుగా?','ఈరోజు overtrading లేదుగా?','Market condition నీ setup కి suit అవుతోందా?'];
+var clSt={};
+function buildCL(){var c=ge('cl-items');c.innerHTML='';for(var i=0;i<CKS.length;i++){(function(idx){var div=document.createElement('div');div.className='ck'+(clSt[idx]?' on':'');div.innerHTML='<div class="cb"><span class="ct2">✓</span></div><span class="cx">'+CKS[idx]+'</span><span class="cn">'+(idx+1)+'/8</span>';div.onclick=function(){clSt[idx]=!clSt[idx];div.classList.toggle('on',!!clSt[idx]);uCS();};c.appendChild(div);})(i);}uCS();}
+function uCS(){var sc=0;for(var k in clSt){if(clSt[k])sc++;}var sn=ge('clsn'),sm=ge('clsm'),sb=ge('clsb'),go=ge('clgo');sn.textContent=sc+'/8';if(sc===8){sn.style.color='#4CAF82';sm.style.color='#4CAF82';sb.style.background='rgba(76,175,130,0.08)';sb.style.borderColor='rgba(76,175,130,0.3)';sm.textContent='✦ GO — Conditions met. Discipline తో trade చేయి.';go.style.display='block';}else if(sc>=6){sn.style.color='#E0A84C';sm.style.color='#E0A84C';sb.style.background='rgba(224,168,76,0.08)';sb.style.borderColor='rgba(224,168,76,0.3)';sm.textContent='⚠ CAUTION — Failed checks review చేయి.';go.style.display='none';}else{sn.style.color='#CF6679';sm.style.color='#CF6679';sb.style.background='rgba(207,102,121,0.08)';sb.style.borderColor='rgba(207,102,121,0.3)';sm.textContent='✗ NO TRADE — నీ capital protect చేసుకో.';go.style.display='none';}}
+function logCL(){clSt={};buildCL();toast('Checklist log అయింది ✦');}
+
+// ────── TRADE LOG ──────
+function togTF(){if(checkKillSwitch()){toast('🛑 Daily loss limit hit. Trading blocked.');return;}var f=ge('trform');f.classList.toggle('open');if(f.classList.contains('open'))ge('tr-dt').value=td();}
+function addTrade(){
+  if(checkKillSwitch()){toast('🛑 Daily loss limit hit.');return;}
+  var inst=ge('tr-i').value;if(!inst){toast('Instrument enter చేయి!');return;}
+  var pln=ge('trpv').value==='true',pnl=Number(ge('tr-pn').value||0),mist=pln?'':ge('trmk').value;
+  var t={id:Date.now(),date:ge('tr-dt').value||td(),inst:inst,setup:ge('tr-s').value,dir:ge('tr-dir').value,en:ge('tr-en').value,ex:ge('tr-ex').value,qty:ge('tr-q').value,pnl:pnl,emo:ge('trev').value,pln:pln,mist:mist,voice:ge('tr-voice').value};
+  DB.tr.push(t);ls('mpvtr',DB.tr);
+  if(pln)showFeedback('✦ You executed like a professional.','#4CAF82');
+  else if(mist==='revenge')showFeedback('⚠ Revenge trade. Stop. Reset.','#CF6679');
+  else if(mist==='ignored_sl')showFeedback('🚨 SL ignored. Most dangerous habit.','#CF6679');
+  else showFeedback('⚡ Impulse logged. Awareness is step one.','#E0A84C');
+  if(checkOvertrading())ge('otAlert').classList.add('show');
+  var ids=['tr-i','tr-s','tr-en','tr-ex','tr-q','tr-pn','tr-voice'];for(var i=0;i<ids.length;i++)ge(ids[i]).value='';
+  ge('trmk').value='';var mfs=document.querySelectorAll('.mist-feedback');for(var i=0;i<mfs.length;i++)mfs[i].classList.remove('show');
+  rTr();updHdr();togTF();toast('Trade log అయింది ✦');
+}
+function delT(id){var n=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id!==id)n.push(DB.tr[i]);}DB.tr=n;ls('mpvtr',DB.tr);rTr();updHdr();toast('Trade removed');}
+function rTr(){
+  var T=DB.tr,tot=T.length,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0;
+  for(var i=0;i<T.length;i++){var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){pln++;if(pv>0)gainDisc+=pv;}else{lostMist+=Math.min(pv,0);}}
+  var wr=tot?Math.round(wins/tot*100):0;
+  ge('tltot').textContent=tot;var we=ge('tlwr');we.textContent=wr+'%';we.style.color=wr>=50?'#4CAF82':'#CF6679';
+  var pe=ge('tlpnl');pe.textContent=(tp>=0?'+':'-')+'₹'+fi(tp);pe.style.color=pc(tp);
+  var disc=calcDisciplineScore();var hd=ge('tldisc');hd.textContent=disc;hd.style.color=disc>=0?'#C9A84C':'#CF6679';
+  ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
+  var list=ge('tllist');list.innerHTML='';
+  if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs"><span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+t.dir.toUpperCase()+'</span><span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+t.date+' · '+(t.setup||'')+' · '+t.en+'→'+t.ex+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+}
+
+// ────── EOD ──────
+function saveEOD(){
+  var mandatory=mirrorMandatory();
+  if(mandatory){if(!ge('mir-proc').value){toast('Mirror Q1 answer select చేయి!');return;}if(!ge('mir-lie').value.trim()){toast('Mirror Q2 రాయి!');return;}if(!ge('mir-pro').value){toast('Mirror Q3 select చేయి!');return;}}
+  var d={id:Date.now(),date:ge('eod-dt').value||td(),tot:ge('eod-t').value,proc:Number(ge('sl4').value),out:Number(ge('sl5').value),best:ge('eod-b').value,worst:ge('eod-w').value,imp:ge('eod-im').value,notes:ge('eod-n').value,mood:ge('eod-m').value,mirProc:ge('mir-proc').value,mirLie:ge('mir-lie').value,mirPro:ge('mir-pro').value};
+  DB.eod.push(d);ls('mpveod',DB.eod);
+  // Auto streak check
+  autoCheckStreak(d.date);
+  var todayImp=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===d.date&&!DB.tr[i].pln)todayImp++;}
+  if(todayImp>=3)toast('⚠ 3+ impulse trades today. Streak checked.');
+  else toast('EOD Review save అయింది ✦');
+  rEC();ge('mir-proc').value='';ge('mir-lie').value='';ge('mir-pro').value='';
+}
+function autoCheckStreak(date){
+  var pmOk=false;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===date){pmOk=true;break;}}
+  var eodOk=true;
+  var todayImp=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===date&&!DB.tr[i].pln)todayImp++;}
+  if(!pmOk||todayImp>=3){DB.h.s=0;toast('❌ Streak break అయింది!');}
+  else{DB.h.s=(DB.h.s||0)+1;if(DB.h.s>(DB.h.b||0))DB.h.b=DB.h.s;toast('🔥 Streak: '+DB.h.s+' days!');}
+  ls('mpvh',DB.h);
+}
+function rEC(){var r=DB.eod.slice(-7),card=ge('eod-cc');if(!r.length){card.style.display='none';return;}card.style.display='';var el=ge('eodchart');el.innerHTML='';var mx=1;for(var i=0;i<r.length;i++){if((r[i].proc||0)>mx)mx=r[i].proc;}for(var i=0;i<r.length;i++){var e=r[i];var w=document.createElement('div');w.className='brc';var b=document.createElement('div');b.className='br';b.style.height=Math.max(((e.proc||0)/mx)*68,3)+'px';b.style.background=(e.proc||0)>=7?'#4CAF82':(e.proc||0)>=5?'#E0A84C':'#CF6679';var l=document.createElement('div');l.className='brl';l.textContent=(e.date||'').slice(5);w.appendChild(b);w.appendChild(l);el.appendChild(w);}}
+
+// ────── PSYCHOLOGY ──────
+function savePsyDay(){var d={id:Date.now(),date:ge('psy-dt').value||td(),emo:ge('psyev').value,clarity:ge('sl6').value,disc:ge('sl7').value,challenge:ge('psy-ch').value,handle:ge('psy-han').value,imp:ge('psy-imp').value};DB.psyday.push(d);ls('mpvpsyd',DB.psyday);ge('psy-ch').value='';ge('psy-han').value='';ge('psy-imp').value='';toast('Psychology record save ✦');}
+function rPs(){
+  var T=DB.tr,imp=[],ip=0;for(var i=0;i<T.length;i++){if(!T[i].pln){imp.push(T[i]);ip+=Number(T[i].pnl||0);}}
+  var fol=T.length?Math.round((T.length-imp.length)/T.length*100):0;
+  ge('psimp').textContent=imp.length;var ie=ge('psipnl');ie.textContent=(ip>=0?'+':'-')+'₹'+fi(ip);ie.style.color=pc(ip);ge('psfol').textContent=fol+'%';
+  var disc=calcDisciplineScore();var dsn=ge('discScore');dsn.textContent=disc;var col=disc>=5?'#4CAF82':disc>=0?'#C9A84C':'#CF6679';dsn.style.color=col;var fill=ge('discFill');var pct=Math.max(0,Math.min(100,50+(disc*5)));fill.style.width=pct+'%';fill.style.background=col;
+  var id=calcIdentity();var levels=['emotional','aware','consistent','professional'];for(var i=0;i<levels.length;i++){var el=ge('id-'+levels[i]);if(el)el.classList.toggle('active',levels[i]===id);}
+  var msgs={emotional:'Most trades emotion-driven. Focus: one planned trade per day.',aware:'Improvement happening. Impulse trades reducing.',consistent:'Strong discipline. Keep the process.',professional:'Elite execution. You are the process.'};var dd=ge('id-desc');if(dd)dd.textContent=msgs[id]||'';
+  var mist={};for(var i=0;i<imp.length;i++){var m=imp[i].mist;if(m)mist[m]=(mist[m]||0)+1;}var me=ge('psmis');me.innerHTML='';var mk=Object.keys(mist);if(!mk.length){me.innerHTML='<div class="nd"><div class="ndi">✨</div>ఇంకా impulse trades లేవు!</div>';}else{mk.sort(function(a,b){return mist[b]-mist[a];});for(var i=0;i<mk.length;i++){var k=mk[i],v=mist[k];var pct2=imp.length?Math.round(v/imp.length*100):0;me.innerHTML+='<div class="pr"><div class="pn">'+k.replace(/_/g,' ')+'</div><div class="pt"><div class="pf" style="width:'+pct2+'%"></div></div><div class="pc">'+v+'x</div></div>';}}
+  var emos={};for(var i=0;i<T.length;i++){var em=T[i].emo;if(em)emos[em]=(emos[em]||0)+1;}var ee=ge('psemo');ee.innerHTML='';var ek=Object.keys(emos);if(!ek.length){ee.innerHTML='<div style="color:#2A2A2A;font-size:12px">ఇంకా trades లేవు</div>';}else{for(var i=0;i<ek.length;i++){var k2=ek[i],v2=emos[k2];ee.innerHTML+='<div style="padding:5px 11px;border-radius:20px;background:#181820;border:1px solid rgba(201,168,76,0.1);font-size:12px;color:#9A8870">'+k2+' <span style="color:#C9A84C;font-weight:700">×'+v2+'</span></div>';}}
+}
+
+// ────── STRATEGY SECTION ──────
+function addRule(){var inp=ge('new-rule-input');var txt=inp.value.trim();if(!txt)return;if(!DB.rules)DB.rules=[];DB.rules.push({id:Date.now(),text:txt,breaks:0});ls('mpvrules',DB.rules);inp.value='';rStrategy();}
+function breakRule(id){var r=DB.rules.find(function(x){return x.id===id;});if(r){r.breaks=(r.breaks||0)+1;ls('mpvrules',DB.rules);rStrategy();toast('Rule break logged ⚠');}}
+function delRule(id){DB.rules=DB.rules.filter(function(x){return x.id!==id;});ls('mpvrules',DB.rules);rStrategy();}
+function rStrategy(){
+  var list=ge('rule-list');if(!list)return;list.innerHTML='';
+  if(!DB.rules||!DB.rules.length){list.innerHTML='<div class="nd"><div class="ndi">📐</div>Rules add చేయి.</div>';}
+  else{for(var i=0;i<DB.rules.length;i++){var r=DB.rules[i];var div=document.createElement('div');div.className='rule-item'+(r.breaks>0?' broken':'');div.innerHTML='<div class="rule-text">'+r.text+'</div><div class="rule-break-cnt">'+r.breaks+'x</div><button class="rule-break-btn" onclick="breakRule('+r.id+')">Break</button><button style="background:none;border:none;color:#333;cursor:pointer;font-size:11px;padding:2px 6px" onclick="delRule('+r.id+')">✕</button>';list.appendChild(div);}}
+  var analysis=ge('rule-analysis');analysis.innerHTML='';
+  if(!DB.rules||!DB.rules.length){analysis.innerHTML='<div class="nd"><div class="ndi">📐</div>Rules add చేయి — analysis automatically వస్తుంది.</div>';return;}
+  var sorted=DB.rules.slice().sort(function(a,b){return b.breaks-a.breaks;});
+  for(var i=0;i<sorted.length;i++){var r=sorted[i];var pct=sorted[0].breaks?Math.round(r.breaks/sorted[0].breaks*100):0;analysis.innerHTML+='<div class="pr"><div class="pn">'+r.text.slice(0,30)+'...</div><div class="pt"><div class="pf" style="width:'+pct+'%;background:'+(r.breaks>3?'#CF6679':'#E0A84C')+'"></div></div><div class="pc" style="color:'+(r.breaks>0?'#CF6679':'#4CAF82')+'">'+r.breaks+'x</div></div>';}
+  var strat=DB.strategy||{};if(ge('strat-setup')&&strat.setup)ge('strat-setup').value=strat.setup;if(ge('strat-working')&&strat.working)ge('strat-working').value=strat.working;if(ge('strat-fix')&&strat.fix)ge('strat-fix').value=strat.fix;
+}
+function saveStrategy(){DB.strategy={setup:ge('strat-setup').value,working:ge('strat-working').value,fix:ge('strat-fix').value};ls('mpvstrat',DB.strategy);toast('Strategy save అయింది ✦');}
+
+// ────── WEEKLY ──────
+function autoFillWeekly(){
+  var now=new Date();var dow=now.getDay();var start=new Date(now);start.setDate(now.getDate()-((dow+6)%7));start.setHours(0,0,0,0);
+  var wk=[],wimp=0,wlost=0;var mist={};
+  for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=start){wk.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);if(!DB.tr[i].pln){wimp++;wlost+=Math.min(pv,0);if(DB.tr[i].mist)mist[DB.tr[i].mist]=(mist[DB.tr[i].mist]||0)+1;}}}
+  var topMist='None';var topCnt=0;for(var k in mist){if(mist[k]>topCnt){topCnt=mist[k];topMist=k.replace(/_/g,' ');}}
+  var discPct=wk.length?Math.round((wk.length-wimp)/wk.length*100):0;
+  ge('wk-mis').value=topMist!=='None'?'Most repeated: '+topMist+' ('+topCnt+' times)':'No impulse trades this week!';
+  ge('wk-win').value=discPct+'% planned trades executed. '+(wk.length-wimp)+'/'+wk.length+' discipline trades.';
+  ge('wk-dt').value=td();
+  toast('Auto-filled from this week\'s data ✦');
+}
+function saveWeekly(){var d={id:Date.now(),date:ge('wk-dt').value||td(),mistake:ge('wk-mis').value,win:ge('wk-win').value,goal:ge('wk-goal').value};DB.weekly.push(d);ls('mpvwk',DB.weekly);toast('Weekly save అయింది ✦');}
+function rWk(){
+  var now=new Date();var dow=now.getDay();var start=new Date(now);start.setDate(now.getDate()-((dow+6)%7));start.setHours(0,0,0,0);
+  var wk=[],wp=0,ww=0,wimp=0,wlost=0;
+  for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=start){wk.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);wp+=pv;if(pv>0)ww++;if(!DB.tr[i].pln){wimp++;wlost+=Math.min(pv,0);}}}
+  var wwr=wk.length?Math.round(ww/wk.length*100):0;var discPct=wk.length?Math.round((wk.length-wimp)/wk.length*100):0;
+  var r5=DB.eod.slice(-5);var avg=0;for(var i=0;i<r5.length;i++)avg+=(r5[i].proc||0);if(r5.length)avg=avg/r5.length;
+  var we=ge('wkpnl');we.textContent=(wp>=0?'+':'-')+'₹'+fi(wp);we.style.color=pc(wp);ge('wktr').textContent=wk.length;ge('wkwr').textContent=wwr+'%';ge('wkpr').textContent=avg.toFixed(1);
+  var mist={};for(var i=0;i<wk.length;i++){if(!wk[i].pln&&wk[i].mist)mist[wk[i].mist]=(mist[wk[i].mist]||0)+1;}var topMist='None';var topCnt=0;for(var k in mist){if(mist[k]>topCnt){topCnt=mist[k];topMist=k.replace(/_/g,' ');}}
+  ge('wkTopMistake').textContent=topMist;ge('wkDisciplinePct').textContent=discPct+'%';ge('wkLostMistakes').textContent='-₹'+fi(Math.abs(wlost));
+  var id=calcIdentity();ge('wkIdentity').textContent=id.charAt(0).toUpperCase()+id.slice(1);
+  var el=ge('wkchart');el.innerHTML='';var last=DB.tr.slice(-10);if(!last.length){el.innerHTML='<div style="color:#2A2A2A;font-size:12px;margin:auto">ఇంకా trades లేవు</div>';return;}var mx=1;for(var i=0;i<last.length;i++){var av=Math.abs(Number(last[i].pnl||0));if(av>mx)mx=av;}for(var i=0;i<last.length;i++){var t=last[i];var pnl3=Number(t.pnl||0);var w=document.createElement('div');w.className='brc';var b=document.createElement('div');b.className='br';b.style.height=Math.max((Math.abs(pnl3)/mx)*68,3)+'px';b.style.background=pnl3>=0?'#4CAF82':'#CF6679';var l=document.createElement('div');l.className='brl';l.textContent=(t.inst||'?').slice(0,4);w.appendChild(b);w.appendChild(l);el.appendChild(w);}
+  var dt=ge('wk-dt');if(dt&&!dt.value)dt.value=td();
+}
+
+// ────── MONTHLY ──────
+function saveMonthly(){var d={id:Date.now(),month:ge('mn-dt').value,mistake:ge('mn-mis').value,strength:ge('mn-str').value,level:ge('mnlv').value,letter:ge('mn-let').value};DB.monthly.push(d);ls('mpvmn',DB.monthly);toast('Monthly save అయింది ✦');}
+function rMn(){var now=new Date();var mStart=new Date(now.getFullYear(),now.getMonth(),1);var mTr=[],mP=0,mW=0;for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=mStart){mTr.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);mP+=pv;if(pv>0)mW++;}}var mWr=mTr.length?Math.round(mW/mTr.length*100):0;var mEod=[];for(var i=0;i<DB.eod.length;i++){if(new Date(DB.eod[i].date)>=mStart)mEod.push(DB.eod[i]);}var mAvg=0;for(var i=0;i<mEod.length;i++)mAvg+=(mEod[i].proc||0);if(mEod.length)mAvg=mAvg/mEod.length;var we=ge('mnpnl');we.textContent=(mP>=0?'+':'-')+'₹'+fi(mP);we.style.color=pc(mP);ge('mntr').textContent=mTr.length;ge('mnwr').textContent=mWr+'%';ge('mnpr').textContent=mAvg.toFixed(1);var mn=ge('mn-dt');if(mn&&!mn.value){var y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');mn.value=y+'-'+mo;}}
+
+// ────── HABITS ──────
+var HD=[{id:'rules',l:'అన్ని rules follow చేశాను'},{id:'nr',l:'Revenge trade లేదు'},{id:'sl',l:'Stop loss respect చేశాను'},{id:'ck',l:'Pre-trade checklist చేశాను'},{id:'eod',l:'EOD review చేశాను'},{id:'no',l:'Overtrading లేదు'}];
+var DY=['Mon','Tue','Wed','Thu','Fri'];
+function rHb(){var H=DB.h||{g:{},s:0,b:0};ge('ststr').textContent=(H.s||0)+'d';ge('stbest').textContent=(H.b||0)+'d';var sc=0;var g=H.g||{};for(var k in g){if(g[k])sc++;}ge('stwk').textContent=sc+'/'+(HD.length*DY.length);var tb=ge('htb');tb.innerHTML='';for(var i=0;i<HD.length;i++){var h=HD[i];var tr2=document.createElement('tr');var td0=document.createElement('td');td0.className='hlbl';td0.textContent=h.l;tr2.appendChild(td0);for(var j=0;j<DY.length;j++){(function(hid,day){var key=hid+'_'+day;var on=!!(g[key]);var td2=document.createElement('td');var div=document.createElement('div');div.className='hck'+(on?' on':'');div.id='hck-'+key;div.innerHTML='<span class="hct">✓</span>';div.onclick=function(){togH(hid+'_'+day);};td2.appendChild(div);tr2.appendChild(td2);})(h.id,DY[j]);}tb.appendChild(tr2);}}
+function togH(key){if(!DB.h.g)DB.h.g={};DB.h.g[key]=!DB.h.g[key];var el=ge('hck-'+key);if(el)el.classList.toggle('on',!!DB.h.g[key]);var sc=0;for(var k in DB.h.g){if(DB.h.g[k])sc++;}ge('stwk').textContent=sc+'/'+(HD.length*DY.length);}
+function addSt(){toast('EOD save complete చేసినప్పుడు streak auto-update అవుతుంది.');}
+function rstSt(){DB.h.s=0;ge('ststr').textContent='0d';ls('mpvh',DB.h);toast('Streak reset');}
+function saveH(){ls('mpvh',DB.h);toast('Tracker save అయింది ✦');}
+
+// ────── HISTORY ──────
+function showHist(type,btn){var tabs=ge('hist-tabs').querySelectorAll('.sec-tab-btn');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('on');if(btn)btn.classList.add('on');var list=ge('hist-list');list.innerHTML='';var data=[];if(type==='premarket')data=DB.pm;else if(type==='eod')data=DB.eod;else if(type==='psyday')data=DB.psyday;else if(type==='weekly')data=DB.weekly;else if(type==='monthly')data=DB.monthly;if(!data||!data.length){list.innerHTML='<div class="nd"><div class="ndi">📂</div>ఇంకా records లేవు.</div>';return;}var sorted=data.slice().sort(function(a,b){var da=a.date||a.month||'';var db=b.date||b.month||'';return da<db?1:-1;});for(var i=0;i<sorted.length;i++){var item=sorted[i];var div=document.createElement('div');div.className='rec-item';var dateStr=item.date||item.month||'';var html='<div class="rec-date"><div class="rec-date-dot"></div>'+dateStr+'</div>';if(type==='premarket'){html+='<div class="rec-field"><div class="rec-label">Bias | Emotion</div><div class="rec-val">'+(item.bias||'')+' | '+(item.emo||'')+'</div></div><div class="rec-field"><div class="rec-label">Focus</div><div class="rec-val">'+(item.foc||'-')+'</div></div>';}else if(type==='eod'){html+='<div class="rec-field"><div class="rec-label">Process / Outcome / Mood</div><div class="rec-val">'+(item.proc||0)+'/10 | '+(item.out||0)+'/10 | '+(item.mood||'')+'</div></div><div class="rec-field"><div class="rec-label">Best / Worst</div><div class="rec-val">'+(item.best||'-')+' / '+(item.worst||'-')+'</div></div>';}else if(type==='psyday'){html+='<div class="rec-field"><div class="rec-label">Emotion | Clarity</div><div class="rec-val">'+(item.emo||'')+' | '+(item.clarity||0)+'/10</div></div><div class="rec-field"><div class="rec-label">Challenge</div><div class="rec-val">'+(item.challenge||'-')+'</div></div>';}else if(type==='weekly'){html+='<div class="rec-field"><div class="rec-label">Biggest Mistake</div><div class="rec-val">'+(item.mistake||'-')+'</div></div><div class="rec-field"><div class="rec-label">Discipline WIN</div><div class="rec-val">'+(item.win||'-')+'</div></div>';}else if(type==='monthly'){html+='<div class="rec-field"><div class="rec-label">Trader Level</div><div class="rec-val">'+(item.level||'')+'</div></div><div class="rec-field"><div class="rec-label">Mistakes</div><div class="rec-val">'+(item.mistake||'-')+'</div></div>';}(function(it,tp){var delBtn=document.createElement('button');delBtn.className='rec-del';delBtn.textContent='delete';delBtn.onclick=function(){delRec(it.id,tp);};div.innerHTML=html;div.appendChild(delBtn);})(item,type);list.appendChild(div);}}
+function delRec(id,type){var map={premarket:'pm',eod:'eod',psyday:'psyday',weekly:'weekly',monthly:'monthly'};var key=map[type];if(!key)return;var arr=DB[key];var n=[];for(var i=0;i<arr.length;i++){if(arr[i].id!==id)n.push(arr[i]);}DB[key]=n;var lsmap={pm:'mpvpm',eod:'mpveod',psyday:'mpvpsyd',weekly:'mpvwk',monthly:'mpvmn'};ls(lsmap[type],DB[key]);var activeBtn=ge('hist-tabs').querySelector('.on');showHist(type,activeBtn);toast('Record delete అయింది');}
+
+// ────── EXPORT / SHARE ──────
+function exportPDF(){
+  ge('sharePanel').classList.remove('open');
+  // Generate a proper printable report in new window
+  var T=DB.tr,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0;
+  for(var i=0;i<T.length;i++){var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){pln++;if(pv>0)gainDisc+=pv;}else lostMist+=Math.min(pv,0);}
+  var wr=T.length?Math.round(wins/T.length*100):0;
+  var disc=calcDisciplineScore();var id=calcIdentity();
+  // Last 7 EOD
+  var eodRows=DB.eod.slice(-7).map(function(e){return '<tr><td>'+e.date+'</td><td>'+e.proc+'/10</td><td>'+e.out+'/10</td><td>'+e.mood+'</td><td>'+(e.best||'—')+'</td><td>'+(e.worst||'—')+'</td></tr>';}).join('');
+  // All trades
+  var trRows=T.slice(-20).map(function(t){return '<tr><td>'+t.date+'</td><td>'+t.inst+'</td><td>'+(t.pln?'✓ Planned':'⚡ Impulse')+'</td><td style="color:'+(Number(t.pnl)>=0?'green':'red')+';">'+(Number(t.pnl)>=0?'+':'')+t.pnl+'</td><td>'+t.emo+'</td><td>'+(t.mist?t.mist.replace(/_/g,' '):'—')+'</td></tr>';}).join('');
+  var f=DB.f||{};
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MPV Journal Report - '+td()+'</title>';
+  html+='<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">';
+  html+='<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Noto Sans Telugu",Arial,sans-serif;background:#fff;color:#111;padding:30px;max-width:800px;margin:0 auto;font-size:13px}h1{color:#7A6530;letter-spacing:2px;font-size:20px;margin-bottom:4px}h2{color:#7A6530;font-size:13px;margin:20px 0 8px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #e0c880;padding-bottom:4px}.meta{font-size:11px;color:#888;margin-bottom:20px}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.stat{background:#fdf9f0;border:1px solid #e0c880;border-radius:6px;padding:10px;text-align:center}.stat-v{font-size:20px;font-weight:700;color:#7A6530}.stat-l{font-size:9px;color:#888;margin-top:2px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}th{background:#fdf5e0;color:#7A6530;padding:7px 8px;text-align:left;font-size:11px;letter-spacing:0.5px}td{padding:7px 8px;border-bottom:1px solid #f0e8c8}.sec-box{background:#fdf9f0;border:1px solid #e0c880;border-radius:6px;padding:14px;margin-bottom:16px}.sec-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}.sec-val{font-size:13px;color:#333;line-height:1.7}.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#fdf5e0;color:#7A6530;border:1px solid #e0c880}@media print{body{padding:15px}button{display:none}}</style>';
+  html+='</head><body>';
+  html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">';
+  html+='<div><h1>MIND POWER VAULTT</h1><div class="meta">Trading Journal Report &nbsp;·&nbsp; Generated: '+td()+' &nbsp;·&nbsp; Identity: <span class="badge">'+id.toUpperCase()+'</span></div></div>';
+  html+='<button onclick="window.print()" style="background:#7A6530;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">🖨 Print / Save PDF</button></div>';
+  html+='<div class="stat-grid"><div class="stat"><div class="stat-v">'+(tp>=0?'+':'-')+'₹'+fi(tp)+'</div><div class="stat-l">Total P&L</div></div><div class="stat"><div class="stat-v">'+T.length+'</div><div class="stat-l">Total Trades</div></div><div class="stat"><div class="stat-v">'+wr+'%</div><div class="stat-l">Win Rate</div></div><div class="stat"><div class="stat-v" style="color:'+(disc>=0?'#2a7a2a':'#7a2a2a')+'">'+disc+'</div><div class="stat-l">Disc. Score</div></div></div>';
+  html+='<div class="stat-grid"><div class="stat"><div class="stat-v" style="color:#e05050">-₹'+fi(Math.abs(lostMist))+'</div><div class="stat-l">Lost to Mistakes</div></div><div class="stat"><div class="stat-v" style="color:#2a7a2a">+₹'+fi(gainDisc)+'</div><div class="stat-l">Earned (Discipline)</div></div><div class="stat"><div class="stat-v">'+pln+'</div><div class="stat-l">Planned Trades</div></div><div class="stat"><div class="stat-v">'+T.length-pln+'</div><div class="stat-l">Impulse Trades</div></div></div>';
+  if(f.why){html+='<h2>Foundation</h2><div class="sec-box"><div class="sec-label">My Why</div><div class="sec-val">'+f.why+'</div></div>';}
+  if(T.length){html+='<h2>Last 20 Trades</h2><table><tr><th>Date</th><th>Instrument</th><th>Type</th><th>P&L</th><th>Emotion</th><th>Mistake</th></tr>'+trRows+'</table>';}
+  if(DB.eod.length){html+='<h2>Last 7 Days — EOD Review</h2><table><tr><th>Date</th><th>Process</th><th>Outcome</th><th>Mood</th><th>Best Decision</th><th>Worst Decision</th></tr>'+eodRows+'</table>';}
+  if(DB.rules&&DB.rules.length){html+='<h2>Strategy Rules — Break Count</h2><table><tr><th>Rule</th><th>Break Count</th></tr>';for(var i=0;i<DB.rules.length;i++){html+='<tr><td>'+DB.rules[i].text+'</td><td style="color:'+(DB.rules[i].breaks>0?'red':'green')+'">'+DB.rules[i].breaks+'x</td></tr>';}html+='</table>';}
+  html+='<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center">Mind Power Vaultt — Trading Psychology Journal &nbsp;·&nbsp; Confidential</div>';
+  html+='</body></html>';
+  var w=window.open('','_blank');w.document.write(html);w.document.close();
+  toast('Report new window లో open అయింది — Print / Save PDF ✦');
+}
+function exportWeeklyReport(){
+  var now=new Date();var dow=now.getDay();var start=new Date(now);start.setDate(now.getDate()-((dow+6)%7));start.setHours(0,0,0,0);
+  var wk=[],wp=0,ww=0,wimp=0,wlost=0;var mist={};
+  for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=start){var t=DB.tr[i];wk.push(t);var pv=Number(t.pnl||0);wp+=pv;if(pv>0)ww++;if(!t.pln){wimp++;wlost+=Math.min(pv,0);if(t.mist)mist[t.mist]=(mist[t.mist]||0)+1;}}}
+  var wwr=wk.length?Math.round(ww/wk.length*100):0;var disc=wk.length?Math.round((wk.length-wimp)/wk.length*100):0;
+  var id=calcIdentity();var topMist='None';for(var k in mist){if(!topMist||mist[k]>mist[topMist])topMist=k;}
+  var tradeRows=wk.map(function(t){return '<tr><td>'+t.date+'</td><td>'+t.inst+'</td><td>'+(t.pln?'Planned':'Impulse')+'</td><td style="color:'+(Number(t.pnl)>=0?'green':'red')+'">'+(Number(t.pnl)>=0?'+':'')+t.pnl+'</td><td>'+t.emo+'</td><td>'+(t.mist||'—')+'</td></tr>';}).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MPV Weekly Report</title><style>body{font-family:Arial,sans-serif;background:#0a0a0a;color:#F0E6D3;padding:30px;max-width:800px;margin:0 auto}h1{color:#C9A84C;letter-spacing:2px;margin-bottom:4px}h2{color:#C9A84C;font-size:14px;margin:20px 0 10px}table{width:100%;border-collapse:collapse;margin-bottom:20px}th{background:#1a1a1a;color:#C9A84C;padding:8px;text-align:left;font-size:12px}td{padding:8px;border-bottom:1px solid #1a1a1a;font-size:12px}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.stat{background:#181820;border:1px solid #2a2a2a;border-radius:8px;padding:12px;text-align:center}.stat-v{font-size:22px;font-weight:700;color:#C9A84C}.stat-l{font-size:10px;color:#555;margin-top:2px}.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(201,168,76,0.15);color:#C9A84C;border:1px solid rgba(201,168,76,0.3)}@media print{body{background:#fff;color:#000}th{background:#f0f0f0;color:#333}.stat{background:#f9f9f9}.stat-v{color:#7A6530}.badge{color:#7A6530}h1,h2{color:#7A6530}}</style></head><body>';
+  html+='<h1>MIND POWER VAULTT</h1><div style="font-size:12px;color:#555;margin-bottom:20px">Weekly Report · '+td()+' · Identity: <span class="badge">'+id.toUpperCase()+'</span></div>';
+  html+='<div class="stat-grid"><div class="stat"><div class="stat-v">'+(wp>=0?'+':'-')+'₹'+fi(wp)+'</div><div class="stat-l">Week P&L</div></div><div class="stat"><div class="stat-v">'+wk.length+'</div><div class="stat-l">Trades</div></div><div class="stat"><div class="stat-v">'+wwr+'%</div><div class="stat-l">Win Rate</div></div><div class="stat"><div class="stat-v">'+disc+'%</div><div class="stat-l">Discipline</div></div></div>';
+  html+='<h2>Trade Summary</h2><table><tr><th>Date</th><th>Instrument</th><th>Type</th><th>P&L</th><th>Emotion</th><th>Mistake</th></tr>'+tradeRows+'</table>';
+  html+='<h2>Psychology Summary</h2><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Impulse Trades</td><td>'+wimp+'</td></tr><tr><td>₹ Lost to Mistakes</td><td>-₹'+fi(Math.abs(wlost))+'</td></tr><tr><td>Most Repeated Mistake</td><td>'+topMist.replace(/_/g,' ')+'</td></div></td></tr><tr><td>Identity Level</td><td>'+id+'</td></tr></table>';
+  html+='</body></html>';
+  var blob=new Blob([html],{type:'text/html'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MPV_Weekly_Report_'+td()+'.html';a.click();ge('sharePanel').classList.remove('open');toast('Weekly Report downloaded ✦');
+}
+function exportJSON(){
+  var data={exported:td(),version:'v3',db:DB};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MPV_Backup_'+td()+'.json';a.click();ge('sharePanel').classList.remove('open');toast('Data backup downloaded ✦');
+}
+function importJSON(){ge('importFile').click();}
+function doImport(input){
+  var file=input.files[0];if(!file)return;var reader=new FileReader();
+  reader.onload=function(e){try{var data=JSON.parse(e.target.result);if(data.db){DB=data.db;var keys=[['mpvf','f'],['mpvpm','pm'],['mpvtr','tr'],['mpveod','eod'],['mpvh','h'],['mpvpsyd','psyday'],['mpvmir','mirror'],['mpvwk','weekly'],['mpvmn','monthly'],['mpvrules','rules'],['mpvstrat','strategy']];for(var i=0;i<keys.length;i++){if(DB[keys[i][1]])ls(keys[i][0],DB[keys[i][1]]);}loadF();rTr();rPs();rWk();rMn();rHb();rEC();updHdr();ge('sharePanel').classList.remove('open');toast('Data restored successfully ✦');}else{alert('Invalid backup file.');}}catch(err){alert('Import failed. Valid backup file use చేయి.');}};
+  reader.readAsText(file);
+}
+
+// ────── START APP ──────
+function startApp(){
+  ge('app').style.display='flex';
+  loadDB();loadF();loadPMA();buildCL();rTr();rEC();rPs();rWk();rMn();rHb();rStrategy();updHdr();
+  var e1=ge('eod-dt');if(e1)e1.value=td();var e2=ge('tr-dt');if(e2)e2.value=td();var e3=ge('psy-dt');if(e3)e3.value=td();
+  pMood('green');updateMirrorUI();
+  if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
+}
+
+// ────── INIT ──────
+window.onload=function(){
+  setTimeout(function(){
+    ge('loader').style.display='none';
+    var onboarded=lg('mpvOnboarded');
+    var hasPin=lg('mpvPin');
+    if(!onboarded){ge('onboarding').classList.remove('hidden');return;}
+    if(hasPin){ge('pinScreen').classList.remove('hidden');ge('pinInput').focus();return;}
+    startApp();
+  },700);
 };
 
-export default function Journal({ lang, onBack }) {
-  const [auth, setAuth] = useState(false);
-  const [sessionChecking, setSessionChecking] = useState(true);
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const [tab, setTab] = useState("foundation");
-  const [db, setDb] = useState(() => loadDB() || { ...EMPTY_DB });
-  const [blocked] = useState(!isDomainAllowed());
+        } catch(e) {
+            console.error("Journal script error:", e);
+        }
+    }, [accessGranted]);
 
-  // Anti-clone on mount
-  useEffect(() => { applyAntiClone(); }, []);
+    if (!accessGranted) return <div style={{color:'white', padding: 50}}>Verifying access...</div>;
 
-  // JWT session verification on mount
-  useEffect(() => {
-    if (blocked) { setSessionChecking(false); return; }
-    const token = localStorage.getItem(SESSION_KEY);
-    if (!token) { setSessionChecking(false); return; }
-    api.verifySession(token).then(res => {
-      if (res.valid) { setAuth(true); }
-      else { localStorage.removeItem(SESSION_KEY); } // expired
-    }).catch(() => {
-      localStorage.removeItem(SESSION_KEY);
-    }).finally(() => setSessionChecking(false));
-  }, [blocked]);
-
-  if (blocked) return (
-    <div style={{ minHeight: "100vh", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ textAlign: "center", color: "#C9A84C" }}>
-        <p style={{ fontSize: 40, marginBottom: 16 }}>⛔</p>
-        <p style={{ fontSize: 18, marginBottom: 8 }}>Unauthorized Access</p>
-        <p style={{ fontSize: 13, color: "#666" }}>This journal is only accessible at mindpowervaultt.com</p>
-      </div>
-    </div>
-  );
-
-  // Show loading while verifying existing session
-  if (sessionChecking) return (
-    <div style={{ minHeight: "100vh", background: G.black, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <p style={{ color: G.gold, fontFamily: sans, letterSpacing: 3, fontSize: 13 }}>Verifying session...</p>
-    </div>
-  );
-
-  const upd = (fn) => {
-    setDb(prev => {
-      const next = fn({ ...prev });
-      saveDB(next);
-      return next;
-    });
-  };
-
-  const handleAccess = async () => {
-    if (!code.trim()) { setErr("Access code enter చేయి"); return; }
-    setLoading(true);
-    try {
-      const deviceId = getDeviceFingerprint();
-      const res = await api.validateCode(code.trim().toUpperCase(), 'access');
-      if (res.valid && res.token) {
-        // Store JWT token (not the raw code)
-        localStorage.setItem(SESSION_KEY, res.token);
-        localStorage.setItem("mpv_device", deviceId);
-        setAuth(true); setErr("");
-      } else {
-        const msg = res.error || "Invalid code. మీ mentor నుంచి valid code తీసుకో.";
-        const left = res.attemptsLeft !== undefined ? ` (${res.attemptsLeft} attempts left)` : '';
-        setErr(msg + left);
-      }
-    } catch { setErr("Connection error. Try again."); }
-    setLoading(false);
-  };
-
-  const logout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    setAuth(false); setCode(""); setErr("");
-  };
-
-  if (!auth) return (
-    <div style={{ minHeight: "100vh", background: G.black, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
-        <p style={{ fontFamily: serif, fontSize: 28, color: G.gold, letterSpacing: 3, marginBottom: 8 }}>MIND POWER VAULTT</p>
-        <p style={{ fontSize: 12, color: G.soft, letterSpacing: 2, marginBottom: 48 }}>TRADING JOURNAL</p>
-        <div style={{ background: "#0D0D16", border: `1px solid ${G.goldDim}`, borderRadius: 12, padding: 32 }}>
-          <p style={{ color: G.mid, fontSize: 14, marginBottom: 24, lineHeight: 1.8 }}>
-            ఈ Journal మీ Mentor నుండి access code తీసుకున్న students మాత్రమే use చేయగలరు.
-          </p>
-          <input
-            value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setErr(""); }}
-            onKeyDown={e => e.key === 'Enter' && handleAccess()}
-            placeholder="ACCESS CODE"
-            style={{ width: "100%", background: "#181822", border: `1px solid ${err ? "rgba(200,80,80,0.5)" : G.goldDim}`, borderRadius: 8, padding: "16px", color: G.gold, fontSize: 20, textAlign: "center", letterSpacing: 6, marginBottom: 16, outline: "none", fontFamily: sans }}
-          />
-          {err && <p style={{ color: "rgba(200,80,80,0.8)", fontSize: 12, marginBottom: 16 }}>{err}</p>}
-          <button
-            onClick={handleAccess} disabled={loading}
-            style={{ width: "100%", background: loading ? G.goldDim : `linear-gradient(135deg,${G.gold},#9A7020)`, color: G.black, border: "none", borderRadius: 6, padding: 16, fontWeight: 700, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", letterSpacing: 2 }}
-          >{loading ? "Verifying..." : "ENTER JOURNAL →"}</button>
-          <button onClick={onBack} style={{ background: "transparent", border: "none", color: G.soft, fontSize: 12, marginTop: 20, cursor: "pointer", textDecoration: "underline" }}>← Back to site</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const tabs = [
-    { id: "foundation", icon: "🏛", label: "Foundation" },
-    { id: "premarket", icon: "🌅", label: "Pre-Market" },
-    { id: "tradelog", icon: "📋", label: "Trade Log" },
-    { id: "eod", icon: "🌙", label: "EOD Review" },
-    { id: "psych", icon: "🧠", label: "Psychology" },
-    { id: "weekly", icon: "📅", label: "Weekly" },
-  ];
-
-  const td = () => new Date().toISOString().split('T')[0];
-  const Card = ({ children, style }) => (
-    <div style={{ background: "#0D0D16", border: `1px solid ${G.goldDim}`, borderRadius: 10, padding: 20, marginBottom: 16, ...style }}>{children}</div>
-  );
-  const Label = ({ children }) => (
-    <p style={{ fontSize: 10, color: G.gold, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, fontFamily: sans }}>{children}</p>
-  );
-  const Input = ({ value, onChange, placeholder, multiline, type = "text" }) => {
-    const s = { width: "100%", background: "#181822", border: `1px solid ${G.goldDim}`, borderRadius: 6, padding: "10px 12px", color: G.smoke, fontFamily: sans, fontSize: 14, outline: "none", marginBottom: 4 };
-    return multiline
-      ? <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...s, resize: "vertical" }} />
-      : <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={s} />;
-  };
-  const Btn = ({ onClick, children, danger }) => (
-    <button onClick={onClick} style={{ padding: "10px 20px", borderRadius: 6, border: "none", background: danger ? "rgba(200,80,80,0.15)" : `linear-gradient(135deg,${G.gold},#9A7020)`, color: danger ? "#CF6679" : G.black, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: sans }}>{children}</button>
-  );
-
-  const FoundationTab = () => (
-    <div>
-      <p style={{ color: G.soft, fontSize: 12, marginBottom: 20, fontStyle: "italic" }}>ఒక్కసారి fill చేయి — ఇది నీ anchor.</p>
-      <Card>
-        <Label>నా Why — Trading ఎందుకు చేస్తున్నావు?</Label>
-        <Input multiline value={db.f.why} onChange={v => upd(d => ({ ...d, f: { ...d.f, why: v } }))} placeholder="నా family కోసం..." />
-        <Label>Trading Constitution — NEVER చేయని rules</Label>
-        <Input multiline value={db.f.con} onChange={v => upd(d => ({ ...d, f: { ...d.f, con: v } }))} placeholder="1. Stoploss hit తర్వాత re-enter అవ్వను..." />
-        <Label>1 సంవత్సరం Vision</Label>
-        <Input multiline value={db.f.vis} onChange={v => upd(d => ({ ...d, f: { ...d.f, vis: v } }))} placeholder="1 సంవత్సరంలో నేను ఎక్కడ ఉండాలి..." />
-      </Card>
-      <Card>
-        <p style={{ color: G.gold, fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Capital Framework</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {[["cap","Total Capital (₹)"],["day","Max Daily Loss (₹)"],["maxt","Max Trades/Day"],["ota","Overtrading Alert After"]].map(([k, label]) => (
-            <div key={k}><Label>{label}</Label><Input type="number" value={db.f[k]} onChange={v => upd(d => ({ ...d, f: { ...d.f, [k]: v } }))} placeholder="0" /></div>
-          ))}
-        </div>
-      </Card>
-      <div style={{ textAlign: "right" }}><Btn onClick={() => { saveDB(db); alert("Foundation saved ✦"); }}>Foundation Save చేయి ✦</Btn></div>
-    </div>
-  );
-
-  const PreMarketTab = () => {
-    const [form, setForm] = useState({ date: td(), bias: "bullish", levels: "", focus: "" });
-    const today = db.pm.find(p => p.date === td());
     return (
-      <div>
-        {today && <div style={{ background: "rgba(76,175,130,0.08)", border: "1px solid rgba(76,175,130,0.3)", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
-          <p style={{ color: "#4CAF82", fontSize: 13, fontWeight: 700 }}>✦ ఈరోజు ritual complete — Bias: {today.bias}</p>
-        </div>}
-        <Card>
-          <Label>Market Bias</Label>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            {["bullish","bearish","neutral","sideways"].map(b => (
-              <button key={b} onClick={() => setForm(f => ({ ...f, bias: b }))} style={{ padding: "8px 16px", borderRadius: 6, border: `1px solid ${form.bias === b ? G.gold : G.goldDim}`, background: form.bias === b ? "rgba(201,168,76,0.12)" : "transparent", color: form.bias === b ? G.smoke : G.soft, cursor: "pointer", fontFamily: sans, fontSize: 12 }}>{b}</button>
-            ))}
+        <div 
+            ref={containerRef}
+            dangerouslySetInnerHTML={{ __html: `
+
+<div id="loader"><div class="ring"></div><div class="lb">MIND POWER VAULTT</div><div class="ls">Securing your journal...</div></div>
+
+<!-- PIN SCREEN -->
+<div id="pinScreen" class="hidden">
+  <div class="pin-logo">MIND POWER VAULTT</div>
+  <div class="pin-title" id="pinTitle">Enter your PIN</div>
+  <div class="pin-sub" id="pinSub">మీ journal secure గా ఉంది. PIN enter చేయండి.</div>
+  <input class="pin-input" type="password" id="pinInput" maxlength="6" placeholder="••••" inputmode="numeric" onkeyup="if(event.key==='Enter')checkPin()">
+  <button class="pin-btn" onclick="checkPin()">Unlock Journal</button>
+  <div class="pin-err" id="pinErr"></div>
+  <span class="pin-set-link" onclick="showPinSet()">PIN మార్చాలా? Click here</span>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding" class="hidden">
+  <div class="ob-logo">MIND POWER VAULTT</div>
+  <div class="ob-dots" id="obDots">
+    <div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+  </div>
+  <!-- Step 1 -->
+  <div class="ob-step on" id="ob1">
+    <div class="ob-num">Step 1 of 3</div>
+    <div class="ob-icon">🏛</div>
+    <div class="ob-title">నీ Trading Foundation Set చేయి</div>
+    <div class="ob-body">నీ Why, Constitution మరియు Capital limits define చేయడం — ఇది ఒక్కసారే. ఇది నీ anchor. ఈ step లేకుండా journal meaningless.</div>
+    <div class="ob-input-wrap">
+      <div class="ob-label">నీ #1 Trading Why</div>
+      <textarea id="ob-why" placeholder="నా family కోసం... నన్ను నేను నిరూపించుకోవడం కోసం..." rows="2" style="border-radius:8px;padding:10px;background:#181820;border:1px solid rgba(201,168,76,0.2);color:#F0E6D3;width:100%;font-family:inherit;font-size:13px;resize:none;outline:none"></textarea>
+    </div>
+    <div class="ob-input-wrap">
+      <div class="ob-label">Max Daily Loss (₹) — ఇది hit అయితే trading stop</div>
+      <input type="number" id="ob-day" placeholder="5000" style="border-radius:8px;padding:10px;background:#181820;border:1px solid rgba(201,168,76,0.2);color:#F0E6D3;width:100%;font-family:inherit;font-size:14px;outline:none">
+    </div>
+    <button class="ob-next" onclick="obNext(2)">Next →</button>
+    <div class="ob-skip" onclick="skipOnboarding()">Skip setup (not recommended)</div>
+  </div>
+  <!-- Step 2 -->
+  <div class="ob-step" id="ob2">
+    <div class="ob-num">Step 2 of 3</div>
+    <div class="ob-icon">🔐</div>
+    <div class="ob-title">Journal PIN Set చేయి</div>
+    <div class="ob-body">నీ journal private గా ఉండాలి. 4-6 digit PIN set చేయి. ఇది forget చేస్తే data reset అవుతుంది — note చేసుకో.</div>
+    <div class="ob-input-wrap">
+      <div class="ob-label">New PIN (4-6 digits)</div>
+      <input type="password" id="ob-pin1" maxlength="6" placeholder="••••" inputmode="numeric" style="border-radius:8px;padding:12px;background:#181820;border:1px solid rgba(201,168,76,0.2);color:#F0E6D3;width:100%;font-family:inherit;font-size:20px;letter-spacing:6px;text-align:center;outline:none">
+    </div>
+    <div class="ob-input-wrap">
+      <div class="ob-label">Confirm PIN</div>
+      <input type="password" id="ob-pin2" maxlength="6" placeholder="••••" inputmode="numeric" style="border-radius:8px;padding:12px;background:#181820;border:1px solid rgba(201,168,76,0.2);color:#F0E6D3;width:100%;font-family:inherit;font-size:20px;letter-spacing:6px;text-align:center;outline:none">
+    </div>
+    <div class="pin-err" id="ob-pin-err"></div>
+    <button class="ob-next" onclick="obNext(3)">Next →</button>
+    <div class="ob-skip" onclick="obNext(3,true)">PIN skip చేయి (not recommended)</div>
+  </div>
+  <!-- Step 3 -->
+  <div class="ob-step" id="ob3">
+    <div class="ob-num">Step 3 of 3</div>
+    <div class="ob-icon">✅</div>
+    <div class="ob-title">Ready. ఇప్పుడు మొదలు పెట్టు.</div>
+    <div class="ob-body">Day 1 కి ఒక్క section మాత్రమే: <strong style="color:#C9A84C">Pre-Market Ritual</strong>.<br><br>ఇది complete చేయి. Trade Log automatically unlock అవుతుంది.<br><br>Checklist → Trade → EOD → ఇదే నీ daily loop.</div>
+    <button class="ob-next" onclick="finishOnboarding()">Journal తెరువు →</button>
+  </div>
+</div>
+
+<!-- FEEDBACK POPUP -->
+<div class="feedback-popup" id="feedbackPopup"></div>
+
+<!-- LOCK OVERLAY -->
+<div class="lock-overlay hidden" id="lockOverlay">
+  <div class="lock-icon">🔒</div>
+  <div class="lock-title" id="lockTitle">YOU ARE NOT PREPARED</div>
+  <div class="lock-msg" id="lockMsg">Pre-Market ritual complete చేయకుండా trade చేయడం — process కాదు.</div>
+  <button class="lock-btn" id="lockBtn" onclick="ge('lockOverlay').classList.add('hidden');goToSection('premarket')">Ritual Complete చేయి →</button>
+</div>
+
+<!-- SHARE PANEL -->
+<div id="sharePanel">
+  <div class="share-card">
+    <div class="share-title">📤 Export / Share</div>
+    <div class="share-btn" onclick="exportPDF()">
+      <div class="share-btn-icon">📄</div>
+      <div><div class="share-btn-title">Print / Save as PDF</div><div class="share-btn-sub">Current page print చేయి — PDF గా save అవుతుంది</div></div>
+    </div>
+    <div class="share-btn" onclick="exportWeeklyReport()">
+      <div class="share-btn-icon">📊</div>
+      <div><div class="share-btn-title">Weekly Report — Mentor కి</div><div class="share-btn-sub">ఈ వారం complete report download చేయి</div></div>
+    </div>
+    <div class="share-btn" onclick="exportJSON()">
+      <div class="share-btn-icon">💾</div>
+      <div><div class="share-btn-title">Full Data Backup (JSON)</div><div class="share-btn-sub">అన్ని data backup — safe గా store చేయి</div></div>
+    </div>
+    <div class="share-btn" onclick="importJSON()">
+      <div class="share-btn-icon">📥</div>
+      <div><div class="share-btn-title">Data Restore</div><div class="share-btn-sub">Backup నుండి data restore చేయి</div></div>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="doImport(this)">
+    <div class="share-close" onclick="ge('sharePanel').classList.remove('open')">Close</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="mobile-banner">💻 Best experience: Laptop/Desktop browser లో open చేయండి. Mobile version coming soon.</div>
+  <div class="hdr">
+    <div class="hdr-l">
+      <button class="mbtn" onclick="toggleSB()">☰</button>
+      <div><div class="bn">MIND POWER VAULTT</div><div class="bt">Trading Journal</div></div>
+    </div>
+    <div class="hdr-r">
+      <div class="hstat"><div class="hstat-l">P&L</div><div class="hstat-v" id="hpnl">₹0</div></div>
+      <div class="hsep"></div>
+      <div class="hstat"><div class="hstat-l">Trades</div><div class="hstat-v" id="htrades">0</div></div>
+      <div class="hsep"></div>
+      <div class="hstat"><div class="hstat-l">Disc.</div><div class="hstat-v" id="hdisc" style="color:#C9A84C">0</div></div>
+      <div class="hsep"></div>
+      <div class="identity-badge id-emotional" id="hidentity">EMOTIONAL</div>
+      <div class="rbadge rp" id="hritual">⚡ Pending</div>
+      <button class="btn bgh bsm" onclick="ge('sharePanel').classList.add('open')" style="padding:5px 10px;font-size:11px">📤 Share</button>
+      <button class="btn bgh bsm" onclick="showPinSet()" style="padding:5px 10px;font-size:11px">🔐</button>
+    </div>
+  </div>
+  <div class="body">
+    <div class="sb" id="sb">
+      <button class="nb on" onclick="gS('foundation',this)"><span class="ni">🏛</span><span class="nl">Foundation</span></button>
+      <button class="nb" onclick="gS('premarket',this)"><span class="ni">🌅</span><span class="nl">Pre-Market</span></button>
+      <button class="nb" onclick="gS('checklist',this)"><span class="ni">✅</span><span class="nl">Checklist</span></button>
+      <button class="nb" onclick="gS('tradelog',this)"><span class="ni">📋</span><span class="nl">Trade Log</span></button>
+      <button class="nb" onclick="gS('eod',this)"><span class="ni">🌙</span><span class="nl">EOD Review</span></button>
+      <button class="nb" onclick="gS('psych',this)"><span class="ni">🧠</span><span class="nl">Psychology</span></button>
+      <button class="nb" onclick="gS('strategy',this)"><span class="ni">📐</span><span class="nl">Strategy</span></button>
+      <button class="nb" onclick="gS('weekly',this)"><span class="ni">📅</span><span class="nl">Weekly</span></button>
+      <button class="nb" onclick="gS('monthly',this)"><span class="ni">📆</span><span class="nl">Monthly</span></button>
+      <button class="nb" onclick="gS('habits',this)"><span class="ni">🔥</span><span class="nl">Streak</span></button>
+      <button class="nb" onclick="gS('history',this)"><span class="ni">📂</span><span class="nl">Records</span></button>
+      <div class="stip" id="stip">
+        <span>MPV Principle</span>
+        <p>"Market నిన్ను కాదు hurt చేసేది — నీ mind నిన్ను hurt చేస్తోంది."</p>
+      </div>
+    </div>
+    <div class="main">
+      <div class="wrap">
+
+        <!-- FOUNDATION -->
+        <div class="sec on" id="sec-foundation">
+          <div class="sh"><div class="st"><span style="font-size:19px">🏛</span><h2>The Foundation</h2></div><div class="ss">ఒక్కసారి fill చేయి — ఇది నీ anchor.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="card">
+            <div class="fld"><div class="lbl">నా Why</div><textarea id="f-why" placeholder="నా family కోసం..."></textarea></div>
+            <div class="fld"><div class="lbl">నా Trading Constitution — NEVER చేయని rules</div><textarea id="f-con" placeholder="1. Stoploss hit అయిన తర్వాత మళ్ళీ enter అవ్వను&#10;2. Revenge trade చేయను"></textarea></div>
+            <div class="fld"><div class="lbl">నా Edge — Setup మరియు Strategy</div><textarea id="f-edge" placeholder="Liquidity zones + Volume confirmation..."></textarea></div>
+            <div class="fld"><div class="lbl">1 సంవత్సరం Vision</div><textarea id="f-vis" placeholder="1 సంవత్సరంలో నేను ఎక్కడ ఉండాలి..."></textarea></div>
           </div>
-          <Label>Key Levels</Label>
-          <Input value={form.levels} onChange={v => setForm(f => ({ ...f, levels: v }))} placeholder="Support: 24200, Resistance: 24800" />
-          <Label>ఈరోజు Focus</Label>
-          <Input value={form.focus} onChange={v => setForm(f => ({ ...f, focus: v }))} placeholder="Stoploss discipline / Overtrading లేదు..." />
-        </Card>
-        <div style={{ textAlign: "right" }}>
-          <Btn onClick={() => { upd(d => ({ ...d, pm: [...d.pm.filter(p => p.date !== form.date), { ...form, id: Date.now() }] })); alert("Pre-Market Ritual complete ✦"); }}>Ritual Complete ✦</Btn>
-        </div>
-      </div>
-    );
-  };
-
-  const TradeLogTab = () => {
-    const [form, setForm] = useState({ date: td(), inst: "", pnl: "", planned: true, note: "" });
-    const [showForm, setShowForm] = useState(false);
-    const totalPnL = db.tr.reduce((a, t) => a + Number(t.pnl || 0), 0);
-    const wins = db.tr.filter(t => Number(t.pnl) > 0).length;
-    const wr = db.tr.length ? Math.round(wins / db.tr.length * 100) : 0;
-    return (
-      <div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
-          {[["Total P&L",(totalPnL>=0?"+":"")+"₹"+Math.abs(totalPnL).toLocaleString('en-IN'),totalPnL>=0?"#4CAF82":"#CF6679"],["Win Rate",wr+"%","#C9A84C"],["Trades",db.tr.length,G.smoke]].map(([l,v,c]) => (
-            <div key={l} style={{ background:"#0D0D16",border:`1px solid ${G.goldDim}`,borderRadius:8,padding:14,textAlign:"center" }}>
-              <p style={{ fontSize:20,fontWeight:900,color:c }}>{v}</p>
-              <p style={{ fontSize:9,color:G.soft,letterSpacing:1,textTransform:"uppercase" }}>{l}</p>
+          <div class="card">
+            <div class="ct">Capital Framework &amp; Risk Limits</div>
+            <div class="g3">
+              <div class="fld"><div class="lbl">Total Capital (₹)</div><input type="number" id="f-cap" placeholder="500000"/></div>
+              <div class="fld"><div class="lbl">Max Daily Loss (₹)</div><input type="number" id="f-day" placeholder="5000"/></div>
+              <div class="fld"><div class="lbl">Max Weekly Loss (₹)</div><input type="number" id="f-wk" placeholder="15000"/></div>
             </div>
-          ))}
-        </div>
-        <div style={{ textAlign:"right",marginBottom:12 }}>
-          <button onClick={() => setShowForm(s => !s)} style={{ padding:"8px 16px",background:"transparent",border:`1px solid ${G.goldDim}`,color:G.gold,borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:sans }}>+ Trade Add చేయి</button>
-        </div>
-        {showForm && (
-          <Card>
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10 }}>
-              <div><Label>Instrument</Label><Input value={form.inst} onChange={v => setForm(f => ({ ...f, inst:v }))} placeholder="NIFTY" /></div>
-              <div><Label>P&L (₹)</Label><Input type="number" value={form.pnl} onChange={v => setForm(f => ({ ...f, pnl:v }))} placeholder="3750" /></div>
-            </div>
-            <div style={{ display:"flex",gap:8,marginBottom:12 }}>
-              {["Planned","Impulse"].map((t,i) => (
-                <button key={t} onClick={() => setForm(f => ({ ...f, planned:i===0 }))} style={{ flex:1,padding:"8px",border:`1px solid ${(i===0)===form.planned?G.gold:G.goldDim}`,background:(i===0)===form.planned?"rgba(201,168,76,0.1)":"transparent",color:(i===0)===form.planned?G.smoke:G.soft,borderRadius:6,cursor:"pointer",fontFamily:sans,fontSize:12 }}>{t}</button>
-              ))}
-            </div>
-            <Label>Note</Label>
-            <Input multiline value={form.note} onChange={v => setForm(f => ({ ...f, note:v }))} placeholder="Why did you take this trade?" />
-            <div style={{ textAlign:"right" }}>
-              <Btn onClick={() => { if(!form.inst){alert("Instrument enter చేయి!");return;} upd(d=>({...d,tr:[...d.tr,{...form,id:Date.now()}]})); setForm({date:td(),inst:"",pnl:"",planned:true,note:""}); setShowForm(false); }}>Trade Log చేయి ✦</Btn>
-            </div>
-          </Card>
-        )}
-        {db.tr.length===0 && <p style={{ textAlign:"center",color:G.soft,padding:40 }}>ఇంకా trades లేవు.</p>}
-        {[...db.tr].reverse().map(t => (
-          <div key={t.id} style={{ background:"#0D0D16",border:`1px solid ${Number(t.pnl)>=0?"rgba(76,175,130,0.3)":"rgba(200,80,80,0.3)"}`,borderRadius:8,padding:14,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-            <div>
-              <p style={{ color:G.smoke,fontWeight:700,marginBottom:4 }}>{t.inst} · <span style={{ color:t.planned?"#4CAF82":"#E0A84C",fontSize:12 }}>{t.planned?"Planned":"Impulse"}</span></p>
-              <p style={{ color:G.soft,fontSize:12 }}>{t.date} · {t.note}</p>
-            </div>
-            <div style={{ textAlign:"right" }}>
-              <p style={{ fontSize:20,fontWeight:900,color:Number(t.pnl)>=0?"#4CAF82":"#CF6679" }}>{Number(t.pnl)>=0?"+":""}₹{Math.abs(Number(t.pnl)).toLocaleString('en-IN')}</p>
-              <button onClick={() => upd(d=>({...d,tr:d.tr.filter(x=>x.id!==t.id)}))} style={{ background:"none",border:"none",color:G.soft,fontSize:11,cursor:"pointer" }}>remove</button>
+            <div class="g2">
+              <div class="fld"><div class="lbl">Max Trades Per Day</div><input type="number" id="f-maxt" placeholder="5"/></div>
+              <div class="fld"><div class="lbl">Overtrading Alert After</div><input type="number" id="f-ota" placeholder="3"/></div>
             </div>
           </div>
-        ))}
-      </div>
-    );
-  };
+          <div class="rgt"><button class="btn bpri" onclick="saveF()">Foundation Save చేయి ✦</button></div>
+        </div>
 
-  const EODTab = () => {
-    const [form, setForm] = useState({ date: td(), best:"", worst:"", improve:"", mood:"green", proc:7 });
-    return (
-      <div>
-        <Card>
-          <Label>Best Decision Today</Label>
-          <Input value={form.best} onChange={v => setForm(f=>({...f,best:v}))} placeholder="Stop loss respect చేశాను..." />
-          <Label>Worst Decision Today</Label>
-          <Input value={form.worst} onChange={v => setForm(f=>({...f,worst:v}))} placeholder="FOMO లో entry తీసుకున్నాను..." />
-          <Label>రేపు Improve చేయేది</Label>
-          <Input value={form.improve} onChange={v => setForm(f=>({...f,improve:v}))} placeholder="..." />
-          <Label>Process Score: {form.proc}/10</Label>
-          <input type="range" min={1} max={10} value={form.proc} onChange={e=>setForm(f=>({...f,proc:Number(e.target.value)}))} style={{ width:"100%",marginBottom:12 }} />
-          <Label>Mood Seal</Label>
-          <div style={{ display:"flex",gap:8 }}>
-            {[["green","🟢 Calm"],["yellow","🟡 Mixed"],["red","🔴 Emotional"]].map(([v,l]) => (
-              <button key={v} onClick={() => setForm(f=>({...f,mood:v}))} style={{ flex:1,padding:"10px 4px",border:`1px solid ${form.mood===v?G.gold:G.goldDim}`,background:form.mood===v?"rgba(201,168,76,0.1)":"transparent",color:G.smoke,borderRadius:6,cursor:"pointer",fontFamily:sans,fontSize:12 }}>{l}</button>
-            ))}
+        <!-- PRE-MARKET -->
+        <div class="sec" id="sec-premarket">
+          <div class="sh"><div class="st"><span style="font-size:19px">🌅</span><h2>Pre-Market Ritual</h2></div><div class="ss">Market open కాకముందు — ఈ 10 నిమిషాలు నీ రోజు decide చేస్తాయి.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div id="pm-alert" style="display:none" class="alt"><div class="altt">✦ ఈరోజు ritual పూర్తయింది</div><div class="alts" id="pm-alts"></div></div>
+          <div class="card">
+            <div class="ct">Mental State Check</div>
+            <div class="slr"><span class="sll">నిద్ర నాణ్యత: <b id="slv1">7</b>/10</span><input type="range" min="1" max="10" value="7" id="sl1" oninput="uSl(this,'slv1','sln1','#C9A84C')"><span class="sln" id="sln1" style="color:#C9A84C">7</span></div>
+            <div class="slr"><span class="sll">Stress level: <b id="slv2">5</b>/10</span><input type="range" min="1" max="10" value="5" id="sl2" oninput="uSl(this,'slv2','sln2','#CF6679')"><span class="sln" id="sln2" style="color:#CF6679">5</span></div>
+            <div class="slr"><span class="sll">Distractions (1=లేవు): <b id="slv3">3</b>/10</span><input type="range" min="1" max="10" value="3" id="sl3" oninput="uSl(this,'slv3','sln3','#E0A84C')"><span class="sln" id="sln3" style="color:#E0A84C">3</span></div>
+            <div class="fld" style="margin-top:8px"><div class="lbl">Pre-Market Emotion</div>
+              <div class="ew" id="pmew">
+                <button class="eb on" style="color:#4CAF82;border-color:#4CAF82" onclick="pEmo('pmew','pmev',this,'calm')">😌 Calm</button>
+                <button class="eb" onclick="pEmo('pmew','pmev',this,'anxious')">😰 Anxious</button>
+                <button class="eb" onclick="pEmo('pmew','pmev',this,'confident')">💪 Confident</button>
+                <button class="eb" onclick="pEmo('pmew','pmev',this,'fearful')">😨 Fearful</button>
+                <button class="eb" onclick="pEmo('pmew','pmev',this,'neutral')">😐 Neutral</button>
+              </div>
+              <input type="hidden" id="pmev" value="calm">
+            </div>
           </div>
-        </Card>
-        <div style={{ textAlign:"right" }}><Btn onClick={() => { upd(d=>({...d,eod:[...d.eod,{...form,id:Date.now()}]})); alert("EOD Review saved ✦"); }}>EOD Save చేయి ✦</Btn></div>
-      </div>
-    );
-  };
-
-  const PsychTab = () => {
-    const imp = db.tr.filter(t => !t.planned);
-    const pct = db.tr.length ? Math.round((db.tr.length-imp.length)/db.tr.length*100) : 0;
-    const identity = pct>=85?"Professional 🏆":pct>=70?"Consistent 🎯":pct>=50?"Aware 👁":"Emotional 😤";
-    const iColor = pct>=85?"#4CAF82":pct>=70?"#5B8FD4":pct>=50?"#E0A84C":"#CF6679";
-    return (
-      <div>
-        <Card style={{ textAlign:"center" }}>
-          <p style={{ fontSize:11,color:G.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:8 }}>Trader Identity</p>
-          <p style={{ fontSize:32,fontWeight:900,color:iColor,marginBottom:4 }}>{identity}</p>
-          <p style={{ fontSize:13,color:G.soft }}>{pct}% planned trades</p>
-        </Card>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16 }}>
-          {[["Impulse Trades",imp.length,"#CF6679"],["Discipline %",pct+"%","#C9A84C"],["Total Trades",db.tr.length,G.smoke]].map(([l,v,c]) => (
-            <div key={l} style={{ background:"#0D0D16",border:`1px solid ${G.goldDim}`,borderRadius:8,padding:14,textAlign:"center" }}>
-              <p style={{ fontSize:22,fontWeight:900,color:c }}>{v}</p>
-              <p style={{ fontSize:9,color:G.soft,letterSpacing:1,textTransform:"uppercase" }}>{l}</p>
+          <div class="card">
+            <div class="ct">Market Preparation</div>
+            <div class="fld"><div class="lbl">Market Bias ఈరోజు</div>
+              <div class="bw" id="pmbw">
+                <button class="bb on" onclick="pBias('pmbw','pmbv',this,'bullish')">📈 Bullish</button>
+                <button class="bb" onclick="pBias('pmbw','pmbv',this,'bearish')">📉 Bearish</button>
+                <button class="bb" onclick="pBias('pmbw','pmbv',this,'neutral')">Neutral</button>
+                <button class="bb" onclick="pBias('pmbw','pmbv',this,'sideways')">Sideways</button>
+              </div>
+              <input type="hidden" id="pmbv" value="bullish">
             </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const WeeklyTab = () => {
-    const now = new Date();
-    const start = new Date(now); start.setDate(now.getDate()-((now.getDay()+6)%7)); start.setHours(0,0,0,0);
-    const wTr = db.tr.filter(t => new Date(t.date)>=start);
-    const wPnL = wTr.reduce((a,t)=>a+Number(t.pnl||0),0);
-    return (
-      <div>
-        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16 }}>
-          {[["Week P&L",(wPnL>=0?"+":"")+"₹"+Math.abs(wPnL).toLocaleString('en-IN'),wPnL>=0?"#4CAF82":"#CF6679"],["This Week Trades",wTr.length,"#C9A84C"]].map(([l,v,c]) => (
-            <div key={l} style={{ background:"#0D0D16",border:`1px solid ${G.goldDim}`,borderRadius:8,padding:14,textAlign:"center" }}>
-              <p style={{ fontSize:24,fontWeight:900,color:c }}>{v}</p>
-              <p style={{ fontSize:10,color:G.soft,textTransform:"uppercase" }}>{l}</p>
+            <div class="fld"><div class="lbl">Key Levels</div><textarea id="pm-lev" placeholder="Nifty Support: 24200, Resistance: 24800..." rows="2"></textarea></div>
+            <div class="g2">
+              <div class="fld"><div class="lbl">News / Events</div><input id="pm-news" placeholder="FOMC, RBI, Results..."/></div>
+              <div class="fld"><div class="lbl">Max Loss ఈరోజు (₹)</div><input type="number" id="pm-ml" placeholder="5000"/></div>
             </div>
-          ))}
+            <div class="fld"><div class="lbl">ఈరోజు Focus</div><input id="pm-foc" placeholder="Stoploss discipline / Overtrading లేదు..."/></div>
+          </div>
+          <div class="rgt"><button class="btn bpri" onclick="savePM()">Ritual పూర్తి చేయి ✦</button></div>
         </div>
-        <Card>
-          <p style={{ color:G.gold,fontWeight:700,marginBottom:14 }}>Weekly Reflection</p>
-          <Label>ఈ వారం biggest mistake?</Label>
-          <Input multiline placeholder="నీ reflection..." onChange={()=>{}} value="" />
-          <Label>ఈ వారం biggest WIN?</Label>
-          <Input multiline placeholder="నీ reflection..." onChange={()=>{}} value="" />
-          <div style={{ textAlign:"right",marginTop:8 }}><Btn onClick={()=>alert("Weekly saved ✦")}>Weekly Save ✦</Btn></div>
-        </Card>
-      </div>
-    );
-  };
 
-  const tabContent = { foundation:<FoundationTab/>, premarket:<PreMarketTab/>, tradelog:<TradeLogTab/>, eod:<EODTab/>, psych:<PsychTab/>, weekly:<WeeklyTab/> };
+        <!-- CHECKLIST -->
+        <div class="sec" id="sec-checklist">
+          <div class="sh"><div class="st"><span style="font-size:19px">✅</span><h2>Pre-Trade Checklist</h2></div><div class="ss">8/8 కాకపోతే నో trade — ఇది నీ protection.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="card"><div class="g2">
+            <div class="fld"><div class="lbl">Instrument</div><input id="cl-i" placeholder="NIFTY / BANKNIFTY..."/></div>
+            <div class="fld"><div class="lbl">Setup Name</div><input id="cl-s" placeholder="OB Retest / Liquidity..."/></div>
+          </div></div>
+          <div class="card"><div id="cl-items"></div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div><div class="scbox" id="clsb"><div class="scn" id="clsn" style="color:#CF6679">0/8</div><div class="scm" id="clsm" style="color:#2A2A2A">పైన checks select చేయి</div></div></div>
+          <div class="rgt" id="clgo" style="display:none"><button class="btn bpri" onclick="logCL()">Log చేసి Trade కి వెళ్ళు ✦</button></div>
+        </div>
 
-  return (
-    <div style={{ minHeight:"100vh", background:G.black, color:G.smoke, fontFamily:sans }}>
-      <div style={{ background:"#0C0C11", borderBottom:`1px solid ${G.goldDim}`, padding:"12px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div>
-          <p style={{ fontFamily:serif, color:G.gold, fontSize:16, letterSpacing:3, fontWeight:700 }}>MIND POWER VAULTT</p>
-          <p style={{ fontSize:9, color:G.soft, letterSpacing:2 }}>TRADING JOURNAL</p>
+        <!-- TRADE LOG -->
+        <div class="sec" id="sec-tradelog">
+          <div class="sh"><div class="st"><span style="font-size:19px">📋</span><h2>Trade Log</h2></div><div class="ss">ప్రతి trade record చేయి — winner అయినా loser అయినా.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="kill-banner" id="killBanner"><div style="font-size:24px">🛑</div><div><div class="kill-title">DAILY LOSS LIMIT HIT — TRADING BLOCKED</div><div class="kill-msg">Maximum daily loss reach చేశారు. Screen మూసి వెళ్ళు. రేపు fresh start.</div></div></div>
+          <div class="ot-alert" id="otAlert"><div style="font-weight:700;color:#E0A84C;font-size:13px">⚠️ You are no longer trading. You are reacting.</div><div style="font-size:11px;color:#9A8870;margin-top:3px">Overtrading threshold reach అయింది. ఇప్పుడు stop చేయడం professional decision.</div></div>
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sb2"><div class="sv" id="tltot">0</div><div class="sl2">Trades</div></div>
+            <div class="sb2"><div class="sv" id="tlwr" style="color:#4CAF82">0%</div><div class="sl2">Win Rate</div></div>
+            <div class="sb2"><div class="sv" id="tlpnl">₹0</div><div class="sl2">P&L</div></div>
+            <div class="sb2"><div class="sv" id="tldisc" style="color:#C9A84C">0</div><div class="sl2">Disc.</div></div>
+          </div>
+          <div class="pvp-grid">
+            <div class="pvp-card pvp-loss"><div class="pvp-amt" id="pvpLoss" style="color:#CF6679">₹0</div><div class="pvp-lbl">Lost to Mistakes</div></div>
+            <div class="pvp-card pvp-gain"><div class="pvp-amt" id="pvpGain" style="color:#4CAF82">₹0</div><div class="pvp-lbl">Earned via Discipline</div></div>
+          </div>
+          <div style="text-align:right;margin-bottom:10px"><button class="btn bgh bsm" onclick="togTF()">+ Trade Add చేయి</button></div>
+          <div class="fp" id="trform">
+            <div class="ct">New Trade Entry</div>
+            <div class="g3">
+              <div class="fld"><div class="lbl">Date</div><input type="date" id="tr-dt"/></div>
+              <div class="fld"><div class="lbl">Instrument</div><input id="tr-i" placeholder="NIFTY..."/></div>
+              <div class="fld"><div class="lbl">Setup</div><input id="tr-s" placeholder="OB Retest..."/></div>
+            </div>
+            <div class="g3">
+              <div class="fld"><div class="lbl">Direction</div><select id="tr-dir"><option value="long">Long (Buy)</option><option value="short">Short (Sell)</option></select></div>
+              <div class="fld"><div class="lbl">Entry Price</div><input type="number" id="tr-en" placeholder="24450"/></div>
+              <div class="fld"><div class="lbl">Exit Price</div><input type="number" id="tr-ex" placeholder="24600"/></div>
+            </div>
+            <div class="g2">
+              <div class="fld"><div class="lbl">Qty / Lots</div><input type="number" id="tr-q" placeholder="1"/></div>
+              <div class="fld"><div class="lbl">Realized P&L (₹)</div><input type="number" id="tr-pn" placeholder="3750"/></div>
+            </div>
+            <!-- VOICE NOTE -->
+            <div class="fld">
+              <div class="lbl">Quick Voice Note (Emotion / Reason)</div>
+              <div class="voice-btn" id="voiceBtn" onclick="toggleVoice()"><div class="voice-indicator"></div><span id="voiceTxt">🎙 Voice record చేయి</span></div>
+              <textarea id="tr-voice" placeholder="Voice note లేదా manually type చేయి..." rows="2"></textarea>
+            </div>
+            <div class="fld"><div class="lbl">Emotion</div>
+              <div class="ew" id="trew">
+                <button class="eb on" style="color:#4CAF82;border-color:#4CAF82" onclick="pEmo('trew','trev',this,'calm')">😌 Calm</button>
+                <button class="eb" onclick="pEmo('trew','trev',this,'anxious')">😰 Anxious</button>
+                <button class="eb" onclick="pEmo('trew','trev',this,'fearful')">😨 Fearful</button>
+                <button class="eb" onclick="pEmo('trew','trev',this,'greedy')">🤑 Greedy</button>
+                <button class="eb" onclick="pEmo('trew','trev',this,'angry')">😤 Angry</button>
+                <button class="eb" onclick="pEmo('trew','trev',this,'neutral')">😐 Neutral</button>
+              </div>
+              <input type="hidden" id="trev" value="calm">
+            </div>
+            <div class="fld"><div class="lbl">Trade Type</div>
+              <div class="bw" id="trtw">
+                <button class="bb on" onclick="pBias('trtw','trpv',this,'true');sMis(false)">✓ Planned Trade</button>
+                <button class="bb" onclick="pBias('trtw','trpv',this,'false');sMis(true)">⚡ Impulse Trade</button>
+              </div>
+              <input type="hidden" id="trpv" value="true">
+            </div>
+            <div class="fld" id="trmw" style="display:none">
+              <div class="lbl">Impulse Trigger</div>
+              <select id="trmk" onchange="showMistFeedback(this.value)">
+                <option value="">Select...</option>
+                <option value="revenge">Revenge Trade</option>
+                <option value="fomo">FOMO Entry</option>
+                <option value="early_exit">Early Exit (Fear)</option>
+                <option value="late_exit">Late Exit (Hope)</option>
+                <option value="overtrade">Overtraded</option>
+                <option value="size_up">Size Impulsively Increase చేశాను</option>
+                <option value="ignored_sl">Stop Loss ignore చేశాను</option>
+              </select>
+              <div class="mist-feedback mf-revenge" id="mf-revenge"><div class="mf-title" style="color:#CF6679">🔴 Revenge Trade Detected</div><div class="mf-body">ఈ trade market తో కాదు — నీ ego తో. Exit చేసు. Reset చేసుకో. Market ఎక్కడికీ వెళ్ళదు.</div></div>
+              <div class="mist-feedback mf-fomo" id="mf-fomo"><div class="mf-title" style="color:#E0A84C">⚠️ FOMO Entry Detected</div><div class="mf-body">Move miss అయింది అనిపిస్తోంది. Setup లేకుండా enter అవ్వడం — next setup వస్తుంది.</div></div>
+              <div class="mist-feedback mf-sl" id="mf-ignored_sl"><div class="mf-title" style="color:#CF6679">🚨 Stop Loss Ignored</div><div class="mf-body">ఇది most dangerous behavior. ఇప్పుడే exit చేయి.</div></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:9px">
+              <button class="btn bgh bsm" onclick="togTF()">Cancel</button>
+              <button class="btn bpri bsm" onclick="addTrade()">Trade Log చేయి ✦</button>
+            </div>
+          </div>
+          <div id="tllist"></div>
         </div>
-        <div style={{ display:"flex", gap:10 }}>
-          <button onClick={onBack} style={{ background:"transparent", border:`1px solid ${G.goldDim}`, color:G.soft, padding:"6px 12px", borderRadius:4, cursor:"pointer", fontSize:11, fontFamily:sans }}>← Back</button>
-          <button onClick={logout} style={{ background:"transparent", border:"1px solid rgba(200,80,80,0.3)", color:"#CF6679", padding:"6px 12px", borderRadius:4, cursor:"pointer", fontSize:11, fontFamily:sans }}>Logout</button>
+
+        <!-- EOD -->
+        <div class="sec" id="sec-eod">
+          <div class="sh"><div class="st"><span style="font-size:19px">🌙</span><h2>End of Day Review</h2></div><div class="ss">Market close తర్వాత ఈ 10 నిమిషాలు — రేపటి clarity ఇప్పుడే.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="card">
+            <div class="g2"><div class="fld"><div class="lbl">Date</div><input type="date" id="eod-dt"/></div><div class="fld"><div class="lbl">Total Trades</div><input type="number" id="eod-t" placeholder="3"/></div></div>
+            <div class="ib">Process Score = నీ discipline. Outcome Score = Market result. Process మీదే focus.</div>
+            <div class="slr"><span class="sll">Process Score: <b id="slv4">5</b>/10</span><input type="range" min="1" max="10" value="5" id="sl4" oninput="uSl(this,'slv4','sln4','#5B8FD4')"><span class="sln" id="sln4" style="color:#5B8FD4">5</span></div>
+            <div class="slr"><span class="sll">Outcome Score: <b id="slv5">5</b>/10</span><input type="range" min="1" max="10" value="5" id="sl5" oninput="uSl(this,'slv5','sln5','#4CAF82')"><span class="sln" id="sln5" style="color:#4CAF82">5</span></div>
+            <div class="fld"><div class="lbl">Best Decision</div><input id="eod-b" placeholder="Stop loss respect చేశాను..."/></div>
+            <div class="fld"><div class="lbl">Worst Decision</div><input id="eod-w" placeholder="FOMO లో entry తీసుకున్నాను"/></div>
+            <div class="fld"><div class="lbl">రేపు Improve</div><input id="eod-im" placeholder="..."/></div>
+            <div class="fld"><div class="lbl">Notes</div><textarea id="eod-n" placeholder="Market observations..."></textarea></div>
+          </div>
+          <!-- MIRROR — optional first 7 days, mandatory after -->
+          <div class="card cg">
+            <div class="ct">🪞 Daily Mirror</div>
+            <div class="ib" id="mirrorNote">ఈ questions కి honest గా జవాబు చెప్పు.</div>
+            <div class="fld"><div class="lbl">01. ఈరోజు process follow చేశానా?</div><select id="mir-proc"><option value="">Select...</option><option value="yes_fully">Yes, fully followed</option><option value="mostly">Mostly</option><option value="partially">Partially</option><option value="no">No, broke rules</option></select></div>
+            <div class="fld"><div class="lbl">02. ఎక్కడ నేను నన్నే deceive చేసుకున్నాను?</div><textarea id="mir-lie" placeholder="Honest గా చెప్పు..." rows="2"></textarea></div>
+            <div class="fld"><div class="lbl">03. ఈరోజు professional లా behave చేశానా?</div><select id="mir-pro"><option value="">Select...</option><option value="yes">Yes</option><option value="mostly">Mostly</option><option value="no">No — emotional decisions</option></select></div>
+          </div>
+          <div class="card">
+            <div class="lbl" style="margin-bottom:9px">Mood Seal</div>
+            <div class="mw">
+              <button class="mb on" id="mg" onclick="pMood('green')" style="color:#4CAF82;border-color:#4CAF82"><span class="me">🟢</span>Calm</button>
+              <button class="mb" id="my" onclick="pMood('yellow')"><span class="me">🟡</span>Mixed</button>
+              <button class="mb" id="mr" onclick="pMood('red')"><span class="me">🔴</span>Emotional</button>
+            </div>
+            <input type="hidden" id="eod-m" value="green">
+          </div>
+          <div class="rgt"><button class="btn bpri" onclick="saveEOD()">EOD Review Save చేయి ✦</button></div>
+          <div id="eod-cc" style="display:none" class="card"><div class="ct">Process Score Trend</div><div class="bc" id="eodchart"></div><div class="clbl">Last 7 Days</div></div>
         </div>
-      </div>
-      <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${G.goldDim}`, background:"#0A0A10" }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding:"12px 18px", background:"none", border:"none", borderBottom:`2px solid ${tab===t.id?G.gold:"transparent"}`, color:tab===t.id?G.gold:G.soft, cursor:"pointer", whiteSpace:"nowrap", fontSize:12, fontFamily:sans, display:"flex", alignItems:"center", gap:6 }}>
-            <span>{t.icon}</span><span>{t.label}</span>
-          </button>
-        ))}
-      </div>
-      <div style={{ maxWidth:700, margin:"0 auto", padding:"28px 16px" }}>
-        <h2 style={{ fontFamily:serif, color:G.smoke, fontSize:22, marginBottom:20 }}>
-          {tabs.find(t=>t.id===tab)?.icon} {tabs.find(t=>t.id===tab)?.label}
-        </h2>
-        {tabContent[tab]}
+
+        <!-- PSYCHOLOGY -->
+        <div class="sec" id="sec-psych">
+          <div class="sh"><div class="st"><span style="font-size:19px">🧠</span><h2>Psychology Tracker</h2></div><div class="ss">Market నిన్ను కాదు hurt చేసేది — నీ mind నిన్ను hurt చేస్తోంది.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="id-meter">
+            <div class="id-meter-title">🧬 Trader Identity Level</div>
+            <div class="id-levels">
+              <div class="id-level active" id="id-emotional"><span class="id-level-icon">😤</span>Emotional</div>
+              <div class="id-level" id="id-aware"><span class="id-level-icon">👁</span>Aware</div>
+              <div class="id-level" id="id-consistent"><span class="id-level-icon">🎯</span>Consistent</div>
+              <div class="id-level" id="id-professional"><span class="id-level-icon">🏆</span>Professional</div>
+            </div>
+            <div style="font-size:11px;color:#9A8870;margin-top:8px;text-align:center" id="id-desc">Planned % మరియు Process score based గా automatically calculate అవుతుంది.</div>
+          </div>
+          <div class="disc-score-box">
+            <div class="disc-score-num" id="discScore" style="color:#C9A84C">0</div>
+            <div class="disc-score-lbl">Discipline Score</div>
+            <div class="disc-score-bar"><div class="disc-score-fill" id="discFill" style="width:50%;background:#C9A84C"></div></div>
+            <div style="font-size:10px;color:#555;margin-top:4px">+1 planned · -2 impulse · -3 SL violation</div>
+          </div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="sb2"><div class="sv" id="psimp" style="color:#CF6679">0</div><div class="sl2">Impulse</div></div>
+            <div class="sb2"><div class="sv" id="psipnl">₹0</div><div class="sl2">Impulse P&L</div></div>
+            <div class="sb2"><div class="sv" id="psfol" style="color:#5B8FD4">0%</div><div class="sl2">Plan Follow</div></div>
+          </div>
+          <div class="card">
+            <div class="ct">📅 Daily Psychology Record</div>
+            <div class="g2">
+              <div class="fld"><div class="lbl">Date</div><input type="date" id="psy-dt"/></div>
+              <div class="fld"><div class="lbl">Emotion Today</div>
+                <div class="ew" id="psyew">
+                  <button class="eb on" style="color:#4CAF82;border-color:#4CAF82" onclick="pEmo('psyew','psyev',this,'calm')">😌 Calm</button>
+                  <button class="eb" onclick="pEmo('psyew','psyev',this,'anxious')">😰 Anxious</button>
+                  <button class="eb" onclick="pEmo('psyew','psyev',this,'fearful')">😨 Fearful</button>
+                  <button class="eb" onclick="pEmo('psyew','psyev',this,'greedy')">🤑 Greedy</button>
+                  <button class="eb" onclick="pEmo('psyew','psyev',this,'angry')">😤 Angry</button>
+                  <button class="eb" onclick="pEmo('psyew','psyev',this,'neutral')">😐 Neutral</button>
+                </div>
+                <input type="hidden" id="psyev" value="calm">
+              </div>
+            </div>
+            <div class="slr"><span class="sll">Mental Clarity: <b id="slv6">5</b>/10</span><input type="range" min="1" max="10" value="5" id="sl6" oninput="uSl(this,'slv6','sln6','#C9A84C')"><span class="sln" id="sln6" style="color:#C9A84C">5</span></div>
+            <div class="slr"><span class="sll">Discipline Score: <b id="slv7">5</b>/10</span><input type="range" min="1" max="10" value="5" id="sl7" oninput="uSl(this,'slv7','sln7','#5B8FD4')"><span class="sln" id="sln7" style="color:#5B8FD4">5</span></div>
+            <div class="fld"><div class="lbl">Biggest psychological challenge today</div><input id="psy-ch" placeholder="FOMO, Revenge trade..."/></div>
+            <div class="fld"><div class="lbl">ఈ challenge ని ఎలా handle చేశాను?</div><textarea id="psy-han" placeholder="నీ response..." rows="2"></textarea></div>
+            <div class="fld"><div class="lbl">రేపు improve చేయవలసింది</div><input id="psy-imp" placeholder="..."/></div>
+            <div class="rgt"><button class="btn bpri bsm" onclick="savePsyDay()">Save చేయి ✦</button></div>
+          </div>
+          <div class="card"><div class="ct">📈 Repeated Mistakes</div><div id="psmis"><div class="nd"><div class="ndi">✨</div>ఇంకా impulse trades లేవు!</div></div></div>
+          <div class="card"><div class="ct">💬 Emotion Distribution</div><div id="psemo" style="display:flex;flex-wrap:wrap;gap:6px"><div style="color:#2A2A2A;font-size:12px">ఇంకా trades లేవు</div></div></div>
+        </div>
+
+        <!-- STRATEGY CORRECTION -->
+        <div class="sec" id="sec-strategy">
+          <div class="sh"><div class="st"><span style="font-size:19px">📐</span><h2>Strategy Correction</h2></div><div class="ss">నీ rules define చేయి — ఎన్నిసార్లు break చేశావో track చేయి.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="card">
+            <div class="ct">My Trading Rules</div>
+            <div class="ib">ఒక్కో rule ని enter చేయి. Trade లో break అయినప్పుడు "Break" click చేయి — auto track అవుతుంది.</div>
+            <div class="g2" style="margin-bottom:12px">
+              <input id="new-rule-input" placeholder="e.g. 15-min candle close wait చేస్తాను..." style="border-radius:8px"/>
+              <button class="btn bpri" onclick="addRule()">Rule Add చేయి</button>
+            </div>
+            <div id="rule-list"></div>
+          </div>
+          <div class="card">
+            <div class="ct">Rule Break Analysis</div>
+            <div id="rule-analysis"><div class="nd"><div class="ndi">📐</div>Rules add చేయి — analysis automatically వస్తుంది.</div></div>
+          </div>
+          <div class="card">
+            <div class="ct">Strategy Notes</div>
+            <div class="fld"><div class="lbl">My Setup Rules (detailed)</div><textarea id="strat-setup" placeholder="Entry criteria, Exit criteria, Position sizing rules..." rows="4"></textarea></div>
+            <div class="fld"><div class="lbl">This Week — Strategy Working Well?</div><select id="strat-working"><option value="">Select...</option><option value="yes">Yes, working well</option><option value="partial">Partially working</option><option value="no">No, needs review</option></select></div>
+            <div class="fld"><div class="lbl">What needs correction in my strategy?</div><textarea id="strat-fix" placeholder="Cherry anna feedback based corrections..." rows="3"></textarea></div>
+            <div class="rgt"><button class="btn bpri bsm" onclick="saveStrategy()">Strategy Save చేయి ✦</button></div>
+          </div>
+        </div>
+
+        <!-- WEEKLY -->
+        <div class="sec" id="sec-weekly">
+          <div class="sh"><div class="st"><span style="font-size:19px">📅</span><h2>Weekly Summary</h2></div><div class="ss">ప్రతి Sunday — Process అడుగు, outcome కాదు.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sb2"><div class="sv" id="wkpnl">₹0</div><div class="sl2">Week P&L</div></div>
+            <div class="sb2"><div class="sv" id="wktr">0</div><div class="sl2">Trades</div></div>
+            <div class="sb2"><div class="sv" id="wkwr" style="color:#4CAF82">0%</div><div class="sl2">Win Rate</div></div>
+            <div class="sb2"><div class="sv" id="wkpr" style="color:#5B8FD4">0.0</div><div class="sl2">Avg Process</div></div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-title">⚡ Weekly Reality Check</div>
+            <div class="reality-row"><div class="reality-label">Most Repeated Mistake</div><div class="reality-val" id="wkTopMistake" style="color:#CF6679">—</div></div>
+            <div class="reality-row"><div class="reality-label">Discipline %</div><div class="reality-val" id="wkDisciplinePct" style="color:#C9A84C">0%</div></div>
+            <div class="reality-row"><div class="reality-label">₹ Lost to Mistakes</div><div class="reality-val" id="wkLostMistakes" style="color:#CF6679">₹0</div></div>
+            <div class="reality-row"><div class="reality-label">Identity Level</div><div class="reality-val" id="wkIdentity">—</div></div>
+          </div>
+          <div class="card"><div class="ct">Last 10 Trades Chart</div><div class="bc" id="wkchart"></div><div class="clbl">P&L per trade</div></div>
+          <div class="card">
+            <div class="ct">Weekly Reflection</div>
+            <div style="text-align:right;margin-bottom:10px"><button class="btn bgh bsm" onclick="autoFillWeekly()">🔄 Auto-fill from this week's data</button></div>
+            <div class="fld"><div class="lbl">Week Date Range</div><input type="date" id="wk-dt"/></div>
+            <div class="fld"><div class="lbl">ఈ వారం అత్యంత తరచుగా చేసిన mistake?</div><textarea id="wk-mis" placeholder="నీ reflection..." rows="2"></textarea></div>
+            <div class="fld"><div class="lbl">ఈ వారం biggest discipline WIN?</div><textarea id="wk-win" placeholder="నీ reflection..." rows="2"></textarea></div>
+            <div class="fld"><div class="lbl">వచ్చే వారం ONE specific goal?</div><textarea id="wk-goal" placeholder="నీ reflection..." rows="2"></textarea></div>
+            <div class="rgt"><button class="btn bpri bsm" onclick="saveWeekly()">Weekly Save చేయి ✦</button></div>
+          </div>
+        </div>
+
+        <!-- MONTHLY -->
+        <div class="sec" id="sec-monthly">
+          <div class="sh"><div class="st"><span style="font-size:19px">📆</span><h2>Monthly Summary</h2></div><div class="ss">ప్రతి month end లో — transformation track చేయి.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sb2"><div class="sv" id="mnpnl">₹0</div><div class="sl2">Month P&L</div></div>
+            <div class="sb2"><div class="sv" id="mntr">0</div><div class="sl2">Trades</div></div>
+            <div class="sb2"><div class="sv" id="mnwr" style="color:#4CAF82">0%</div><div class="sl2">Win Rate</div></div>
+            <div class="sb2"><div class="sv" id="mnpr" style="color:#5B8FD4">0.0</div><div class="sl2">Avg Process</div></div>
+          </div>
+          <div class="card">
+            <div class="ct">Monthly Reflection</div>
+            <div class="fld"><div class="lbl">Month</div><input type="month" id="mn-dt"/></div>
+            <div class="fld"><div class="lbl">Top 3 recurring mistakes</div><textarea id="mn-mis" placeholder="1. Revenge trading&#10;2. FOMO entries&#10;3. Stop loss ignore..." rows="3"></textarea></div>
+            <div class="fld"><div class="lbl">Top 3 strengths developed</div><textarea id="mn-str" placeholder="1. &#10;2. &#10;3. ..." rows="3"></textarea></div>
+            <div class="fld"><div class="lbl">Trader Identity Level — ఈ నెల</div>
+              <div class="bw" id="mnlw">
+                <button class="bb on" onclick="pBias('mnlw','mnlv',this,'emotional')">😤 Emotional</button>
+                <button class="bb" onclick="pBias('mnlw','mnlv',this,'aware')">👁 Aware</button>
+                <button class="bb" onclick="pBias('mnlw','mnlv',this,'consistent')">🎯 Consistent</button>
+                <button class="bb" onclick="pBias('mnlw','mnlv',this,'professional')">🏆 Professional</button>
+              </div>
+              <input type="hidden" id="mnlv" value="emotional">
+            </div>
+            <div class="fld"><div class="lbl">నా self కి monthly letter</div><textarea id="mn-let" placeholder="ఈ నెల నేను నా గురించి ఏం నేర్చుకున్నాను..." rows="4"></textarea></div>
+            <div class="rgt"><button class="btn bpri bsm" onclick="saveMonthly()">Monthly Save చేయి ✦</button></div>
+          </div>
+        </div>
+
+        <!-- HABITS / STREAK -->
+        <div class="sec" id="sec-habits">
+          <div class="sh"><div class="st"><span style="font-size:19px">🔥</span><h2>Transformation Tracker</h2></div><div class="ss">Consistency is the only currency that markets respect.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="g3" style="margin-bottom:12px">
+            <div class="sb2"><div class="sv" id="ststr" style="color:#C9A84C">0d</div><div class="sl2">Streak</div></div>
+            <div class="sb2"><div class="sv" id="stbest" style="color:#E0A84C">0d</div><div class="sl2">Personal Best</div></div>
+            <div class="sb2"><div class="sv" id="stwk" style="color:#5B8FD4">0/30</div><div class="sl2">This Week</div></div>
+          </div>
+          <div class="card" style="background:rgba(207,102,121,0.05);border-color:rgba(207,102,121,0.2);margin-bottom:12px">
+            <div style="font-size:11px;color:#CF6679;font-weight:600;margin-bottom:6px">⚠️ Streak Break Conditions:</div>
+            <div style="font-size:11px;color:#9A8870;line-height:1.8">• Pre-market ritual skip చేస్తే<br>• EOD review skip చేస్తే<br>• 3+ impulse trades చేస్తే</div>
+          </div>
+          <div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn bsu bsm" onclick="addSt()">Check &amp; Add Streak 🔥</button>
+            <button class="btn bda bsm" onclick="rstSt()">Reset</button>
+            <button class="btn bpri bsm" onclick="saveH()">Save ✦</button>
+          </div>
+          <div class="card" style="overflow-x:auto">
+            <table class="ht"><thead><tr>
+              <th style="text-align:left;padding-left:8px">Habit</th>
+              <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th>
+            </tr></thead><tbody id="htb"></tbody></table>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="sec" id="sec-history">
+          <div class="sh"><div class="st"><span style="font-size:19px">📂</span><h2>Records — All History</h2></div><div class="ss">అన్ని sections లో save చేసిన data ఒకే చోట.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="sec-tab" id="hist-tabs">
+            <button class="sec-tab-btn on" onclick="showHist('premarket',this)">🌅 Pre-Market</button>
+            <button class="sec-tab-btn" onclick="showHist('eod',this)">🌙 EOD</button>
+            <button class="sec-tab-btn" onclick="showHist('psyday',this)">🧠 Psychology</button>
+            <button class="sec-tab-btn" onclick="showHist('weekly',this)">📅 Weekly</button>
+            <button class="sec-tab-btn" onclick="showHist('monthly',this)">📆 Monthly</button>
+          </div>
+          <div id="hist-list"></div>
+        </div>
+
       </div>
     </div>
-  );
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+var MEM={};
+function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return MEM[k]||null;}}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;}
+function ge(id){return document.getElementById(id);}
+
+var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{}};
+
+function loadDB(){
+  var keys=[['mpvf','f'],['mpvpm','pm'],['mpvtr','tr'],['mpveod','eod'],['mpvh','h'],['mpvpsyd','psyday'],['mpvmir','mirror'],['mpvwk','weekly'],['mpvmn','monthly'],['mpvrules','rules'],['mpvstrat','strategy']];
+  for(var i=0;i<keys.length;i++){var a=lg(keys[i][0]);if(a)DB[keys[i][1]]=a;}
+}
+
+function td(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fi(n){return Math.abs(Number(n||0)).toLocaleString('en-IN');}
+function pc(v){return Number(v)>=0?'#4CAF82':'#CF6679';}
+function ps2(v){var n=Number(v||0);return(n>=0?'+':'-')+'₹'+fi(n);}
+var tt;
+function toast(m){var t=ge('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none';},2500);}
+var ft2;
+function showFeedback(msg,col){var p=ge('feedbackPopup');p.textContent=msg;p.style.color=col||'#E2C97A';p.style.borderColor=col||'#7A6530';p.classList.add('show');clearTimeout(ft2);ft2=setTimeout(function(){p.classList.remove('show');},3500);}
+
+// ────── PIN SYSTEM ──────
+function hashPin(p){var h=0;for(var i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return h.toString();}
+function checkPin(){
+  var p=ge('pinInput').value;
+  var stored=lg('mpvPin');
+  if(!stored){ls('mpvPin',hashPin(p));ge('pinScreen').classList.add('hidden');startApp();return;}
+  if(hashPin(p)===stored){ge('pinScreen').classList.add('hidden');startApp();}
+  else{ge('pinErr').textContent='Wrong PIN. Try again.';ge('pinInput').value='';}
+}
+function showPinSet(){
+  var np=prompt('New PIN enter చేయి (4-6 digits):');
+  if(!np||np.length<4){alert('Minimum 4 digits అవసరం.');return;}
+  var cp=prompt('Confirm PIN:');
+  if(np!==cp){alert('PINs match కాలేదు.');return;}
+  ls('mpvPin',hashPin(np));toast('PIN updated ✦');
+}
+
+// ────── ONBOARDING ──────
+function obNext(step,skipPin){
+  if(step===3){
+    // Save pin from step 2
+    if(!skipPin){
+      var p1=ge('ob-pin1').value,p2=ge('ob-pin2').value;
+      if(p1.length<4){ge('ob-pin-err').textContent='Minimum 4 digits.';return;}
+      if(p1!==p2){ge('ob-pin-err').textContent='PINs match కాలేదు.';return;}
+      ls('mpvPin',hashPin(p1));
+    }
+  }
+  for(var i=1;i<=3;i++){ge('ob'+i).classList.remove('on');}
+  ge('ob'+step).classList.add('on');
+  var dots=ge('obDots').children;
+  for(var i=0;i<dots.length;i++)dots[i].classList.toggle('on',i===step-1);
+}
+function skipOnboarding(){ls('mpvOnboarded','1');ge('onboarding').classList.add('hidden');startApp();}
+function finishOnboarding(){
+  // Save foundation from step 1
+  var why=ge('ob-why').value,day=ge('ob-day').value;
+  if(why){DB.f.why=why;}
+  if(day){DB.f.day=day;}
+  ls('mpvf',DB.f);
+  ls('mpvOnboarded','1');
+  ge('onboarding').classList.add('hidden');
+  startApp();
+}
+
+// ────── IDENTITY ──────
+function calcIdentity(){
+  var T=DB.tr,tot=T.length;if(!tot)return'emotional';
+  var pln=0;for(var i=0;i<T.length;i++){if(T[i].pln)pln++;}
+  var pct=pln/tot;
+  var eods=DB.eod.slice(-10);var avgP=0;for(var i=0;i<eods.length;i++)avgP+=(eods[i].proc||0);if(eods.length)avgP=avgP/eods.length;
+  var imp=tot-pln;
+  if(pct>=0.85&&avgP>=7&&imp<=1)return'professional';
+  if(pct>=0.70&&avgP>=5)return'consistent';
+  if(pct>=0.50)return'aware';
+  return'emotional';
+}
+function calcDisciplineScore(){
+  var score=0;
+  for(var i=0;i<DB.tr.length;i++){var t=DB.tr[i];if(t.pln)score+=1;else score-=2;if(t.mist==='ignored_sl')score-=1;}
+  return score;
+}
+function updHdr(){
+  var tp=0,imp=0;for(var i=0;i<DB.tr.length;i++){tp+=Number(DB.tr[i].pnl||0);if(!DB.tr[i].pln)imp++;}
+  var pe=ge('hpnl');pe.textContent=(tp>=0?'+':'-')+'₹'+fi(tp);pe.style.color=pc(tp);
+  ge('htrades').textContent=DB.tr.length;
+  var disc=calcDisciplineScore();var hd=ge('hdisc');hd.textContent=disc;hd.style.color=disc>=0?'#C9A84C':'#CF6679';
+  var id=calcIdentity();var hid=ge('hidentity');hid.textContent=id.toUpperCase();hid.className='identity-badge id-'+id;
+  var t=td(),has=false;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t){has=true;break;}}
+  var r=ge('hritual');if(has){r.textContent='✦ Done';r.className='rbadge rd';}else{r.textContent='⚡ Pending';r.className='rbadge rp';}
+}
+
+function checkKillSwitch(){var f=DB.f||{};var maxDay=Number(f.day||0);if(!maxDay)return false;var t=td(),todayLoss=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)todayLoss+=Number(DB.tr[i].pnl||0);}return todayLoss<=-maxDay;}
+function checkOvertrading(){var f=DB.f||{};var ota=Number(f.ota||3);var t=td(),cnt=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)cnt++;}return cnt>=ota;}
+function pmDone(){var t=td();for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t)return true;}return false;}
+function daysSinceFirst(){var f=DB.f._firstDay;if(!f)return 999;return Math.floor((new Date()-new Date(f))/(1000*60*60*24));}
+function mirrorMandatory(){return daysSinceFirst()>=7;}
+
+function goToSection(id){var btns=document.querySelectorAll('.nb');for(var i=0;i<btns.length;i++){if(btns[i].getAttribute('onclick')&&btns[i].getAttribute('onclick').indexOf("'"+id+"'")>-1){gS(id,btns[i]);return;}}}
+var sbo=true;
+function toggleSB(){sbo=!sbo;var s=ge('sb');s.classList.toggle('cl',!sbo);var ls2=document.querySelectorAll('.nl');for(var i=0;i<ls2.length;i++)ls2[i].style.display=sbo?'':'none';var tip=ge('stip');if(tip)tip.style.display=sbo?'':'none';}
+
+function gS(id,btn){
+  var ss=document.querySelectorAll('.sec');for(var i=0;i<ss.length;i++)ss[i].classList.remove('on');
+  var ns=document.querySelectorAll('.nb');for(var i=0;i<ns.length;i++)ns[i].classList.remove('on');
+  var s=ge('sec-'+id);if(s)s.classList.add('on');if(btn)btn.classList.add('on');
+  if(id==='tradelog'){
+    if(!pmDone()){ge('lockTitle').textContent='YOU ARE NOT PREPARED';ge('lockMsg').textContent='Pre-Market ritual complete చేయకుండా trade log చేయడం allowed కాదు.';ge('lockBtn').textContent='Ritual Complete చేయి →';ge('lockBtn').onclick=function(){ge('lockOverlay').classList.add('hidden');goToSection('premarket');};ge('lockOverlay').classList.remove('hidden');return;}
+    if(checkKillSwitch())ge('killBanner').classList.add('show');else ge('killBanner').classList.remove('show');
+    if(checkOvertrading())ge('otAlert').classList.add('show');else ge('otAlert').classList.remove('show');
+    rTr();
+  }
+  if(id==='checklist'){if(!pmDone()){ge('lockTitle').textContent='CHECKLIST BLOCKED';ge('lockMsg').textContent='Pre-Market ritual complete చేయకుండా checklist allowed కాదు.';ge('lockBtn').textContent='Pre-Market చేయి →';ge('lockBtn').onclick=function(){ge('lockOverlay').classList.add('hidden');goToSection('premarket');};ge('lockOverlay').classList.remove('hidden');return;}}
+  if(id==='psych'){rPs();ge('psy-dt').value=td();}
+  if(id==='weekly')rWk();
+  if(id==='monthly')rMn();
+  if(id==='habits')rHb();
+  if(id==='eod'){rEC();updateMirrorUI();}
+  if(id==='strategy')rStrategy();
+  if(id==='history')showHist('premarket',ge('hist-tabs').querySelector('.on'));
+}
+
+function updateMirrorUI(){
+  var mandatory=mirrorMandatory();
+  var note=ge('mirrorNote');
+  if(note)note.textContent=mandatory?'ఈ questions skip చేయడం EOD save కి allow కాదు. Honest గా చెప్పు.':'First 7 days: Mirror questions optional. తర్వాత mandatory అవుతాయి.';
+}
+
+function uSl(el,vi,ni,col){var v=el.value;var pct=(v-1)/9*100;el.style.background='linear-gradient(to right,'+col+' '+pct+'%,#222 '+pct+'%)';var a=ge(vi);if(a)a.textContent=v;var b=ge(ni);if(b)b.textContent=v;}
+var EC={calm:'#4CAF82',anxious:'#E0A84C',confident:'#5B8FD4',fearful:'#CF6679',angry:'#CF6679',greedy:'#CF6679',neutral:'#9A8870'};
+function pEmo(wid,hid,btn,val){var w=ge(wid);if(!w)return;var bs=w.querySelectorAll('.eb');for(var i=0;i<bs.length;i++){bs[i].classList.remove('on');bs[i].style.color='';bs[i].style.borderColor='';bs[i].style.background='';}btn.classList.add('on');var c=EC[val]||'#9A8870';btn.style.color=c;btn.style.borderColor=c;btn.style.background='rgba(255,255,255,0.04)';var h=ge(hid);if(h)h.value=val;}
+function pBias(wid,hid,btn,val){var w=ge(wid);if(w){var bs=w.querySelectorAll('.bb');for(var i=0;i<bs.length;i++)bs[i].classList.remove('on');}btn.classList.add('on');var h=ge(hid);if(h)h.value=val;}
+function sMis(show){var e=ge('trmw');if(e)e.style.display=show?'':'none';}
+function showMistFeedback(val){var ids=['mf-revenge','mf-fomo','mf-ignored_sl'];for(var i=0;i<ids.length;i++){var el=ge(ids[i]);if(el)el.classList.remove('show');}if(!val)return;var el=ge('mf-'+val);if(el)el.classList.add('show');}
+var MC={green:'#4CAF82',yellow:'#E0A84C',red:'#CF6679'};
+function pMood(m){var map={green:'mg',yellow:'my',red:'mr'};var ids=['green','yellow','red'];for(var i=0;i<ids.length;i++){var b=ge(map[ids[i]]);if(!b)continue;b.classList.remove('on');b.style.color='';b.style.borderColor='';b.style.background='';}var btn=ge(map[m]);if(btn){btn.classList.add('on');btn.style.color=MC[m];btn.style.borderColor=MC[m];btn.style.background='rgba(255,255,255,0.04)';}var h=ge('eod-m');if(h)h.value=m;}
+
+// ────── VOICE NOTE ──────
+var recognition=null,voiceActive=false;
+function toggleVoice(){
+  // Voice requires https:// - not available in file:// protocol
+  if(location.protocol==='file:'){
+    toast('Voice కి website (https://) లో open చేయాలి. ఇప్పుడు manually type చేయి.');
+    ge('tr-voice').focus();
+    return;
+  }
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    toast('Voice Chrome browser లో మాత్రమే work అవుతుంది.');
+    return;
+  }
+  if(voiceActive){if(recognition)recognition.stop();return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.lang='te-IN';recognition.continuous=false;recognition.interimResults=false;
+  recognition.onstart=function(){voiceActive=true;ge('voiceBtn').classList.add('recording');ge('voiceTxt').textContent='🔴 Recording... Click to stop';};
+  recognition.onresult=function(e){var txt=e.results[0][0].transcript;var ta=ge('tr-voice');ta.value=(ta.value?ta.value+' ':'')+txt;};
+  recognition.onend=function(){voiceActive=false;ge('voiceBtn').classList.remove('recording');ge('voiceTxt').textContent='🎙 Voice record చేయి';};
+  recognition.onerror=function(){voiceActive=false;ge('voiceBtn').classList.remove('recording');ge('voiceTxt').textContent='🎙 Voice record చేయి';toast('Voice error. Retry చేయి.');};
+  recognition.start();
+}
+
+// ────── FOUNDATION ──────
+function loadF(){var f=DB.f||{};var mp=[['why','f-why'],['con','f-con'],['edge','f-edge'],['vis','f-vis'],['cap','f-cap'],['day','f-day'],['wk','f-wk'],['maxt','f-maxt'],['ota','f-ota']];for(var i=0;i<mp.length;i++){var el=ge(mp[i][1]);if(el&&f[mp[i][0]])el.value=f[mp[i][0]];}}
+function saveF(){
+  if(!DB.f._firstDay)DB.f._firstDay=td();
+  DB.f.why=ge('f-why').value;DB.f.con=ge('f-con').value;DB.f.edge=ge('f-edge').value;DB.f.vis=ge('f-vis').value;DB.f.cap=ge('f-cap').value;DB.f.day=ge('f-day').value;DB.f.wk=ge('f-wk').value;DB.f.maxt=ge('f-maxt').value;DB.f.ota=ge('f-ota').value;
+  ls('mpvf',DB.f);toast('Foundation save అయింది ✦');
+}
+
+// ────── PRE-MARKET ──────
+function loadPMA(){var t=td(),found=null;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t){found=DB.pm[i];break;}}var al=ge('pm-alert'),als=ge('pm-alts');if(found){al.style.display='';if(als)als.textContent='Bias: '+found.bias+' | Focus: '+(found.foc||'');}else{al.style.display='none';}}
+function savePM(){
+  if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
+  var d={id:Date.now(),date:td(),sl:ge('sl1').value,st:ge('sl2').value,di:ge('sl3').value,emo:ge('pmev').value,bias:ge('pmbv').value,lev:ge('pm-lev').value,news:ge('pm-news').value,ml:ge('pm-ml').value,foc:ge('pm-foc').value};
+  var f=[];for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date!==d.date)f.push(DB.pm[i]);}f.push(d);DB.pm=f;ls('mpvpm',DB.pm);updHdr();loadPMA();toast('Ritual complete ✦');showFeedback('✦ Ritual complete. Now you are prepared to trade.','#4CAF82');
+}
+
+// ────── CHECKLIST ──────
+var CKS=['Setup chart లో clearly visible గా ఉందా?','Risk:Reward minimum 1:2 ఉందా?','Stop Loss entry కి ముందే define అయిందా?','Position size calculate చేశావా?','Emotional state లో లేవా?','Revenge trading చేయడం లేదుగా?','ఈరోజు overtrading లేదుగా?','Market condition నీ setup కి suit అవుతోందా?'];
+var clSt={};
+function buildCL(){var c=ge('cl-items');c.innerHTML='';for(var i=0;i<CKS.length;i++){(function(idx){var div=document.createElement('div');div.className='ck'+(clSt[idx]?' on':'');div.innerHTML='<div class="cb"><span class="ct2">✓</span></div><span class="cx">'+CKS[idx]+'</span><span class="cn">'+(idx+1)+'/8</span>';div.onclick=function(){clSt[idx]=!clSt[idx];div.classList.toggle('on',!!clSt[idx]);uCS();};c.appendChild(div);})(i);}uCS();}
+function uCS(){var sc=0;for(var k in clSt){if(clSt[k])sc++;}var sn=ge('clsn'),sm=ge('clsm'),sb=ge('clsb'),go=ge('clgo');sn.textContent=sc+'/8';if(sc===8){sn.style.color='#4CAF82';sm.style.color='#4CAF82';sb.style.background='rgba(76,175,130,0.08)';sb.style.borderColor='rgba(76,175,130,0.3)';sm.textContent='✦ GO — Conditions met. Discipline తో trade చేయి.';go.style.display='block';}else if(sc>=6){sn.style.color='#E0A84C';sm.style.color='#E0A84C';sb.style.background='rgba(224,168,76,0.08)';sb.style.borderColor='rgba(224,168,76,0.3)';sm.textContent='⚠ CAUTION — Failed checks review చేయి.';go.style.display='none';}else{sn.style.color='#CF6679';sm.style.color='#CF6679';sb.style.background='rgba(207,102,121,0.08)';sb.style.borderColor='rgba(207,102,121,0.3)';sm.textContent='✗ NO TRADE — నీ capital protect చేసుకో.';go.style.display='none';}}
+function logCL(){clSt={};buildCL();toast('Checklist log అయింది ✦');}
+
+// ────── TRADE LOG ──────
+function togTF(){if(checkKillSwitch()){toast('🛑 Daily loss limit hit. Trading blocked.');return;}var f=ge('trform');f.classList.toggle('open');if(f.classList.contains('open'))ge('tr-dt').value=td();}
+function addTrade(){
+  if(checkKillSwitch()){toast('🛑 Daily loss limit hit.');return;}
+  var inst=ge('tr-i').value;if(!inst){toast('Instrument enter చేయి!');return;}
+  var pln=ge('trpv').value==='true',pnl=Number(ge('tr-pn').value||0),mist=pln?'':ge('trmk').value;
+  var t={id:Date.now(),date:ge('tr-dt').value||td(),inst:inst,setup:ge('tr-s').value,dir:ge('tr-dir').value,en:ge('tr-en').value,ex:ge('tr-ex').value,qty:ge('tr-q').value,pnl:pnl,emo:ge('trev').value,pln:pln,mist:mist,voice:ge('tr-voice').value};
+  DB.tr.push(t);ls('mpvtr',DB.tr);
+  if(pln)showFeedback('✦ You executed like a professional.','#4CAF82');
+  else if(mist==='revenge')showFeedback('⚠ Revenge trade. Stop. Reset.','#CF6679');
+  else if(mist==='ignored_sl')showFeedback('🚨 SL ignored. Most dangerous habit.','#CF6679');
+  else showFeedback('⚡ Impulse logged. Awareness is step one.','#E0A84C');
+  if(checkOvertrading())ge('otAlert').classList.add('show');
+  var ids=['tr-i','tr-s','tr-en','tr-ex','tr-q','tr-pn','tr-voice'];for(var i=0;i<ids.length;i++)ge(ids[i]).value='';
+  ge('trmk').value='';var mfs=document.querySelectorAll('.mist-feedback');for(var i=0;i<mfs.length;i++)mfs[i].classList.remove('show');
+  rTr();updHdr();togTF();toast('Trade log అయింది ✦');
+}
+function delT(id){var n=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id!==id)n.push(DB.tr[i]);}DB.tr=n;ls('mpvtr',DB.tr);rTr();updHdr();toast('Trade removed');}
+function rTr(){
+  var T=DB.tr,tot=T.length,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0;
+  for(var i=0;i<T.length;i++){var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){pln++;if(pv>0)gainDisc+=pv;}else{lostMist+=Math.min(pv,0);}}
+  var wr=tot?Math.round(wins/tot*100):0;
+  ge('tltot').textContent=tot;var we=ge('tlwr');we.textContent=wr+'%';we.style.color=wr>=50?'#4CAF82':'#CF6679';
+  var pe=ge('tlpnl');pe.textContent=(tp>=0?'+':'-')+'₹'+fi(tp);pe.style.color=pc(tp);
+  var disc=calcDisciplineScore();var hd=ge('tldisc');hd.textContent=disc;hd.style.color=disc>=0?'#C9A84C':'#CF6679';
+  ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
+  var list=ge('tllist');list.innerHTML='';
+  if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs"><span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+t.dir.toUpperCase()+'</span><span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+t.date+' · '+(t.setup||'')+' · '+t.en+'→'+t.ex+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+}
+
+// ────── EOD ──────
+function saveEOD(){
+  var mandatory=mirrorMandatory();
+  if(mandatory){if(!ge('mir-proc').value){toast('Mirror Q1 answer select చేయి!');return;}if(!ge('mir-lie').value.trim()){toast('Mirror Q2 రాయి!');return;}if(!ge('mir-pro').value){toast('Mirror Q3 select చేయి!');return;}}
+  var d={id:Date.now(),date:ge('eod-dt').value||td(),tot:ge('eod-t').value,proc:Number(ge('sl4').value),out:Number(ge('sl5').value),best:ge('eod-b').value,worst:ge('eod-w').value,imp:ge('eod-im').value,notes:ge('eod-n').value,mood:ge('eod-m').value,mirProc:ge('mir-proc').value,mirLie:ge('mir-lie').value,mirPro:ge('mir-pro').value};
+  DB.eod.push(d);ls('mpveod',DB.eod);
+  // Auto streak check
+  autoCheckStreak(d.date);
+  var todayImp=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===d.date&&!DB.tr[i].pln)todayImp++;}
+  if(todayImp>=3)toast('⚠ 3+ impulse trades today. Streak checked.');
+  else toast('EOD Review save అయింది ✦');
+  rEC();ge('mir-proc').value='';ge('mir-lie').value='';ge('mir-pro').value='';
+}
+function autoCheckStreak(date){
+  var pmOk=false;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===date){pmOk=true;break;}}
+  var eodOk=true;
+  var todayImp=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===date&&!DB.tr[i].pln)todayImp++;}
+  if(!pmOk||todayImp>=3){DB.h.s=0;toast('❌ Streak break అయింది!');}
+  else{DB.h.s=(DB.h.s||0)+1;if(DB.h.s>(DB.h.b||0))DB.h.b=DB.h.s;toast('🔥 Streak: '+DB.h.s+' days!');}
+  ls('mpvh',DB.h);
+}
+function rEC(){var r=DB.eod.slice(-7),card=ge('eod-cc');if(!r.length){card.style.display='none';return;}card.style.display='';var el=ge('eodchart');el.innerHTML='';var mx=1;for(var i=0;i<r.length;i++){if((r[i].proc||0)>mx)mx=r[i].proc;}for(var i=0;i<r.length;i++){var e=r[i];var w=document.createElement('div');w.className='brc';var b=document.createElement('div');b.className='br';b.style.height=Math.max(((e.proc||0)/mx)*68,3)+'px';b.style.background=(e.proc||0)>=7?'#4CAF82':(e.proc||0)>=5?'#E0A84C':'#CF6679';var l=document.createElement('div');l.className='brl';l.textContent=(e.date||'').slice(5);w.appendChild(b);w.appendChild(l);el.appendChild(w);}}
+
+// ────── PSYCHOLOGY ──────
+function savePsyDay(){var d={id:Date.now(),date:ge('psy-dt').value||td(),emo:ge('psyev').value,clarity:ge('sl6').value,disc:ge('sl7').value,challenge:ge('psy-ch').value,handle:ge('psy-han').value,imp:ge('psy-imp').value};DB.psyday.push(d);ls('mpvpsyd',DB.psyday);ge('psy-ch').value='';ge('psy-han').value='';ge('psy-imp').value='';toast('Psychology record save ✦');}
+function rPs(){
+  var T=DB.tr,imp=[],ip=0;for(var i=0;i<T.length;i++){if(!T[i].pln){imp.push(T[i]);ip+=Number(T[i].pnl||0);}}
+  var fol=T.length?Math.round((T.length-imp.length)/T.length*100):0;
+  ge('psimp').textContent=imp.length;var ie=ge('psipnl');ie.textContent=(ip>=0?'+':'-')+'₹'+fi(ip);ie.style.color=pc(ip);ge('psfol').textContent=fol+'%';
+  var disc=calcDisciplineScore();var dsn=ge('discScore');dsn.textContent=disc;var col=disc>=5?'#4CAF82':disc>=0?'#C9A84C':'#CF6679';dsn.style.color=col;var fill=ge('discFill');var pct=Math.max(0,Math.min(100,50+(disc*5)));fill.style.width=pct+'%';fill.style.background=col;
+  var id=calcIdentity();var levels=['emotional','aware','consistent','professional'];for(var i=0;i<levels.length;i++){var el=ge('id-'+levels[i]);if(el)el.classList.toggle('active',levels[i]===id);}
+  var msgs={emotional:'Most trades emotion-driven. Focus: one planned trade per day.',aware:'Improvement happening. Impulse trades reducing.',consistent:'Strong discipline. Keep the process.',professional:'Elite execution. You are the process.'};var dd=ge('id-desc');if(dd)dd.textContent=msgs[id]||'';
+  var mist={};for(var i=0;i<imp.length;i++){var m=imp[i].mist;if(m)mist[m]=(mist[m]||0)+1;}var me=ge('psmis');me.innerHTML='';var mk=Object.keys(mist);if(!mk.length){me.innerHTML='<div class="nd"><div class="ndi">✨</div>ఇంకా impulse trades లేవు!</div>';}else{mk.sort(function(a,b){return mist[b]-mist[a];});for(var i=0;i<mk.length;i++){var k=mk[i],v=mist[k];var pct2=imp.length?Math.round(v/imp.length*100):0;me.innerHTML+='<div class="pr"><div class="pn">'+k.replace(/_/g,' ')+'</div><div class="pt"><div class="pf" style="width:'+pct2+'%"></div></div><div class="pc">'+v+'x</div></div>';}}
+  var emos={};for(var i=0;i<T.length;i++){var em=T[i].emo;if(em)emos[em]=(emos[em]||0)+1;}var ee=ge('psemo');ee.innerHTML='';var ek=Object.keys(emos);if(!ek.length){ee.innerHTML='<div style="color:#2A2A2A;font-size:12px">ఇంకా trades లేవు</div>';}else{for(var i=0;i<ek.length;i++){var k2=ek[i],v2=emos[k2];ee.innerHTML+='<div style="padding:5px 11px;border-radius:20px;background:#181820;border:1px solid rgba(201,168,76,0.1);font-size:12px;color:#9A8870">'+k2+' <span style="color:#C9A84C;font-weight:700">×'+v2+'</span></div>';}}
+}
+
+// ────── STRATEGY SECTION ──────
+function addRule(){var inp=ge('new-rule-input');var txt=inp.value.trim();if(!txt)return;if(!DB.rules)DB.rules=[];DB.rules.push({id:Date.now(),text:txt,breaks:0});ls('mpvrules',DB.rules);inp.value='';rStrategy();}
+function breakRule(id){var r=DB.rules.find(function(x){return x.id===id;});if(r){r.breaks=(r.breaks||0)+1;ls('mpvrules',DB.rules);rStrategy();toast('Rule break logged ⚠');}}
+function delRule(id){DB.rules=DB.rules.filter(function(x){return x.id!==id;});ls('mpvrules',DB.rules);rStrategy();}
+function rStrategy(){
+  var list=ge('rule-list');if(!list)return;list.innerHTML='';
+  if(!DB.rules||!DB.rules.length){list.innerHTML='<div class="nd"><div class="ndi">📐</div>Rules add చేయి.</div>';}
+  else{for(var i=0;i<DB.rules.length;i++){var r=DB.rules[i];var div=document.createElement('div');div.className='rule-item'+(r.breaks>0?' broken':'');div.innerHTML='<div class="rule-text">'+r.text+'</div><div class="rule-break-cnt">'+r.breaks+'x</div><button class="rule-break-btn" onclick="breakRule('+r.id+')">Break</button><button style="background:none;border:none;color:#333;cursor:pointer;font-size:11px;padding:2px 6px" onclick="delRule('+r.id+')">✕</button>';list.appendChild(div);}}
+  var analysis=ge('rule-analysis');analysis.innerHTML='';
+  if(!DB.rules||!DB.rules.length){analysis.innerHTML='<div class="nd"><div class="ndi">📐</div>Rules add చేయి — analysis automatically వస్తుంది.</div>';return;}
+  var sorted=DB.rules.slice().sort(function(a,b){return b.breaks-a.breaks;});
+  for(var i=0;i<sorted.length;i++){var r=sorted[i];var pct=sorted[0].breaks?Math.round(r.breaks/sorted[0].breaks*100):0;analysis.innerHTML+='<div class="pr"><div class="pn">'+r.text.slice(0,30)+'...</div><div class="pt"><div class="pf" style="width:'+pct+'%;background:'+(r.breaks>3?'#CF6679':'#E0A84C')+'"></div></div><div class="pc" style="color:'+(r.breaks>0?'#CF6679':'#4CAF82')+'">'+r.breaks+'x</div></div>';}
+  var strat=DB.strategy||{};if(ge('strat-setup')&&strat.setup)ge('strat-setup').value=strat.setup;if(ge('strat-working')&&strat.working)ge('strat-working').value=strat.working;if(ge('strat-fix')&&strat.fix)ge('strat-fix').value=strat.fix;
+}
+function saveStrategy(){DB.strategy={setup:ge('strat-setup').value,working:ge('strat-working').value,fix:ge('strat-fix').value};ls('mpvstrat',DB.strategy);toast('Strategy save అయింది ✦');}
+
+// ────── WEEKLY ──────
+function autoFillWeekly(){
+  var now=new Date();var dow=now.getDay();var start=new Date(now);start.setDate(now.getDate()-((dow+6)%7));start.setHours(0,0,0,0);
+  var wk=[],wimp=0,wlost=0;var mist={};
+  for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=start){wk.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);if(!DB.tr[i].pln){wimp++;wlost+=Math.min(pv,0);if(DB.tr[i].mist)mist[DB.tr[i].mist]=(mist[DB.tr[i].mist]||0)+1;}}}
+  var topMist='None';var topCnt=0;for(var k in mist){if(mist[k]>topCnt){topCnt=mist[k];topMist=k.replace(/_/g,' ');}}
+  var discPct=wk.length?Math.round((wk.length-wimp)/wk.length*100):0;
+  ge('wk-mis').value=topMist!=='None'?'Most repeated: '+topMist+' ('+topCnt+' times)':'No impulse trades this week!';
+  ge('wk-win').value=discPct+'% planned trades executed. '+(wk.length-wimp)+'/'+wk.length+' discipline trades.';
+  ge('wk-dt').value=td();
+  toast('Auto-filled from this week\'s data ✦');
+}
+function saveWeekly(){var d={id:Date.now(),date:ge('wk-dt').value||td(),mistake:ge('wk-mis').value,win:ge('wk-win').value,goal:ge('wk-goal').value};DB.weekly.push(d);ls('mpvwk',DB.weekly);toast('Weekly save అయింది ✦');}
+function rWk(){
+  var now=new Date();var dow=now.getDay();var start=new Date(now);start.setDate(now.getDate()-((dow+6)%7));start.setHours(0,0,0,0);
+  var wk=[],wp=0,ww=0,wimp=0,wlost=0;
+  for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=start){wk.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);wp+=pv;if(pv>0)ww++;if(!DB.tr[i].pln){wimp++;wlost+=Math.min(pv,0);}}}
+  var wwr=wk.length?Math.round(ww/wk.length*100):0;var discPct=wk.length?Math.round((wk.length-wimp)/wk.length*100):0;
+  var r5=DB.eod.slice(-5);var avg=0;for(var i=0;i<r5.length;i++)avg+=(r5[i].proc||0);if(r5.length)avg=avg/r5.length;
+  var we=ge('wkpnl');we.textContent=(wp>=0?'+':'-')+'₹'+fi(wp);we.style.color=pc(wp);ge('wktr').textContent=wk.length;ge('wkwr').textContent=wwr+'%';ge('wkpr').textContent=avg.toFixed(1);
+  var mist={};for(var i=0;i<wk.length;i++){if(!wk[i].pln&&wk[i].mist)mist[wk[i].mist]=(mist[wk[i].mist]||0)+1;}var topMist='None';var topCnt=0;for(var k in mist){if(mist[k]>topCnt){topCnt=mist[k];topMist=k.replace(/_/g,' ');}}
+  ge('wkTopMistake').textContent=topMist;ge('wkDisciplinePct').textContent=discPct+'%';ge('wkLostMistakes').textContent='-₹'+fi(Math.abs(wlost));
+  var id=calcIdentity();ge('wkIdentity').textContent=id.charAt(0).toUpperCase()+id.slice(1);
+  var el=ge('wkchart');el.innerHTML='';var last=DB.tr.slice(-10);if(!last.length){el.innerHTML='<div style="color:#2A2A2A;font-size:12px;margin:auto">ఇంకా trades లేవు</div>';return;}var mx=1;for(var i=0;i<last.length;i++){var av=Math.abs(Number(last[i].pnl||0));if(av>mx)mx=av;}for(var i=0;i<last.length;i++){var t=last[i];var pnl3=Number(t.pnl||0);var w=document.createElement('div');w.className='brc';var b=document.createElement('div');b.className='br';b.style.height=Math.max((Math.abs(pnl3)/mx)*68,3)+'px';b.style.background=pnl3>=0?'#4CAF82':'#CF6679';var l=document.createElement('div');l.className='brl';l.textContent=(t.inst||'?').slice(0,4);w.appendChild(b);w.appendChild(l);el.appendChild(w);}
+  var dt=ge('wk-dt');if(dt&&!dt.value)dt.value=td();
+}
+
+// ────── MONTHLY ──────
+function saveMonthly(){var d={id:Date.now(),month:ge('mn-dt').value,mistake:ge('mn-mis').value,strength:ge('mn-str').value,level:ge('mnlv').value,letter:ge('mn-let').value};DB.monthly.push(d);ls('mpvmn',DB.monthly);toast('Monthly save అయింది ✦');}
+function rMn(){var now=new Date();var mStart=new Date(now.getFullYear(),now.getMonth(),1);var mTr=[],mP=0,mW=0;for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=mStart){mTr.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);mP+=pv;if(pv>0)mW++;}}var mWr=mTr.length?Math.round(mW/mTr.length*100):0;var mEod=[];for(var i=0;i<DB.eod.length;i++){if(new Date(DB.eod[i].date)>=mStart)mEod.push(DB.eod[i]);}var mAvg=0;for(var i=0;i<mEod.length;i++)mAvg+=(mEod[i].proc||0);if(mEod.length)mAvg=mAvg/mEod.length;var we=ge('mnpnl');we.textContent=(mP>=0?'+':'-')+'₹'+fi(mP);we.style.color=pc(mP);ge('mntr').textContent=mTr.length;ge('mnwr').textContent=mWr+'%';ge('mnpr').textContent=mAvg.toFixed(1);var mn=ge('mn-dt');if(mn&&!mn.value){var y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');mn.value=y+'-'+mo;}}
+
+// ────── HABITS ──────
+var HD=[{id:'rules',l:'అన్ని rules follow చేశాను'},{id:'nr',l:'Revenge trade లేదు'},{id:'sl',l:'Stop loss respect చేశాను'},{id:'ck',l:'Pre-trade checklist చేశాను'},{id:'eod',l:'EOD review చేశాను'},{id:'no',l:'Overtrading లేదు'}];
+var DY=['Mon','Tue','Wed','Thu','Fri'];
+function rHb(){var H=DB.h||{g:{},s:0,b:0};ge('ststr').textContent=(H.s||0)+'d';ge('stbest').textContent=(H.b||0)+'d';var sc=0;var g=H.g||{};for(var k in g){if(g[k])sc++;}ge('stwk').textContent=sc+'/'+(HD.length*DY.length);var tb=ge('htb');tb.innerHTML='';for(var i=0;i<HD.length;i++){var h=HD[i];var tr2=document.createElement('tr');var td0=document.createElement('td');td0.className='hlbl';td0.textContent=h.l;tr2.appendChild(td0);for(var j=0;j<DY.length;j++){(function(hid,day){var key=hid+'_'+day;var on=!!(g[key]);var td2=document.createElement('td');var div=document.createElement('div');div.className='hck'+(on?' on':'');div.id='hck-'+key;div.innerHTML='<span class="hct">✓</span>';div.onclick=function(){togH(hid+'_'+day);};td2.appendChild(div);tr2.appendChild(td2);})(h.id,DY[j]);}tb.appendChild(tr2);}}
+function togH(key){if(!DB.h.g)DB.h.g={};DB.h.g[key]=!DB.h.g[key];var el=ge('hck-'+key);if(el)el.classList.toggle('on',!!DB.h.g[key]);var sc=0;for(var k in DB.h.g){if(DB.h.g[k])sc++;}ge('stwk').textContent=sc+'/'+(HD.length*DY.length);}
+function addSt(){toast('EOD save complete చేసినప్పుడు streak auto-update అవుతుంది.');}
+function rstSt(){DB.h.s=0;ge('ststr').textContent='0d';ls('mpvh',DB.h);toast('Streak reset');}
+function saveH(){ls('mpvh',DB.h);toast('Tracker save అయింది ✦');}
+
+// ────── HISTORY ──────
+function showHist(type,btn){var tabs=ge('hist-tabs').querySelectorAll('.sec-tab-btn');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('on');if(btn)btn.classList.add('on');var list=ge('hist-list');list.innerHTML='';var data=[];if(type==='premarket')data=DB.pm;else if(type==='eod')data=DB.eod;else if(type==='psyday')data=DB.psyday;else if(type==='weekly')data=DB.weekly;else if(type==='monthly')data=DB.monthly;if(!data||!data.length){list.innerHTML='<div class="nd"><div class="ndi">📂</div>ఇంకా records లేవు.</div>';return;}var sorted=data.slice().sort(function(a,b){var da=a.date||a.month||'';var db=b.date||b.month||'';return da<db?1:-1;});for(var i=0;i<sorted.length;i++){var item=sorted[i];var div=document.createElement('div');div.className='rec-item';var dateStr=item.date||item.month||'';var html='<div class="rec-date"><div class="rec-date-dot"></div>'+dateStr+'</div>';if(type==='premarket'){html+='<div class="rec-field"><div class="rec-label">Bias | Emotion</div><div class="rec-val">'+(item.bias||'')+' | '+(item.emo||'')+'</div></div><div class="rec-field"><div class="rec-label">Focus</div><div class="rec-val">'+(item.foc||'-')+'</div></div>';}else if(type==='eod'){html+='<div class="rec-field"><div class="rec-label">Process / Outcome / Mood</div><div class="rec-val">'+(item.proc||0)+'/10 | '+(item.out||0)+'/10 | '+(item.mood||'')+'</div></div><div class="rec-field"><div class="rec-label">Best / Worst</div><div class="rec-val">'+(item.best||'-')+' / '+(item.worst||'-')+'</div></div>';}else if(type==='psyday'){html+='<div class="rec-field"><div class="rec-label">Emotion | Clarity</div><div class="rec-val">'+(item.emo||'')+' | '+(item.clarity||0)+'/10</div></div><div class="rec-field"><div class="rec-label">Challenge</div><div class="rec-val">'+(item.challenge||'-')+'</div></div>';}else if(type==='weekly'){html+='<div class="rec-field"><div class="rec-label">Biggest Mistake</div><div class="rec-val">'+(item.mistake||'-')+'</div></div><div class="rec-field"><div class="rec-label">Discipline WIN</div><div class="rec-val">'+(item.win||'-')+'</div></div>';}else if(type==='monthly'){html+='<div class="rec-field"><div class="rec-label">Trader Level</div><div class="rec-val">'+(item.level||'')+'</div></div><div class="rec-field"><div class="rec-label">Mistakes</div><div class="rec-val">'+(item.mistake||'-')+'</div></div>';}(function(it,tp){var delBtn=document.createElement('button');delBtn.className='rec-del';delBtn.textContent='delete';delBtn.onclick=function(){delRec(it.id,tp);};div.innerHTML=html;div.appendChild(delBtn);})(item,type);list.appendChild(div);}}
+function delRec(id,type){var map={premarket:'pm',eod:'eod',psyday:'psyday',weekly:'weekly',monthly:'monthly'};var key=map[type];if(!key)return;var arr=DB[key];var n=[];for(var i=0;i<arr.length;i++){if(arr[i].id!==id)n.push(arr[i]);}DB[key]=n;var lsmap={pm:'mpvpm',eod:'mpveod',psyday:'mpvpsyd',weekly:'mpvwk',monthly:'mpvmn'};ls(lsmap[type],DB[key]);var activeBtn=ge('hist-tabs').querySelector('.on');showHist(type,activeBtn);toast('Record delete అయింది');}
+
+// ────── EXPORT / SHARE ──────
+function exportPDF(){
+  ge('sharePanel').classList.remove('open');
+  // Generate a proper printable report in new window
+  var T=DB.tr,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0;
+  for(var i=0;i<T.length;i++){var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){pln++;if(pv>0)gainDisc+=pv;}else lostMist+=Math.min(pv,0);}
+  var wr=T.length?Math.round(wins/T.length*100):0;
+  var disc=calcDisciplineScore();var id=calcIdentity();
+  // Last 7 EOD
+  var eodRows=DB.eod.slice(-7).map(function(e){return '<tr><td>'+e.date+'</td><td>'+e.proc+'/10</td><td>'+e.out+'/10</td><td>'+e.mood+'</td><td>'+(e.best||'—')+'</td><td>'+(e.worst||'—')+'</td></tr>';}).join('');
+  // All trades
+  var trRows=T.slice(-20).map(function(t){return '<tr><td>'+t.date+'</td><td>'+t.inst+'</td><td>'+(t.pln?'✓ Planned':'⚡ Impulse')+'</td><td style="color:'+(Number(t.pnl)>=0?'green':'red')+';">'+(Number(t.pnl)>=0?'+':'')+t.pnl+'</td><td>'+t.emo+'</td><td>'+(t.mist?t.mist.replace(/_/g,' '):'—')+'</td></tr>';}).join('');
+  var f=DB.f||{};
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MPV Journal Report - '+td()+'</title>';
+  html+='<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">';
+  html+='<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Noto Sans Telugu",Arial,sans-serif;background:#fff;color:#111;padding:30px;max-width:800px;margin:0 auto;font-size:13px}h1{color:#7A6530;letter-spacing:2px;font-size:20px;margin-bottom:4px}h2{color:#7A6530;font-size:13px;margin:20px 0 8px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #e0c880;padding-bottom:4px}.meta{font-size:11px;color:#888;margin-bottom:20px}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.stat{background:#fdf9f0;border:1px solid #e0c880;border-radius:6px;padding:10px;text-align:center}.stat-v{font-size:20px;font-weight:700;color:#7A6530}.stat-l{font-size:9px;color:#888;margin-top:2px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}th{background:#fdf5e0;color:#7A6530;padding:7px 8px;text-align:left;font-size:11px;letter-spacing:0.5px}td{padding:7px 8px;border-bottom:1px solid #f0e8c8}.sec-box{background:#fdf9f0;border:1px solid #e0c880;border-radius:6px;padding:14px;margin-bottom:16px}.sec-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}.sec-val{font-size:13px;color:#333;line-height:1.7}.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#fdf5e0;color:#7A6530;border:1px solid #e0c880}@media print{body{padding:15px}button{display:none}}</style>';
+  html+='</head><body>';
+  html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">';
+  html+='<div><h1>MIND POWER VAULTT</h1><div class="meta">Trading Journal Report &nbsp;·&nbsp; Generated: '+td()+' &nbsp;·&nbsp; Identity: <span class="badge">'+id.toUpperCase()+'</span></div></div>';
+  html+='<button onclick="window.print()" style="background:#7A6530;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">🖨 Print / Save PDF</button></div>';
+  html+='<div class="stat-grid"><div class="stat"><div class="stat-v">'+(tp>=0?'+':'-')+'₹'+fi(tp)+'</div><div class="stat-l">Total P&L</div></div><div class="stat"><div class="stat-v">'+T.length+'</div><div class="stat-l">Total Trades</div></div><div class="stat"><div class="stat-v">'+wr+'%</div><div class="stat-l">Win Rate</div></div><div class="stat"><div class="stat-v" style="color:'+(disc>=0?'#2a7a2a':'#7a2a2a')+'">'+disc+'</div><div class="stat-l">Disc. Score</div></div></div>';
+  html+='<div class="stat-grid"><div class="stat"><div class="stat-v" style="color:#e05050">-₹'+fi(Math.abs(lostMist))+'</div><div class="stat-l">Lost to Mistakes</div></div><div class="stat"><div class="stat-v" style="color:#2a7a2a">+₹'+fi(gainDisc)+'</div><div class="stat-l">Earned (Discipline)</div></div><div class="stat"><div class="stat-v">'+pln+'</div><div class="stat-l">Planned Trades</div></div><div class="stat"><div class="stat-v">'+T.length-pln+'</div><div class="stat-l">Impulse Trades</div></div></div>';
+  if(f.why){html+='<h2>Foundation</h2><div class="sec-box"><div class="sec-label">My Why</div><div class="sec-val">'+f.why+'</div></div>';}
+  if(T.length){html+='<h2>Last 20 Trades</h2><table><tr><th>Date</th><th>Instrument</th><th>Type</th><th>P&L</th><th>Emotion</th><th>Mistake</th></tr>'+trRows+'</table>';}
+  if(DB.eod.length){html+='<h2>Last 7 Days — EOD Review</h2><table><tr><th>Date</th><th>Process</th><th>Outcome</th><th>Mood</th><th>Best Decision</th><th>Worst Decision</th></tr>'+eodRows+'</table>';}
+  if(DB.rules&&DB.rules.length){html+='<h2>Strategy Rules — Break Count</h2><table><tr><th>Rule</th><th>Break Count</th></tr>';for(var i=0;i<DB.rules.length;i++){html+='<tr><td>'+DB.rules[i].text+'</td><td style="color:'+(DB.rules[i].breaks>0?'red':'green')+'">'+DB.rules[i].breaks+'x</td></tr>';}html+='</table>';}
+  html+='<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center">Mind Power Vaultt — Trading Psychology Journal &nbsp;·&nbsp; Confidential</div>';
+  html+='` }} 
+        />
+    );
 }

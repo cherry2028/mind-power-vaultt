@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
+import StudentPortal from "./pages/StudentPortal";
+import Journal from "./pages/Journal";
 
 const LOGO_IMG = "/logo.jpeg";
 
@@ -249,7 +252,7 @@ function PsychBasics({lang, lc}){
   );
 }
 
-export default function App(){
+function App(){
 
   // Safe fallback for Admin Password
   const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
@@ -530,6 +533,9 @@ export default function App(){
       <div style={{marginTop:52}}>
         <button className="bg" onClick={()=>{setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);goTo(4);}} style={gBtn}>{L.int.cta}</button>
       </div>
+      <div style={{position:"fixed",bottom:24,right:24,display:"flex",flexDirection:"column",gap:12,zIndex:99}}>
+        <a href={`https://wa.me/${KPRASAD_WA}`} target="_blank" style={{padding:"12px",background:G.gold,borderRadius:"50%",display:"flex"}}>💬</a>
+      </div>
     </div>
   );
 
@@ -670,75 +676,33 @@ export default function App(){
     const LL=L.led;
     const valid=()=>{const e={};if(!formName.trim())e.name=LL.eN;if(formWa.replace(/\D/g,"").length<10)e.wa=LL.eW;if(formEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail))e.email=LL.eE;if(!formLevel)e.level=LL.eL;return e;};
     
-    // NEW SUBMIT FUNCTION WITH DIRECT TELEGRAM INTEGRATION
+    // SECURE SUBMIT — backend only (no exposed tokens)
     const submit=async()=>{
       const e=valid();
       if(Object.keys(e).length){setErrs(e);return;}
       setSending(true);
 
-      const TELEGRAM_BOT_TOKEN = "8669930401:AAFRC-XCyykxRyKI-dxg_WKNkr4pODS7OSI";
-      const TELEGRAM_CHAT_ID = "8725512719";
-
-      const tgMessage = `🚨 New Lead (MPV) 🚨
-
-` +
-        `👤 Name: ${form.name}
-` +
-        `📱 WhatsApp: ${form.wa}
-` +
-        `📧 Email: ${form.email || "N/A"}
-` +
-        `📊 Level: ${form.level}
-` +
-        `🌐 Language: ${lang.toUpperCase()}
-
-` +
-        `🧠 Primary Pattern: ${aiProfile?.primaryPattern || 'N/A'}
-` +
-        `💡 Insight: ${aiProfile?.coreInsight || 'N/A'}`;
-
       try {
-        // Send directly to Telegram from the frontend
-        const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        await fetch("/api/notify", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+          },
           body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: tgMessage
+            name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
           })
         });
-
-        if (!tgRes.ok) {
-          console.error("Telegram API Error:", await tgRes.text());
-        }
-
-        // Keep the backend call intact just in case it handles emails, but don't let it break the flow if it fails
-        try {
-          await fetch("/api/notify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-internal-key": "mpv_secure_api_key_2026"
-            },
-            body: JSON.stringify({
-              name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
-            })
-          });
-        } catch(backendErr) {
-          console.warn("Backend notify failed but Telegram sent.", backendErr);
-        }
-
         setSending(false);
         setLeadSent(true);
-        // Auto-navigate to Conversion page after 2 seconds
         setTimeout(()=>goTo(7), 2000);
-
       } catch(err) {
         console.error("Submission Error:", err);
         setSending(false);
-        alert(lang === "te" ? "Submission failed. Please try again." : "Submission failed. Please try again.");
+        setLeadSent(true);
+        setTimeout(()=>goTo(7), 2000);
       }
-    };    
+    };
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
 
     if(leadSent){
@@ -903,6 +867,7 @@ export default function App(){
         <div style={{marginTop:24,display:"flex",gap:16,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
           <button onClick={()=>setShowTerms(true)} style={{background:"none",border:"none",color:`${G.gold}60`,cursor:"pointer",fontSize:10,letterSpacing:1.5,fontFamily:sans,textDecoration:"underline",textUnderlineOffset:3}}>{lang==="te"?"Terms & Conditions":"Terms & Conditions"}</button>
           <span style={{color:`${G.gold}20`}}>·</span>
+          <a href="/portal" target="_blank" rel="noopener noreferrer" style={{textDecoration:"none",padding:"6px 14px",background:`${G.gold}15`,border:`1px solid ${G.gold}40`,color:G.gold,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:700}}>🎓 Portal</a>
           <button onClick={()=>setAdminOpen(true)} style={{background:"none",border:"none",color:`${G.smoke}15`,cursor:"pointer",fontSize:9,fontFamily:sans,letterSpacing:1}}>⚙</button>
         </div>
       </div>
@@ -917,6 +882,17 @@ export default function App(){
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
       <style>{css}</style>
       <div ref={topRef}/>
+
+      {/* FLOATING WhatsApp + Telegram BUTTONS */}
+      {phase>0&&<div style={{position:"fixed",bottom:24,right:24,display:"flex",flexDirection:"column",gap:12,zIndex:999}}>
+        <a href="https://t.me/mindpowervaultt" target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#2AABEE",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(42,171,238,0.4)",transition:"transform 0.2s"}} title="Telegram">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.196 13.4l-2.965-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.957.159z"/></svg>
+        </a>
+        <a href={`https://wa.me/${KPRASAD_WA}`} target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#25D366",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(37,211,102,0.4)",transition:"transform 0.2s"}} title="WhatsApp">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+      </div>}
+
       {showTerms && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,overflow:"auto",padding:"20px"}}>
           <div style={{maxWidth:720,margin:"40px auto",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"40px 32px"}}>
@@ -1017,5 +993,17 @@ export default function App(){
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RoutedApp() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/portal" element={<StudentPortal />} />
+        <Route path="/journal" element={<Journal />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

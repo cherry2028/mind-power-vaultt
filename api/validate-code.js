@@ -18,9 +18,9 @@ export default async function handler(req, res) {
   }
 
   const { code, type } = req.body || {};
-  const { MASTER_ACCESS_CODE, ADMIN_PASSWORD, JWT_SECRET } = process.env;
+  const { MASTER_ACCESS_CODE, ADMIN_PASSWORD, JWT_SECRET, STUDENT_CODES } = process.env;
 
-  if (!code || !type) {
+  if (!code) {
     return res.status(400).json({ valid: false, error: 'Invalid request' });
   }
 
@@ -29,7 +29,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ valid: false, error: 'Server configuration error' });
   }
 
-  // Student access
+  // Journal Student Portal Access
+  if (!type || type === 'journal') {
+    const validCodes = (STUDENT_CODES || '').split(',').map(c => c.trim());
+    if (validCodes.includes(code) || code === MASTER_ACCESS_CODE) {
+       const token = signJWT({ role: 'student', type: 'journal' }, JWT_SECRET, 24);
+       recordSuccess(ip);
+       logAttempt({ ip, code, type: 'journal', success: true });
+       return res.status(200).json({ valid: true, role: 'student', token });
+    }
+  }
+
+  // Legacy Student access
   if (type === 'access' && code === MASTER_ACCESS_CODE) {
     const token = signJWT({ role: 'student', type: 'access' }, JWT_SECRET, 24);
     recordSuccess(ip);
