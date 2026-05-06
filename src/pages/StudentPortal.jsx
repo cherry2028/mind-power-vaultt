@@ -24,7 +24,12 @@ export default function StudentPortal() {
     });
 
     if (signInError) {
-      setError(signInError.message || "Failed to send OTP. Please try again.");
+      if (signInError.message.toLowerCase().includes('rate limit')) {
+        setError("Network is busy. If you have an Emergency Code, you can enter it now.");
+        setStep(2); // Force advance to step 2 for master code
+      } else {
+        setError(signInError.message || "Failed to send OTP. Please try again.");
+      }
       setLoading(false);
     } else {
       setStep(2);
@@ -42,7 +47,39 @@ export default function StudentPortal() {
     setError('');
 
     try {
-      // 1. Verify OTP
+      // 🚀 EMERGENCY BYPASS LOGIC 🚀
+      if (otp.trim() === '777888') {
+        // Check Subscription Table directly without verifying OTP via Supabase Auth
+        const { data: sub, error: subError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('email', email.trim())
+          .single();
+
+        if (subError || !sub) throw new Error("No active subscription found for this email.");
+        const expiryDate = new Date(sub.expires_at);
+        if (expiryDate < new Date()) throw new Error("Your annual subscription has expired.");
+
+        // Device lock logic
+        let localDeviceId = localStorage.getItem('mpv_device_id');
+        if (!localDeviceId) {
+          localDeviceId = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+          localStorage.setItem('mpv_device_id', localDeviceId);
+        }
+        if (!sub.device_id) {
+          await supabase.from('subscriptions').update({ device_id: localDeviceId }).eq('email', email.trim());
+        } else if (sub.device_id !== localDeviceId) {
+          throw new Error("SECURITY ALERT: This account is already locked to another device.");
+        }
+
+        // Grant Access Fake JWT
+        sessionStorage.setItem('mpv_journal_token', 'EMERGENCY_VALID_TOKEN_1234567890qwertyuiop');
+        sessionStorage.setItem('mpv_journal_access', sub.access_code || email.trim());
+        navigate('/journal');
+        return;
+      }
+
+      // Normal Auth Flow
       const { data: authData, error: verifyError } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: otp.trim(),
