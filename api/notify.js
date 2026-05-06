@@ -135,7 +135,7 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${resendKey}`
         },
         body: JSON.stringify({
-          from: 'Mind Power Vaultt <onboarding@resend.dev>', // Changed to Default Resend email to avoid blocking
+          from: 'Mind Power Vaultt <noreply@mindpowervaultt.com>',
           to: email,
           subject: `🧠 ${name}, Your Trading Psychology Report — Mind Power Vaultt`,
           html: emailHtml
