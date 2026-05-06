@@ -25,7 +25,8 @@ export default function StudentPortal() {
       const data = await res.json();
       
       if (data.valid) {
-        // Securely store access state for this session
+        // Store JWT token for journal session validation
+        sessionStorage.setItem('mpv_journal_token', data.token || code.trim());
         sessionStorage.setItem('mpv_journal_access', code.trim());
         navigate('/journal');
       } else {
