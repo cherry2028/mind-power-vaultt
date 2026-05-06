@@ -136,8 +136,23 @@ export default function Journal() {
   }
 
   // ═══ AUTHORIZED — RENDER JOURNAL ═══
+  const accessCode = sessionStorage.getItem('mpv_journal_access') || 'STUDENT';
+  
   return (
-    <div style={{ width:'100vw', height:'100vh', overflow:'hidden', background:G.black, userSelect:'none', WebkitUserSelect:'none' }}>
+    <div style={{ width:'100vw', height:'100vh', overflow:'hidden', background:G.black, userSelect:'none', WebkitUserSelect:'none', position:'relative' }}>
+      {/* 🛡️ DYNAMIC WATERMARK TO DETER SCREENSHOTS */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9999,
+        display: 'flex', flexWrap: 'wrap', overflow: 'hidden', opacity: 0.04,
+        transform: 'rotate(-30deg) scale(1.5)', userSelect: 'none'
+      }}>
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div key={i} style={{ padding: '40px', fontSize: '24px', fontWeight: 900, color: '#FFFFFF', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+            {accessCode} • CONFIDENTIAL • DO NOT SHARE
+          </div>
+        ))}
+      </div>
+      
       <iframe
         ref={iframeRef}
         title="Mind Power Vaultt Journal"

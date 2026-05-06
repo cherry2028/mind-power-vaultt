@@ -825,6 +825,40 @@ function App(){
             <p className={lc} style={{fontFamily:serif,fontSize:"clamp(22px,3vw,36px)",color:G.gold,lineHeight:1.75,fontWeight:700}}>{CV.k3}</p>
           </div>
         </div>
+
+        {/* PRICING SECTION */}
+        <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"40px",background:"rgba(201,168,76,0.05)",border:`2px solid ${G.gold}`,borderRadius:12,textAlign:"center"}}>
+          <div style={{position:"absolute",top:-14,left:"50%",transform:"translateX(-50%)",background:G.gold,color:G.black,padding:"6px 16px",borderRadius:20,fontSize:12,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>🏆 Recommended</div>
+          <h3 className={lc} style={{fontFamily:serif,fontSize:24,color:G.smoke,marginBottom:8}}>MIND POWER VAULTT</h3>
+          <p className={lc} style={{fontSize:14,letterSpacing:2,color:G.gold,textTransform:"uppercase",marginBottom:24,fontWeight:700}}>Annual Access</p>
+          <div style={{fontSize:48,fontWeight:900,color:G.smoke,marginBottom:8}}>₹3000<span style={{fontSize:16,color:G.mid,fontWeight:400}}> / YEAR</span></div>
+          <p className={lc} style={{fontSize:13,color:G.mid,marginBottom:32}}>All future updates included until subscription ends.</p>
+          
+          <div style={{textAlign:"left",display:"flex",flexDirection:"column",gap:16,marginBottom:40,maxWidth:400,margin:"0 auto"}}>
+            {[
+              "Full Trading Psychology Journal",
+              "Discipline Tracking System",
+              "Trader Identity Framework",
+              "Psychology Reports",
+              "Future Updates Included",
+              "Continuous Feature Upgrades",
+              "Process-Based Trader Development"
+            ].map((f, i) => (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:12}}>
+                <span style={{color:G.gold,fontSize:18}}>✔</span>
+                <span className={lc} style={{color:G.smoke,fontSize:15}}>{f}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{padding:"20px",background:"rgba(200,80,80,0.1)",border:"1px solid rgba(200,80,80,0.3)",borderRadius:8}}>
+            <p className={lc} style={{fontSize:16,color:"#CF6679",fontWeight:700,fontStyle:"italic",lineHeight:1.6}}>
+              "This is not a journal.<br/>This is a behavioral correction system for traders."
+            </p>
+          </div>
+          
+          <button className="bg" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${encodeURIComponent('Hello K Prasad, I want to subscribe to the Annual Access (₹3000/year). Please send me the payment details.')}`,"_blank")} style={{...gBtn,width:"100%",padding:"20px",fontSize:16,borderRadius:8,marginTop:32,fontWeight:800}}>Subscribe Now →</button>
+        </div>
         <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"48px 32px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold},transparent)`}}/>
           <p className={lc} style={{fontSize:12,letterSpacing:2,color:G.mid,textTransform:"uppercase",marginBottom:12}}>{CV.s1}</p>
