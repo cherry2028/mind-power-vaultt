@@ -1,4 +1,6 @@
-// /api/verify-payment.js — Verify Cashfree Payment Order Status
+import { createClient } from '@supabase/supabase-js';
+
+// /api/verify-payment.js — Verify Cashfree Payment Order Status & Create Subscription
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -22,8 +24,8 @@ export default async function handler(req, res) {
   }
 
   const apiUrl = env === 'PROD' 
-    ? \`https://api.cashfree.com/pg/orders/\${order_id}\`
-    : \`https://sandbox.cashfree.com/pg/orders/\${order_id}\`;
+    ? `https://api.cashfree.com/pg/orders/${order_id}`
+    : `https://sandbox.cashfree.com/pg/orders/${order_id}`;
 
   try {
     const response = await fetch(apiUrl, {
@@ -38,16 +40,40 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (response.ok && data.order_status === 'PAID') {
-      // 1. In a full system, you would save this transaction to Supabase here
-      // 2. Generate an access code or save user credentials
+      const customerEmail = data.customer_details.customer_email;
+      const newAccessCode = `MPV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       
-      const newAccessCode = \`MPV-\${Math.random().toString(36).substring(2, 8).toUpperCase()}\`;
+      // Save Subscription to Supabase
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+      const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
-      // Return success with access code
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // 1 Year Expiry
+        const expiresAt = new Date();
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+        const { error: dbError } = await supabase.from('subscriptions').upsert({
+          email: customerEmail,
+          name: data.customer_details.customer_name || 'Trader',
+          phone: data.customer_details.customer_phone || '',
+          access_code: newAccessCode,
+          expires_at: expiresAt.toISOString(),
+          status: 'active'
+        }, { onConflict: 'email' });
+
+        if (dbError) {
+          console.error('[SUPABASE] Failed to save subscription:', dbError);
+        }
+      } else {
+        console.warn('[SUPABASE] Environment variables missing. Skipping DB insert.');
+      }
+      
       return res.status(200).json({
         success: true,
         status: data.order_status,
-        customer_email: data.customer_details.customer_email,
+        customer_email: customerEmail,
         access_code: newAccessCode
       });
     } else {

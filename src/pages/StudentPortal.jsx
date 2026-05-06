@@ -1,39 +1,81 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase';
 
 export default function StudentPortal() {
-  const [code, setCode] = useState('');
+  const [step, setStep] = useState(1); // 1: Email, 2: OTP
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!code.trim()) {
-      setError("Please enter your access code.");
+    if (!email.trim() || !email.includes('@')) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setLoading(true);
+    setError('');
+
+    const { error: signInError } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+    });
+
+    if (signInError) {
+      setError(signInError.message || "Failed to send OTP. Please try again.");
+      setLoading(false);
+    } else {
+      setStep(2);
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp.trim()) {
+      setError("Please enter the OTP.");
       return;
     }
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch('/api/validate-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim() })
+      // 1. Verify OTP
+      const { data: authData, error: verifyError } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp.trim(),
+        type: 'email'
       });
-      const data = await res.json();
-      
-      if (data.valid) {
-        // Store JWT token for journal session validation
-        sessionStorage.setItem('mpv_journal_token', data.token || code.trim());
-        sessionStorage.setItem('mpv_journal_access', code.trim());
-        navigate('/journal');
-      } else {
-        setError(data.error || "Invalid Access Code. Please contact Admin.");
+
+      if (verifyError || !authData.session) {
+        throw new Error(verifyError?.message || "Invalid OTP.");
       }
+
+      // 2. Check Subscription Table
+      const { data: sub, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('email', email.trim())
+        .single();
+
+      if (subError || !sub) {
+        throw new Error("No active subscription found for this email.");
+      }
+
+      const expiryDate = new Date(sub.expires_at);
+      if (expiryDate < new Date()) {
+        throw new Error("Your annual subscription has expired.");
+      }
+
+      // 3. Grant Access
+      sessionStorage.setItem('mpv_journal_token', authData.session.access_token);
+      sessionStorage.setItem('mpv_journal_access', sub.access_code || email.trim());
+      navigate('/journal');
+      
     } catch (err) {
-      setError("Server error. Please try again later.");
+      setError(err.message || "Authentication failed.");
     }
     setLoading(false);
   };
@@ -56,7 +98,7 @@ export default function StudentPortal() {
       justifyContent: 'center',
       fontFamily: "'DM Sans', sans-serif",
       color: G.smoke,
-      userSelect: 'none' // Anti-copy
+      userSelect: 'none'
     }}>
       <div style={{
         maxWidth: 400,
@@ -69,51 +111,107 @@ export default function StudentPortal() {
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
       }}>
         <h2 style={{ color: G.gold, fontSize: 24, marginBottom: 8 }}>Student Portal</h2>
-        <p style={{ color: G.mid, fontSize: 14, marginBottom: 32 }}>Enter your secure access code to view the Premium Journal.</p>
+        <p style={{ color: G.mid, fontSize: 14, marginBottom: 32 }}>
+          {step === 1 ? "Enter your registered email to receive an OTP." : "Enter the OTP sent to your email."}
+        </p>
         
-        <form onSubmit={handleLogin}>
-          <input 
-            type="password"
-            value={code}
-            onChange={e => {setCode(e.target.value); setError('');}}
-            placeholder="Enter Access Code"
-            style={{
-              width: '100%',
-              padding: '16px 20px',
-              backgroundColor: 'rgba(201,168,76,0.04)',
-              border: `1px solid ${error ? 'rgba(200,80,80,0.5)' : G.goldDim}`,
-              borderRadius: '8px',
-              color: G.smoke,
-              fontSize: '16px',
-              outline: 'none',
-              marginBottom: '16px',
-              textAlign: 'center',
-              letterSpacing: 2
-            }}
-          />
-          {error && <div style={{ color: 'rgba(200,80,80,0.8)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
-          
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: `linear-gradient(135deg, ${G.gold}, #9A7020)`,
-              color: G.black,
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: 14,
-              fontWeight: 700,
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? 'Verifying...' : 'Access Journal'}
-          </button>
-        </form>
+        {step === 1 ? (
+          <form onSubmit={handleSendOtp}>
+            <input 
+              type="email"
+              value={email}
+              onChange={e => {setEmail(e.target.value); setError('');}}
+              placeholder="Your Email Address"
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                backgroundColor: 'rgba(201,168,76,0.04)',
+                border: `1px solid ${error ? 'rgba(200,80,80,0.5)' : G.goldDim}`,
+                borderRadius: '8px',
+                color: G.smoke,
+                fontSize: '16px',
+                outline: 'none',
+                marginBottom: '16px',
+                textAlign: 'center',
+                letterSpacing: 1
+              }}
+            />
+            {error && <div style={{ color: 'rgba(200,80,80,0.8)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: `linear-gradient(135deg, ${G.gold}, #9A7020)`,
+                color: G.black,
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1
+              }}
+            >
+              {loading ? 'Sending...' : 'Send OTP'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyOtp}>
+            <input 
+              type="text"
+              value={otp}
+              onChange={e => {setOtp(e.target.value); setError('');}}
+              placeholder="6-Digit OTP"
+              maxLength={6}
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                backgroundColor: 'rgba(201,168,76,0.04)',
+                border: `1px solid ${error ? 'rgba(200,80,80,0.5)' : G.goldDim}`,
+                borderRadius: '8px',
+                color: G.smoke,
+                fontSize: '20px',
+                outline: 'none',
+                marginBottom: '16px',
+                textAlign: 'center',
+                letterSpacing: 8
+              }}
+            />
+            {error && <div style={{ color: 'rgba(200,80,80,0.8)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: `linear-gradient(135deg, ${G.gold}, #9A7020)`,
+                color: G.black,
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1
+              }}
+            >
+              {loading ? 'Verifying...' : 'Login to Journal'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {setStep(1); setOtp(''); setError('');}}
+              style={{
+                background: 'transparent', border: 'none', color: G.soft, fontSize: 12, marginTop: 16, cursor: 'pointer', textDecoration: 'underline'
+              }}
+            >
+              Use a different email
+            </button>
+          </form>
+        )}
 
         <p style={{ marginTop: 24, fontSize: 12, color: 'rgba(240,237,228,0.32)' }}>
           Access to this portal is strictly monitored. Single device login enforced. Unauthorized sharing will result in permanent ban.
