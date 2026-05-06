@@ -386,6 +386,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <div class="share-btn-icon">📊</div>
       <div><div class="share-btn-title">Weekly Report — Mentor కి</div><div class="share-btn-sub">ఈ వారం complete report download చేయి</div></div>
     </div>
+    <div class="share-btn" onclick="emailReport()">
+      <div class="share-btn-icon">📧</div>
+      <div><div class="share-btn-title">Email Report — Mentor కి Send</div><div class="share-btn-sub">Daily/Weekly report email లో send చేయి</div></div>
+    </div>
     <div class="share-btn" onclick="exportJSON()">
       <div class="share-btn-icon">💾</div>
       <div><div class="share-btn-title">Full Data Backup (JSON)</div><div class="share-btn-sub">అన్ని data backup — safe గా store చేయి</div></div>
@@ -433,6 +437,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <button class="nb" onclick="gS('monthly',this)"><span class="ni">📆</span><span class="nl">Monthly</span></button>
       <button class="nb" onclick="gS('habits',this)"><span class="ni">🔥</span><span class="nl">Streak</span></button>
       <button class="nb" onclick="gS('history',this)"><span class="ni">📂</span><span class="nl">Records</span></button>
+      <button class="nb" onclick="gS('performance',this)"><span class="ni">📈</span><span class="nl">Performance</span></button>
       <div class="stip" id="stip">
         <span>MPV Principle</span>
         <p>"Market నిన్ను కాదు hurt చేసేది — నీ mind నిన్ను hurt చేస్తోంది."</p>
@@ -788,6 +793,70 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           </div>
         </div>
 
+
+        <!-- PERFORMANCE DASHBOARD -->
+        <div class="sec" id="sec-performance">
+          <div class="sh"><div class="st"><span style="font-size:19px">📈</span><h2>Performance Dashboard</h2></div><div class="ss">నీ growth ని visualize చేయి — numbers lie చేయవు.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          
+          <div class="g4" style="margin-bottom:12px">
+            <div class="sb2"><div class="sv" id="pfTotalPnl">₹0</div><div class="sl2">Total P&L</div></div>
+            <div class="sb2"><div class="sv" id="pfWinRate" style="color:#4CAF82">0%</div><div class="sl2">Win Rate</div></div>
+            <div class="sb2"><div class="sv" id="pfAvgWin" style="color:#4CAF82">₹0</div><div class="sl2">Avg Win</div></div>
+            <div class="sb2"><div class="sv" id="pfAvgLoss" style="color:#CF6679">₹0</div><div class="sl2">Avg Loss</div></div>
+          </div>
+
+          <!-- EQUITY CURVE -->
+          <div class="card">
+            <div class="ct">📈 Equity Curve — Cumulative P&L</div>
+            <div class="ib">ఈ graph నీ total capital growth చూపిస్తుంది. Upward = discipline working. Downward = review needed.</div>
+            <canvas id="equityCanvas" width="640" height="200" style="width:100%;height:200px;border-radius:8px;background:#0a0a12"></canvas>
+            <div class="clbl">Trade # → Cumulative P&L</div>
+          </div>
+
+          <!-- DAILY P&L -->
+          <div class="card">
+            <div class="ct">📊 Daily P&L Distribution</div>
+            <canvas id="dailyPnlCanvas" width="640" height="180" style="width:100%;height:180px;border-radius:8px;background:#0a0a12"></canvas>
+            <div class="clbl">Last 30 trading days</div>
+          </div>
+
+          <!-- DISCIPLINE TREND -->
+          <div class="card">
+            <div class="ct">🎯 Discipline Score Trend</div>
+            <canvas id="discTrendCanvas" width="640" height="160" style="width:100%;height:160px;border-radius:8px;background:#0a0a12"></canvas>
+            <div class="clbl">Process Score over time (from EOD Reviews)</div>
+          </div>
+
+          <!-- WIN/LOSS STATS -->
+          <div class="card">
+            <div class="ct">🏆 Win vs Loss Analysis</div>
+            <div class="g2" style="margin-bottom:12px">
+              <div class="pvp-card pvp-gain"><div class="pvp-amt" id="pfWins" style="color:#4CAF82">0</div><div class="pvp-lbl">Winning Trades</div></div>
+              <div class="pvp-card pvp-loss"><div class="pvp-amt" id="pfLosses" style="color:#CF6679">0</div><div class="pvp-lbl">Losing Trades</div></div>
+            </div>
+            <div class="g2">
+              <div class="pvp-card pvp-gain"><div class="pvp-amt" id="pfBestTrade" style="color:#4CAF82">₹0</div><div class="pvp-lbl">Best Trade</div></div>
+              <div class="pvp-card pvp-loss"><div class="pvp-amt" id="pfWorstTrade" style="color:#CF6679">₹0</div><div class="pvp-lbl">Worst Trade</div></div>
+            </div>
+          </div>
+
+          <!-- PLANNED vs IMPULSE -->
+          <div class="card">
+            <div class="ct">🧠 Planned vs Impulse — P&L Comparison</div>
+            <canvas id="planImpCanvas" width="640" height="160" style="width:100%;height:160px;border-radius:8px;background:#0a0a12"></canvas>
+            <div class="clbl">Green = Planned trades P&L | Red = Impulse trades P&L</div>
+          </div>
+
+          <!-- EMOTION HEATMAP -->
+          <div class="card">
+            <div class="ct">💬 Emotion → P&L Correlation</div>
+            <div id="emotionPnlGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+            <div class="ib" style="margin-top:10px">ఏ emotion లో నువ్వు profit చేస్తున్నావ? ఏదిలో loss? ఇది నీ awareness tool.</div>
+          </div>
+
+          <div class="rgt"><button class="btn bpri" onclick="rPerf()">🔄 Refresh Dashboard</button></div>
+        </div>
+
         <!-- HISTORY -->
         <div class="sec" id="sec-history">
           <div class="sh"><div class="st"><span style="font-size:19px">📂</span><h2>Records — All History</h2></div><div class="ss">అన్ని sections లో save చేసిన data ఒకే చోట.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
@@ -929,6 +998,7 @@ function gS(id,btn){
   if(id==='eod'){rEC();updateMirrorUI();}
   if(id==='strategy')rStrategy();
   if(id==='history')showHist('premarket',ge('hist-tabs').querySelector('.on'));
+  if(id==='performance')rPerf();
 }
 
 function updateMirrorUI(){
@@ -1196,6 +1266,144 @@ window.onload=function(){
     startApp();
   },700);
 };
+
+
+// ════════ PERFORMANCE DASHBOARD ════════
+function rPerf(){
+  var T=DB.tr;if(!T.length)return;
+  var tp=0,wins=0,losses=0,wSum=0,lSum=0,best=-Infinity,worst=Infinity;
+  for(var i=0;i<T.length;i++){var p=Number(T[i].pnl||0);tp+=p;if(p>0){wins++;wSum+=p;if(p>best)best=p;}else if(p<0){losses++;lSum+=p;if(p<worst)worst=p;}}
+  var pe=ge('pfTotalPnl');pe.textContent=(tp>=0?'+':'-')+'₹'+fi(tp);pe.style.color=pc(tp);
+  ge('pfWinRate').textContent=T.length?Math.round(wins/T.length*100)+'%':'0%';
+  ge('pfAvgWin').textContent=wins?'+₹'+fi(Math.round(wSum/wins)):'₹0';
+  ge('pfAvgLoss').textContent=losses?'-₹'+fi(Math.abs(Math.round(lSum/losses))):'₹0';
+  ge('pfWins').textContent=wins;ge('pfLosses').textContent=losses;
+  ge('pfBestTrade').textContent=best>-Infinity?'+₹'+fi(best):'₹0';
+  ge('pfWorstTrade').textContent=worst<Infinity?'-₹'+fi(Math.abs(worst)):'₹0';
+  drawEquityCurve();drawDailyPnl();drawDiscTrend();drawPlanImp();drawEmotionPnl();
+}
+
+function drawEquityCurve(){
+  var c=ge('equityCanvas');if(!c)return;var ctx=c.getContext('2d');
+  var w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  var T=DB.tr;if(T.length<2)return;
+  var cum=[0];for(var i=0;i<T.length;i++)cum.push(cum[cum.length-1]+Number(T[i].pnl||0));
+  var mn=Math.min.apply(null,cum),mx=Math.max.apply(null,cum);if(mn===mx)mx=mn+1;
+  var pad=20,gw=w-pad*2,gh=h-pad*2;
+  // Grid lines
+  ctx.strokeStyle='rgba(201,168,76,0.08)';ctx.lineWidth=1;
+  for(var i=0;i<=4;i++){var y=pad+gh*(i/4);ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke();}
+  // Zero line
+  var zy=pad+gh*(1-(0-mn)/(mx-mn));ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pad,zy);ctx.lineTo(w-pad,zy);ctx.stroke();ctx.setLineDash([]);
+  // Equity line
+  ctx.beginPath();ctx.strokeStyle='#C9A84C';ctx.lineWidth=2;
+  for(var i=0;i<cum.length;i++){var x=pad+(i/(cum.length-1))*gw,y=pad+gh*(1-(cum[i]-mn)/(mx-mn));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+  // Gradient fill
+  var lastX=pad+((cum.length-1)/(cum.length-1))*gw;
+  ctx.lineTo(lastX,pad+gh);ctx.lineTo(pad,pad+gh);ctx.closePath();
+  var grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,'rgba(201,168,76,0.15)');grad.addColorStop(1,'rgba(201,168,76,0)');
+  ctx.fillStyle=grad;ctx.fill();
+  // Labels
+  ctx.fillStyle='#555';ctx.font='10px sans-serif';ctx.textAlign='right';
+  ctx.fillText('+₹'+fi(mx),pad-4,pad+8);ctx.fillText((mn<0?'-':'')+'₹'+fi(Math.abs(mn)),pad-4,h-pad);
+  ctx.textAlign='center';ctx.fillText('1',pad,h-4);ctx.fillText(T.length+'',w-pad,h-4);
+}
+
+function drawDailyPnl(){
+  var c=ge('dailyPnlCanvas');if(!c)return;var ctx=c.getContext('2d');
+  var w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  var T=DB.tr;if(!T.length)return;
+  var daily={};for(var i=0;i<T.length;i++){var d=T[i].date;daily[d]=(daily[d]||0)+Number(T[i].pnl||0);}
+  var keys=Object.keys(daily).sort().slice(-30);if(!keys.length)return;
+  var vals=keys.map(function(k){return daily[k];});
+  var mx=Math.max.apply(null,vals.map(Math.abs));if(!mx)mx=1;
+  var pad=20,gw=w-pad*2,gh=h-pad*2,bw=Math.max(4,gw/keys.length-3),mid=pad+gh/2;
+  // Zero line
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.beginPath();ctx.moveTo(pad,mid);ctx.lineTo(w-pad,mid);ctx.stroke();
+  for(var i=0;i<vals.length;i++){var x=pad+i*(gw/keys.length)+2,v=vals[i],bh=(Math.abs(v)/mx)*(gh/2-4);
+  ctx.fillStyle=v>=0?'#4CAF82':'#CF6679';
+  if(v>=0)ctx.fillRect(x,mid-bh,bw,bh);else ctx.fillRect(x,mid,bw,bh);}
+}
+
+function drawDiscTrend(){
+  var c=ge('discTrendCanvas');if(!c)return;var ctx=c.getContext('2d');
+  var w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  var E=DB.eod;if(E.length<2)return;
+  var data=E.slice(-20);var vals=data.map(function(e){return e.proc||0;});
+  var mn=0,mx=10,pad=20,gw=w-pad*2,gh=h-pad*2;
+  // Grid
+  ctx.strokeStyle='rgba(91,143,212,0.08)';ctx.lineWidth=1;
+  for(var i=0;i<=5;i++){var y=pad+gh*(i/5);ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke();}
+  // Line
+  ctx.beginPath();ctx.strokeStyle='#5B8FD4';ctx.lineWidth=2;
+  for(var i=0;i<vals.length;i++){var x=pad+(i/(vals.length-1))*gw,y=pad+gh*(1-vals[i]/10);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+  // Dots
+  for(var i=0;i<vals.length;i++){var x=pad+(i/(vals.length-1))*gw,y=pad+gh*(1-vals[i]/10);
+  ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle=vals[i]>=7?'#4CAF82':vals[i]>=5?'#E0A84C':'#CF6679';ctx.fill();}
+}
+
+function drawPlanImp(){
+  var c=ge('planImpCanvas');if(!c)return;var ctx=c.getContext('2d');
+  var w=c.width,h=c.height;ctx.clearRect(0,0,w,h);
+  var T=DB.tr;var planP=0,impP=0,planC=0,impC=0;
+  for(var i=0;i<T.length;i++){var p=Number(T[i].pnl||0);if(T[i].pln){planP+=p;planC++;}else{impP+=p;impC++;}}
+  if(!planC&&!impC)return;
+  var pad=40,barW=80,gap=40,mx=Math.max(Math.abs(planP),Math.abs(impP),1);
+  var mid=h/2;
+  // Planned bar
+  var x1=w/2-barW-gap/2,bh1=(Math.abs(planP)/mx)*(mid-pad);
+  ctx.fillStyle='#4CAF82';if(planP>=0)ctx.fillRect(x1,mid-bh1,barW,bh1);else ctx.fillRect(x1,mid,barW,bh1);
+  ctx.fillStyle='#4CAF82';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+  ctx.fillText((planP>=0?'+':'-')+'₹'+fi(Math.abs(planP)),x1+barW/2,planP>=0?mid-bh1-8:mid+bh1+16);
+  ctx.fillStyle='#9A8870';ctx.font='10px sans-serif';ctx.fillText('Planned ('+planC+')',x1+barW/2,h-8);
+  // Impulse bar
+  var x2=w/2+gap/2,bh2=(Math.abs(impP)/mx)*(mid-pad);
+  ctx.fillStyle='#CF6679';if(impP>=0)ctx.fillRect(x2,mid-bh2,barW,bh2);else ctx.fillRect(x2,mid,barW,bh2);
+  ctx.fillStyle='#CF6679';ctx.font='bold 12px sans-serif';
+  ctx.fillText((impP>=0?'+':'-')+'₹'+fi(Math.abs(impP)),x2+barW/2,impP>=0?mid-bh2-8:mid+bh2+16);
+  ctx.fillStyle='#9A8870';ctx.font='10px sans-serif';ctx.fillText('Impulse ('+impC+')',x2+barW/2,h-8);
+  // Zero line
+  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.beginPath();ctx.moveTo(pad,mid);ctx.lineTo(w-pad,mid);ctx.stroke();
+}
+
+function drawEmotionPnl(){
+  var grid=ge('emotionPnlGrid');if(!grid)return;grid.innerHTML='';
+  var T=DB.tr;var emoData={};
+  for(var i=0;i<T.length;i++){var e=T[i].emo||'unknown',p=Number(T[i].pnl||0);
+  if(!emoData[e])emoData[e]={total:0,count:0};emoData[e].total+=p;emoData[e].count++;}
+  var emojis={calm:'😌',anxious:'😰',fearful:'😨',greedy:'🤑',angry:'😤',neutral:'😐',confident:'💪'};
+  var keys=Object.keys(emoData);if(!keys.length){grid.innerHTML='<div style="color:#2A2A2A;font-size:12px;grid-column:span 3">ఇంకా data లేదు</div>';return;}
+  for(var i=0;i<keys.length;i++){var k=keys[i],d=emoData[k],avg=Math.round(d.total/d.count);
+  var col=d.total>=0?'#4CAF82':'#CF6679';
+  grid.innerHTML+='<div style="background:#101018;border:1px solid rgba(201,168,76,0.1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px">'+(emojis[k]||'❓')+'</div><div style="font-size:10px;color:#9A8870;margin:4px 0">'+k+'</div><div style="font-size:14px;font-weight:700;color:'+col+'">'+(d.total>=0?'+':'-')+'₹'+fi(Math.abs(d.total))+'</div><div style="font-size:9px;color:#555">'+d.count+' trades · avg '+(avg>=0?'+':'-')+'₹'+fi(Math.abs(avg))+'</div></div>';}
+}
+
+// ════════ EMAIL REPORT ════════
+function emailReport(){
+  ge('sharePanel').classList.remove('open');
+  var email=prompt('Report send చేయాల్సిన Email address enter చేయి:');
+  if(!email||!email.includes('@')){toast('Valid email enter చేయి!');return;}
+  var name=prompt('నీ Name (report లో display అవుతుంది):');
+  if(!name){toast('Name enter చేయి!');return;}
+  var type=prompt('Report Type? (daily / weekly / monthly)','weekly');
+  toast('📧 Report generating...');
+  var T=DB.tr,tp=0,wins=0,pln=0;
+  for(var i=0;i<T.length;i++){var p=Number(T[i].pnl||0);tp+=p;if(p>0)wins++;if(T[i].pln)pln++;}
+  var wr=T.length?Math.round(wins/T.length*100):0;
+  var disc=calcDisciplineScore();var id=calcIdentity();
+  var trRows='';var recent=T.slice(-15);
+  for(var i=0;i<recent.length;i++){var t=recent[i];trRows+='<tr><td>'+t.date+'</td><td>'+t.inst+'</td><td>'+(t.pln?'Planned':'Impulse')+'</td><td style="color:'+(Number(t.pnl)>=0?'#4CAF82':'#CF6679')+'">'+(Number(t.pnl)>=0?'+':'')+t.pnl+'</td><td>'+t.emo+'</td></tr>';}
+  var reportHtml='<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#08080A;color:#F0E6D3;padding:30px;border-radius:12px">';
+  reportHtml+='<div style="text-align:center;margin-bottom:20px"><div style="font-size:20px;font-weight:700;color:#C9A84C;letter-spacing:3px">MIND POWER VAULTT</div><div style="font-size:11px;color:#555">'+type.toUpperCase()+' JOURNAL REPORT</div><div style="font-size:12px;color:#9A8870;margin-top:4px">Student: '+name+' | Date: '+td()+'</div></div>';
+  reportHtml+='<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><tr><td style="background:#101018;border:1px solid #222;border-radius:6px;padding:12px;text-align:center;width:25%"><div style="font-size:18px;font-weight:700;color:'+(tp>=0?'#4CAF82':'#CF6679')+'">'+(tp>=0?'+':'-')+'₹'+fi(tp)+'</div><div style="font-size:9px;color:#555">P&L</div></td><td style="background:#101018;border:1px solid #222;border-radius:6px;padding:12px;text-align:center;width:25%"><div style="font-size:18px;font-weight:700">'+T.length+'</div><div style="font-size:9px;color:#555">Trades</div></td><td style="background:#101018;border:1px solid #222;border-radius:6px;padding:12px;text-align:center;width:25%"><div style="font-size:18px;font-weight:700;color:#4CAF82">'+wr+'%</div><div style="font-size:9px;color:#555">Win Rate</div></td><td style="background:#101018;border:1px solid #222;border-radius:6px;padding:12px;text-align:center;width:25%"><div style="font-size:18px;font-weight:700;color:#C9A84C">'+disc+'</div><div style="font-size:9px;color:#555">Discipline</div></td></tr></table>';
+  reportHtml+='<div style="background:#101018;border:1px solid #222;border-radius:6px;padding:12px;margin-bottom:16px;text-align:center"><div style="font-size:10px;color:#C9A84C;letter-spacing:2px;margin-bottom:4px">TRADER IDENTITY</div><div style="font-size:16px;font-weight:700;color:#E2C97A">'+id.toUpperCase()+'</div></div>';
+  if(trRows){reportHtml+='<div style="font-size:11px;color:#C9A84C;margin-bottom:6px;letter-spacing:1px">RECENT TRADES</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px"><tr style="background:#181820"><th style="padding:6px;color:#C9A84C;text-align:left">Date</th><th style="text-align:left;padding:6px;color:#C9A84C">Inst</th><th style="padding:6px;color:#C9A84C">Type</th><th style="padding:6px;color:#C9A84C">P&L</th><th style="padding:6px;color:#C9A84C">Mood</th></tr>'+trRows+'</table>';}
+  reportHtml+='<div style="text-align:center;font-size:10px;color:#333;margin-top:20px">Mind Power Vaultt — Trading Psychology Journal | Confidential</div></div>';
+  fetch('/api/send-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,reportType:type,studentName:name,html:reportHtml})}).then(function(r){return r.json();}).then(function(d){if(d.success)toast('📧 Report '+email+' కి send అయింది ✦');else toast('❌ Error: '+(d.error||'Failed'));}).catch(function(e){toast('❌ Network error');});
+}
+
 </script>
 </body>
 </html>
