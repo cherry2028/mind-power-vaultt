@@ -774,6 +774,74 @@ function App(){
     const mMsg=encodeURIComponent(lang==="te"?`నమస్కారం K Prasad గారు, నేను MPV Self-Discovery Engine complete చేశాను. Mentorship గురించి మాట్లాడాలనుకుంటున్నాను.\n\n👤 పేరు: ${formName||''}\n📱 Number: ${formWa||''}`:`Hello K Prasad, I completed the MPV Self-Discovery Engine. I would like to discuss mentorship.\n\n👤 Name: ${formName||''}\n📱 Number: ${formWa||''}`);
     const cMsg=encodeURIComponent(lang==="te"?"నమస్కారం, నేను Mind Power Vaultt Free Community లో join అవ్వాలనుకుంటున్నాను.":"Hello, I would like to join the Mind Power Vaultt Free Community.");
     const socials=[{icon:"▶",label:"YouTube",url:"https://www.youtube.com/@mindpowervaultt66",color:"#FF4444"},{icon:"📸",label:"Instagram",url:"https://www.instagram.com/mindpowervaultt66",color:"#E1306C"},{icon:"𝕏",label:"X",url:"https://x.com/mindpvault",color:G.smoke},{icon:"✈",label:"Telegram",url:"https://t.me/mindpowervaultt",color:"#2AABEE"}];
+
+    // Cashfree Checkout State
+    const [coOpen, setCoOpen] = useState(false);
+    const [coName, setCoName] = useState(formName || '');
+    const [coEmail, setCoEmail] = useState(formEmail || '');
+    const [coPhone, setCoPhone] = useState(formWa || '');
+    const [coLoading, setCoLoading] = useState(false);
+    const [coError, setCoError] = useState('');
+    const [coSuccess, setCoSuccess] = useState(false);
+    const [coCode, setCoCode] = useState('');
+
+    const startCheckout = async () => {
+      if(!coName || !coEmail || !coPhone) {
+        setCoError("All fields are required");
+        return;
+      }
+      setCoLoading(true); setCoError('');
+      try {
+        const res = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: coName, email: coEmail, phone: coPhone })
+        });
+        const data = await res.json();
+        if(res.ok && data.payment_session_id) {
+          const cashfree = window.Cashfree({ mode: data.environment === 'PROD' ? 'production' : 'sandbox' });
+          let checkoutOptions = {
+            paymentSessionId: data.payment_session_id,
+            redirectTarget: "_modal",
+          };
+          cashfree.checkout(checkoutOptions).then(function(result) {
+            if(result.error) {
+              setCoError(result.error.message);
+              setCoLoading(false);
+            }
+            if(result.paymentDetails) {
+              verifyPayment(data.order_id);
+            }
+          });
+        } else {
+          setCoError(data.error || "Failed to initialize payment");
+          setCoLoading(false);
+        }
+      } catch (err) {
+        setCoError("Network error. Please try again.");
+        setCoLoading(false);
+      }
+    };
+
+    const verifyPayment = async (orderId) => {
+      try {
+        const res = await fetch('/api/verify-payment', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ order_id: orderId })
+        });
+        const data = await res.json();
+        if(data.success) {
+          setCoSuccess(true);
+          setCoCode(data.access_code);
+        } else {
+          setCoError("Payment verification failed. Please contact support.");
+        }
+      } catch (err) {
+        setCoError("Verification failed.");
+      }
+      setCoLoading(false);
+    };
     return(
       <div style={{...sec,textAlign:"center"}}>
         <Tg>{CV.tag}</Tg>
@@ -857,7 +925,7 @@ function App(){
             </p>
           </div>
           
-          <button className="bg" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${encodeURIComponent('Hello K Prasad, I want to subscribe to the Annual Access (₹3000/year). Please send me the payment details.')}`,"_blank")} style={{...gBtn,width:"100%",padding:"20px",fontSize:16,borderRadius:8,marginTop:32,fontWeight:800}}>Subscribe Now →</button>
+          <button className="bg" onClick={()=>setCoOpen(true)} style={{...gBtn,width:"100%",padding:"20px",fontSize:16,borderRadius:8,marginTop:32,fontWeight:800}}>Subscribe Now →</button>
         </div>
         <div style={{position:"relative",maxWidth:560,margin:"0 auto 48px",padding:"48px 32px",background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(to right,transparent,${G.gold},transparent)`}}/>
@@ -904,6 +972,56 @@ function App(){
           <a href="/portal" target="_blank" rel="noopener noreferrer" style={{textDecoration:"none",padding:"6px 14px",background:`${G.gold}15`,border:`1px solid ${G.gold}40`,color:G.gold,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:700}}>🎓 Portal</a>
           <button onClick={()=>setAdminOpen(true)} style={{background:"none",border:"none",color:`${G.smoke}15`,cursor:"pointer",fontSize:9,fontFamily:sans,letterSpacing:1}}>⚙</button>
         </div>
+
+        {/* CASHFREE CHECKOUT MODAL */}
+        {coOpen && (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div style={{background:G.dark1,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"32px",width:"100%",maxWidth:400,textAlign:"center"}}>
+              <h3 style={{color:G.smoke,fontSize:20,fontFamily:serif,marginBottom:8}}>Complete Your Order</h3>
+              <p style={{color:G.gold,fontSize:12,letterSpacing:1,textTransform:"uppercase",marginBottom:24}}>Annual Access — ₹3000</p>
+              
+              {!coSuccess ? (
+                <>
+                  <div style={{display:"flex",flexDirection:"column",gap:12,textAlign:"left",marginBottom:24}}>
+                    <div>
+                      <label style={{fontSize:10,color:G.mid,letterSpacing:1}}>FULL NAME</label>
+                      <input type="text" value={coName} onChange={e=>setCoName(e.target.value)} style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.05)",border:`1px solid ${G.goldDim}`,borderRadius:6,color:G.smoke,marginTop:4}} placeholder="Your Name" />
+                    </div>
+                    <div>
+                      <label style={{fontSize:10,color:G.mid,letterSpacing:1}}>EMAIL ADDRESS</label>
+                      <input type="email" value={coEmail} onChange={e=>setCoEmail(e.target.value)} style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.05)",border:`1px solid ${G.goldDim}`,borderRadius:6,color:G.smoke,marginTop:4}} placeholder="you@email.com" />
+                    </div>
+                    <div>
+                      <label style={{fontSize:10,color:G.mid,letterSpacing:1}}>WHATSAPP NUMBER</label>
+                      <input type="tel" value={coPhone} onChange={e=>setCoPhone(e.target.value)} style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.05)",border:`1px solid ${G.goldDim}`,borderRadius:6,color:G.smoke,marginTop:4}} placeholder="10 Digit Number" />
+                    </div>
+                  </div>
+                  {coError && <p style={{color:"#CF6679",fontSize:12,marginBottom:16}}>{coError}</p>}
+                  <div style={{display:"flex",gap:12}}>
+                    <button onClick={()=>setCoOpen(false)} style={{flex:1,padding:"14px",background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,borderRadius:6,cursor:"pointer"}}>Cancel</button>
+                    <button onClick={startCheckout} disabled={coLoading} style={{flex:2,padding:"14px",background:G.gold,color:G.black,border:"none",borderRadius:6,fontWeight:700,cursor:coLoading?"wait":"pointer"}}>
+                      {coLoading ? "Processing..." : "Pay ₹3000 securely"}
+                    </button>
+                  </div>
+                  <p style={{fontSize:10,color:G.vsoft,marginTop:16}}>Secured by Cashfree Payments</p>
+                </>
+              ) : (
+                <div style={{textAlign:"center",padding:"20px 0"}}>
+                  <div style={{fontSize:48,marginBottom:16}}>✅</div>
+                  <h3 style={{color:"#4CAF82",fontSize:22,marginBottom:12}}>Payment Successful!</h3>
+                  <p style={{color:G.mid,fontSize:14,marginBottom:24,lineHeight:1.6}}>Welcome to Mind Power Vaultt.<br/>Your Portal Access Code is:</p>
+                  <div style={{background:"rgba(201,168,76,0.1)",border:`1px solid ${G.gold}`,padding:"16px",borderRadius:8,fontSize:24,letterSpacing:4,fontWeight:900,color:G.gold,marginBottom:24,userSelect:"all"}}>
+                    {coCode}
+                  </div>
+                  <p style={{color:G.soft,fontSize:12,marginBottom:24}}>Please copy and save this code securely. We have also sent it to your email.</p>
+                  <button onClick={()=>{setCoOpen(false);window.open('/portal','_blank');}} style={{width:"100%",padding:"14px",background:G.gold,color:G.black,border:"none",borderRadius:6,fontWeight:700,cursor:"pointer"}}>
+                    Go to Portal Login →
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
