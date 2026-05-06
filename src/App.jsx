@@ -1037,6 +1037,9 @@ function App(){
 
       {/* FLOATING WhatsApp + Telegram BUTTONS */}
       {phase>0&&<div style={{position:"fixed",bottom:24,right:24,display:"flex",flexDirection:"column",gap:12,zIndex:999}}>
+        <button onClick={() => {setPhase(7); setCoOpen(true);}} style={{width:52,height:52,borderRadius:"50%",background:G.gold,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 20px ${G.gold}60`,transition:"transform 0.2s",border:"none",cursor:"pointer"}} title="Journal Subscription">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill={G.black}><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </button>
         <a href="https://t.me/mindpowervaultt" target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#2AABEE",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(42,171,238,0.4)",transition:"transform 0.2s"}} title="Telegram">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.196 13.4l-2.965-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.957.159z"/></svg>
         </a>
