@@ -11,13 +11,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
-  const internalKey = req.headers['x-internal-key'];
-  const serverKey = process.env.INTERNAL_API_KEY || process.env.VITE_INTERNAL_API_KEY;
-
-  if (serverKey && internalKey && internalKey !== serverKey) {
-    logEvent('telegram_unauthorized', { ip });
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
+  // No API key check needed
 
   const { message } = req.body || {};
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
