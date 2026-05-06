@@ -191,8 +191,8 @@ export default function StudentPortal() {
               type="text"
               value={otp}
               onChange={e => {setOtp(e.target.value); setError('');}}
-              placeholder="6-Digit OTP"
-              maxLength={6}
+              placeholder="Enter OTP"
+              maxLength={12}
               style={{
                 width: '100%',
                 padding: '16px 20px',
