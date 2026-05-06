@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
   const orderPayload = {
     order_id: orderId,
-    order_amount: 3000,
+    order_amount: 3540, // 3000 + 18% GST (540)
     order_currency: "INR",
     customer_details: {
       customer_id: `cust_${phone.replace(/\D/g, '').slice(-10)}`,

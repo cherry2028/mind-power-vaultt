@@ -899,7 +899,7 @@ function App(){
           <div style={{position:"absolute",top:-14,left:"50%",transform:"translateX(-50%)",background:G.gold,color:G.black,padding:"6px 16px",borderRadius:20,fontSize:12,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>🏆 Recommended</div>
           <h3 className={lc} style={{fontFamily:serif,fontSize:24,color:G.smoke,marginBottom:8}}>MIND POWER VAULTT</h3>
           <p className={lc} style={{fontSize:14,letterSpacing:2,color:G.gold,textTransform:"uppercase",marginBottom:24,fontWeight:700}}>Annual Access</p>
-          <div style={{fontSize:48,fontWeight:900,color:G.smoke,marginBottom:8}}>₹3000<span style={{fontSize:16,color:G.mid,fontWeight:400}}> / YEAR</span></div>
+          <div style={{fontSize:48,fontWeight:900,color:G.smoke,marginBottom:8}}>₹3000<span style={{fontSize:18,color:G.gold}}> + GST</span><span style={{fontSize:16,color:G.mid,fontWeight:400}}> / YEAR</span></div>
           <p className={lc} style={{fontSize:13,color:G.mid,marginBottom:32}}>All future updates included until subscription ends.</p>
           
           <div style={{textAlign:"left",display:"flex",flexDirection:"column",gap:16,marginBottom:40,maxWidth:400,margin:"0 auto"}}>
@@ -978,7 +978,7 @@ function App(){
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
             <div style={{background:G.dark1,border:`1px solid ${G.goldDim}`,borderRadius:12,padding:"32px",width:"100%",maxWidth:400,textAlign:"center"}}>
               <h3 style={{color:G.smoke,fontSize:20,fontFamily:serif,marginBottom:8}}>Complete Your Order</h3>
-              <p style={{color:G.gold,fontSize:12,letterSpacing:1,textTransform:"uppercase",marginBottom:24}}>Annual Access — ₹3000</p>
+              <p style={{color:G.gold,fontSize:12,letterSpacing:1,textTransform:"uppercase",marginBottom:24}}>Annual Access — ₹3540 (Inc. 18% GST)</p>
               
               {!coSuccess ? (
                 <>
@@ -1000,7 +1000,7 @@ function App(){
                   <div style={{display:"flex",gap:12}}>
                     <button onClick={()=>setCoOpen(false)} style={{flex:1,padding:"14px",background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,borderRadius:6,cursor:"pointer"}}>Cancel</button>
                     <button onClick={startCheckout} disabled={coLoading} style={{flex:2,padding:"14px",background:G.gold,color:G.black,border:"none",borderRadius:6,fontWeight:700,cursor:coLoading?"wait":"pointer"}}>
-                      {coLoading ? "Processing..." : "Pay ₹3000 securely"}
+                      {coLoading ? "Processing..." : "Pay ₹3540 securely"}
                     </button>
                   </div>
                   <p style={{fontSize:10,color:G.vsoft,marginTop:16}}>Secured by Cashfree Payments</p>

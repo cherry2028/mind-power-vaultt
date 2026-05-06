@@ -143,7 +143,7 @@ export default function Journal() {
       {/* 🛡️ DYNAMIC WATERMARK TO DETER SCREENSHOTS */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9999,
-        display: 'flex', flexWrap: 'wrap', overflow: 'hidden', opacity: 0.04,
+        display: 'flex', flexWrap: 'wrap', overflow: 'hidden', opacity: 0.015,
         transform: 'rotate(-30deg) scale(1.5)', userSelect: 'none'
       }}>
         {Array.from({ length: 50 }).map((_, i) => (
