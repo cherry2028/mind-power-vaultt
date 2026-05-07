@@ -33,6 +33,26 @@ export default function Journal() {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (data?.session) {
+          
+          // Verify if THIS is still the active device
+          const localDeviceId = localStorage.getItem('mpv_device_id');
+          const email = data.session.user.email;
+          
+          const { data: sub, error: subError } = await supabase
+            .from('subscriptions')
+            .select('device_id')
+            .eq('email', email)
+            .single();
+
+          if (sub && sub.device_id && sub.device_id !== localDeviceId) {
+            // Another device logged in!
+            await supabase.auth.signOut();
+            sessionStorage.removeItem('mpv_journal_token');
+            setError('Access revoked. You logged into this account on another device.');
+            setChecking(false);
+            return;
+          }
+
           setAuthorized(true);
         } else {
           sessionStorage.removeItem('mpv_journal_token');
@@ -43,7 +63,12 @@ export default function Journal() {
       }
       setChecking(false);
     };
+    
     validateSession();
+    
+    // Auto-sync: Check every 60 seconds if another device logged in
+    const interval = setInterval(validateSession, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // ═══ ANTI-SCREENSHOT + ANTI-COPY + ANTI-DEVTOOLS ═══
