@@ -186,40 +186,35 @@ ${(report?.behaviorLines || []).map((l, i) => `<b>S${i + 1}:</b> ${escapeHTML(l)
 📨 Report ${emailSent ? 'sent to ' + escapeHTML(email) : 'email not configured'}`;
 
   try {
-    let tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: tgMessage,
-        parse_mode: 'HTML' // Changed to HTML
-      })
-    });
+    const MAX_LENGTH = 4000;
     
-    let tgData = await tgRes.json();
-    
-    // Fallback: If it still fails, send as plain text
-    if (!tgData.ok) {
-       tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    // Fallback plain text if HTML fails or if we need to chunk easily
+    const plainTextMsg = tgMessage.replace(/<[^>]*>?/gm, ''); 
+
+    // We will send plain text to be safe and easily chunkable
+    for (let i = 0; i < plainTextMsg.length; i += MAX_LENGTH) {
+      const chunk = plainTextMsg.substring(i, i + MAX_LENGTH);
+      
+      const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
-          text: tgMessage.replace(/<[^>]*>?/gm, '') // Strip HTML tags for plain text
+          text: chunk
         })
       });
-      tgData = await tgRes.json();
-    }
-
-    if (tgData.ok) {
-      telegramSent = true;
-    } else {
-      console.error('Telegram error:', tgData);
-      return res.status(500).json({ error: tgData.description || 'Telegram send failed' });
+      
+      const tgData = await tgRes.json();
+      if (!tgData.ok) {
+        console.error('Telegram chunk error:', tgData);
+        // Don't fail the whole request if one chunk fails, just log it
+      } else {
+        telegramSent = true;
+      }
     }
   } catch (e) {
     console.error('Telegram send error:', e);
-    return res.status(500).json({ error: e.message || 'Telegram request failed' });
+    // Don't fail the API call just because telegram failed
   }
 
   // Always log the lead (viewable in Vercel logs)
