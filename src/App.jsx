@@ -254,8 +254,6 @@ function PsychBasics({lang, lc}){
 
 function App(){
 
-  // Safe fallback for Admin Password
-  const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
   const SS_KEY = "mpv_session_v1";
 
   // Safely load session avoiding corrupted state
@@ -331,8 +329,19 @@ function App(){
   },[]);
 
   const handleAdminLogin=()=>{
-    if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
-    else{setAdminPwdErr(true);setAdminPwdInput("");}
+    fetch('/api/validate-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: adminPwdInput, type: 'admin' })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.valid && data.role === 'admin'){setAdminAuth(true);setAdminPwdErr(false);}
+      else{setAdminPwdErr(true);setAdminPwdInput("");}
+    })
+    .catch(() => {
+      setAdminPwdErr(true);setAdminPwdInput("");
+    });
   };
   const topRef=useRef(null);
 

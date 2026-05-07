@@ -1,0 +1,4 @@
+## 2026-05-07 - [Hardcoded Admin Password]
+**Vulnerability:** A hardcoded admin password ("mpv@kprasad2028") was present in the frontend code (`src/App.jsx`), acting as a fallback if the `VITE_ADMIN_PASSWORD` environment variable was not set. This exposed the administrative access credentials to any user who inspected the client-side bundle.
+**Learning:** Hardcoding credentials or relying on static frontend checks for authentication is fundamentally insecure. The frontend bundle is fully transparent to the user.
+**Prevention:** Always handle authentication on the backend. Store credentials securely using environment variables or a database, and use an API endpoint (like `/api/validate-code`) to verify credentials submitted by the client, without exposing the expected value to the frontend.
