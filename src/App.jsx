@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
@@ -1144,14 +1144,34 @@ function App(){
           </div>
         </nav>
       )}
-      <div style={{opacity:fading?0:1,transform:fading?"translateY(12px)":"none",transition:"opacity 0.23s ease,transform 0.23s ease"}}>
+      <div style={{opacity:fading?0:1,transform:fading?"translateY(12px)":"none",transition:"opacity 0.23s ease,transform 0.23s ease", paddingBottom: 100}}>
         <div style={phase<=1?{}:{maxWidth:720,margin:"0 auto",padding:"0 22px"}}>
           {currentPhaseJSX}
         </div>
       </div>
+
+      {/* LEGAL FOOTER REQUIRED FOR PAYMENT GATEWAY */}
+      {phase > 0 && (
+        <div style={{ width: '100%', borderTop: `1px solid ${G.goldDim}`, background: G.dark1, padding: '40px 20px', textAlign: 'center', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', fontFamily: sans, fontSize: 12 }}>
+            <Link to="/about" style={{ color: G.mid, textDecoration: 'none' }}>About Us</Link>
+            <Link to="/terms" style={{ color: G.mid, textDecoration: 'none' }}>Terms & Conditions</Link>
+            <Link to="/privacy" style={{ color: G.mid, textDecoration: 'none' }}>Privacy Policy</Link>
+            <Link to="/refund" style={{ color: G.mid, textDecoration: 'none' }}>Refund Policy</Link>
+            <Link to="/contact" style={{ color: G.mid, textDecoration: 'none' }}>Contact Us</Link>
+          </div>
+          <div style={{ color: 'rgba(168,164,152,0.5)', fontSize: 11, fontFamily: sans, lineHeight: 1.5 }}>
+            <p><strong>Legal Name:</strong> MALLADI SRI SAI SIVA RAMA KRISHNAPRASAD | <strong>Trade Name:</strong> ALR SERVICES</p>
+            <p><strong>Constitution:</strong> PROPRIETORSHIP | <strong>GST:</strong> 37DLNPM0984C1ZU</p>
+            <p style={{ marginTop: 10 }}>© 2026 Mind Power Vaultt. All rights reserved.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+import { AboutUs, TermsAndConditions, PrivacyPolicy, RefundPolicy, ContactUs } from './pages/Policies';
 
 export default function RoutedApp() {
   return (
@@ -1160,6 +1180,11 @@ export default function RoutedApp() {
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />
         <Route path="/journal" element={<Journal />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/refund" element={<RefundPolicy />} />
+        <Route path="/contact" element={<ContactUs />} />
       </Routes>
     </BrowserRouter>
   );
