@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { api } from './utils/api-client';
 
 // Design Tokens (Matching App.jsx)
 const G = {
@@ -49,20 +50,35 @@ export default function Journal({ lang, onBack }) {
   }, [students]);
 
   // Auth logic
-  const checkAccess = () => {
+  const checkAccess = async () => {
     const match = students.find(s => s.code === accessCode && s.active);
-    if (match || accessCode === 'MPV-CHERRY-2024') {
+    if (match) {
       setAccessLocked(false);
-    } else {
-      alert("Invalid Access Code. Please contact K Prasad.");
+      return;
+    }
+
+    try {
+      const res = await api.validateCode(accessCode, 'journal');
+      if (res.valid) {
+        setAccessLocked(false);
+      } else {
+        alert("Invalid Access Code. Please contact K Prasad.");
+      }
+    } catch (e) {
+      alert("Error validating code. Please try again.");
     }
   };
 
-  const handleAdminLogin = () => {
-    if (adminPwd === "mpv@cherry2028") {
-      setAdminAuth(true);
-    } else {
-      alert("Incorrect Admin Password.");
+  const handleAdminLogin = async () => {
+    try {
+      const res = await api.validateCode(adminPwd, 'admin');
+      if (res.valid && res.role === 'admin') {
+        setAdminAuth(true);
+      } else {
+        alert("Incorrect Admin Password.");
+      }
+    } catch (e) {
+      alert("Error validating password. Please try again.");
     }
   };
 

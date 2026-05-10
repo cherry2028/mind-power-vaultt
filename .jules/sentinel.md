@@ -1,0 +1,4 @@
+## 2025-05-10 - Hardcoded Credentials in Client Bundle
+**Vulnerability:** Hardcoded admin passwords (`mpv@cherry2028` and `mpv@kprasad2028`) and a master access code (`MPV-CHERRY-2024`) were present directly in the frontend React source code (`src/Journal.jsx` and `src/App.jsx`).
+**Learning:** Storing secrets in frontend bundles, even as fallbacks, exposes them to anyone who inspects the application code. This bypasses the intended security model and allows unauthorized access to administrative and protected features. The assumption that client-side checks are secure was flawed here.
+**Prevention:** Never hardcode passwords, API keys, or access codes in client-side code (e.g., inside `.jsx` or `.tsx` files or `import.meta.env` variables prefixed with `VITE_` unless strictly meant to be public). Always perform authentication and authorization checks on the server/backend using securely managed environment variables and validate with the backend via API calls.
