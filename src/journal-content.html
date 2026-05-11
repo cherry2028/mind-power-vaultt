@@ -1401,7 +1401,8 @@ function emailReport(){
   reportHtml+='<div style="background:#101018;border:1px solid #222;border-radius:6px;padding:12px;margin-bottom:16px;text-align:center"><div style="font-size:10px;color:#C9A84C;letter-spacing:2px;margin-bottom:4px">TRADER IDENTITY</div><div style="font-size:16px;font-weight:700;color:#E2C97A">'+id.toUpperCase()+'</div></div>';
   if(trRows){reportHtml+='<div style="font-size:11px;color:#C9A84C;margin-bottom:6px;letter-spacing:1px">RECENT TRADES</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px"><tr style="background:#181820"><th style="padding:6px;color:#C9A84C;text-align:left">Date</th><th style="text-align:left;padding:6px;color:#C9A84C">Inst</th><th style="padding:6px;color:#C9A84C">Type</th><th style="padding:6px;color:#C9A84C">P&L</th><th style="padding:6px;color:#C9A84C">Mood</th></tr>'+trRows+'</table>';}
   reportHtml+='<div style="text-align:center;font-size:10px;color:#333;margin-top:20px">Mind Power Vaultt — Trading Psychology Journal | Confidential</div></div>';
-  fetch('/api/send-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,reportType:type,studentName:name,html:reportHtml})}).then(function(r){return r.json();}).then(function(d){if(d.success)toast('📧 Report '+email+' కి send అయింది ✦');else toast('❌ Error: '+(d.error||'Failed'));}).catch(function(e){toast('❌ Network error');});
+  var token = window.sessionStorage.getItem('mpv_journal_token');
+  fetch('/api/send-report',{method:'POST',headers:{'Content-Type':'application/json', 'Authorization': 'Bearer ' + token},body:JSON.stringify({to:email,reportType:type,studentName:name,html:reportHtml})}).then(function(r){return r.json();}).then(function(d){if(d.success)toast('📧 Report '+email+' కి send అయింది ✦');else toast('❌ Error: '+(d.error||'Failed'));}).catch(function(e){toast('❌ Network error');});
 }
 
 </script>

@@ -1,0 +1,4 @@
+## 2024-05-11 - [Missing Authentication on Resource-Intensive API]
+**Vulnerability:** The `/api/send-report` endpoint allowed unauthenticated requests, making it possible for anyone to abuse the Resend API limit (100 emails/day on free tier) by hitting the endpoint without a session.
+**Learning:** Endpoints that consume external quotas (like sending emails) must always have authentication/authorization, otherwise the system is vulnerable to resource exhaustion / denial of wallet attacks. Simple client-side obscuration (like calling it from an iframe) does not provide real security.
+**Prevention:** All serverless function endpoints that call third-party APIs must check `Authorization: Bearer <token>` and validate the JWT before processing the request, even if they aren't directly exposing sensitive internal data.

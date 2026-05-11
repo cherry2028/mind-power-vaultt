@@ -1,13 +1,33 @@
 // /api/send-report.js — Send journal reports to mentor/self via email
 // Uses Resend API with verified domain
 
+import { verifyJWT } from './_lib/jwt.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Validate JWT Token
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  const payload = verifyJWT(token, jwtSecret);
+  if (!payload || !['student', 'admin'].includes(payload.role)) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid token or insufficient permissions' });
+  }
 
   const { to, subject, html, reportType, studentName } = req.body || {};
   if (!to || !html) return res.status(400).json({ error: 'Missing email or report content' });
