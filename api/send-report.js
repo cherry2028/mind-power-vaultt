@@ -1,13 +1,28 @@
 // /api/send-report.js — Send journal reports to mentor/self via email
 // Uses Resend API with verified domain
 
+import { verifyJWT } from './_lib/jwt.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // 🛡️ Security Fix: Add Authentication Check to protect external quota (Resend API)
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  if (!token) return res.status(401).json({ error: 'Unauthorized: Missing token' });
+
+  const { JWT_SECRET } = process.env;
+  if (!JWT_SECRET) return res.status(500).json({ error: 'Server configuration error' });
+
+  const payload = verifyJWT(token, JWT_SECRET);
+  if (!payload || (payload.role !== 'student' && payload.role !== 'admin')) {
+    return res.status(403).json({ error: 'Forbidden: Invalid or unauthorized token' });
+  }
 
   const { to, subject, html, reportType, studentName } = req.body || {};
   if (!to || !html) return res.status(400).json({ error: 'Missing email or report content' });
