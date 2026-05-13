@@ -11,8 +11,9 @@ export default async function handler(req, res) {
 
   const { order_id } = req.body;
 
-  if (!order_id) {
-    return res.status(400).json({ error: 'Order ID is required' });
+  // 🛡️ Sentinel: Prevent Path Traversal / SSRF by validating order_id format
+  if (!order_id || typeof order_id !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(order_id)) {
+    return res.status(400).json({ error: 'Valid Order ID is required' });
   }
 
   const appId = process.env.CASHFREE_APP_ID;
