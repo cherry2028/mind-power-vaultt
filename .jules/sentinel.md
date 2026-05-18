@@ -1,0 +1,4 @@
+## 2025-02-23 - [Critical] SSRF & Path Traversal in API Integration
+**Vulnerability:** In `api/verify-payment.js`, the `order_id` from `req.body` was directly interpolated into the Cashfree API URL (`https://sandbox.cashfree.com/pg/orders/${order_id}`) without any validation or sanitization.
+**Learning:** External API integrations that dynamically construct URLs using user-supplied input are highly susceptible to Server-Side Request Forgery (SSRF) or Path Traversal. An attacker could supply malicious inputs like `../` to manipulate the endpoint path, potentially accessing unintended APIs or bypassing security restrictions on the provider's side.
+**Prevention:** Always strictly validate user input before using it in URL paths or queries. Use allowlists or strict regex patterns (e.g., `/^[a-zA-Z0-9_.-]+$/`) that enforce the expected format of the parameter (like an ID) and reject any request that does not comply.
