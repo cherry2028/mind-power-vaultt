@@ -15,6 +15,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Order ID is required' });
   }
 
+  // ══ SECURITY: Strict order_id validation to prevent SSRF & Path Traversal ══
+  // Cashfree order IDs are ONLY alphanumeric + underscores + hyphens, max 50 chars
+  const ORDER_ID_REGEX = /^[a-zA-Z0-9_-]{1,50}$/;
+  if (!ORDER_ID_REGEX.test(order_id)) {
+    return res.status(400).json({ error: 'Invalid order ID format.' });
+  }
+  // ════════════════════════════════════════════════════════════════════════════
+
   const appId = process.env.CASHFREE_APP_ID;
   const secretKey = process.env.CASHFREE_SECRET_KEY;
   const env = process.env.CASHFREE_ENV || 'PROD';
@@ -23,9 +31,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Payment gateway not configured' });
   }
 
-  const apiUrl = env === 'PROD' 
-    ? `https://api.cashfree.com/pg/orders/${order_id}`
-    : `https://sandbox.cashfree.com/pg/orders/${order_id}`;
+  // SECURITY: Use encodeURIComponent to safely embed order_id in URL
+  const baseUrl = env === 'PROD'
+    ? 'https://api.cashfree.com/pg/orders/'
+    : 'https://sandbox.cashfree.com/pg/orders/';
+  const apiUrl = baseUrl + encodeURIComponent(order_id);
 
   try {
     const response = await fetch(apiUrl, {
