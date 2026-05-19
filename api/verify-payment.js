@@ -15,6 +15,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Order ID is required' });
   }
 
+  // Validate order_id to prevent SSRF and Path Traversal
+  if (!/^[a-zA-Z0-9_.-]+$/.test(order_id)) {
+    return res.status(400).json({ error: 'Invalid Order ID format' });
+  }
+
   const appId = process.env.CASHFREE_APP_ID;
   const secretKey = process.env.CASHFREE_SECRET_KEY;
   const env = process.env.CASHFREE_ENV || 'PROD';

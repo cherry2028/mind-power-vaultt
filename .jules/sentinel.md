@@ -1,0 +1,4 @@
+## 2024-05-19 - [CRITICAL] Prevent SSRF and Path Traversal in External API Calls
+**Vulnerability:** User-provided `order_id` in `api/verify-payment.js` was directly concatenated into the Cashfree API URL (`https://api.cashfree.com/pg/orders/${order_id}`) without validation.
+**Learning:** Because the value wasn't validated, an attacker could potentially supply an `order_id` like `../other-endpoint` or inject query parameters. This could lead to a Server-Side Request Forgery (SSRF) or a Path Traversal vulnerability where the backend unintentionally queries different endpoints.
+**Prevention:** Always strictly validate user inputs that are incorporated into external URLs. Use regex allowlists (e.g., `/^[a-zA-Z0-9_.-]+$/`) to ensure that the input matches the expected format before making the API request.
