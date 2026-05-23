@@ -10,12 +10,12 @@ export default async function handler(req, res) {
   }
 
   const message = `
-<b>New Lead Captured!</b>
+New Lead Captured!
 ━━━━━━━━━━━━━━━━━━━━━
-<b>Name:</b> ${name}
-<b>Phone:</b> ${phone}
-<b>Experience:</b> ${experience}
-<b>Pattern:</b> ${profile?.primaryPattern || 'N/A'}
+Name: ${name}
+Phone: ${phone}
+Experience: ${experience}
+Pattern: ${profile?.primaryPattern || 'N/A'}
 ━━━━━━━━━━━━━━━━━━━━━
 `;
 
@@ -26,8 +26,7 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: message,
-        parse_mode: 'HTML'
+        text: message
       })
     });
     const telegramData = await telegramRes.json();
