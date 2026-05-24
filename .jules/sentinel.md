@@ -1,0 +1,4 @@
+## 2026-05-24 - [Admin Auth Bypass via Exposed Vite Variable]
+**Vulnerability:** The admin login password was exposed to the client by reading `VITE_ADMIN_PASSWORD` (with a hardcoded fallback) directly in the React frontend bundle in `src/App.jsx`. Any `VITE_` prefixed environment variables are bundled statically by Vite, meaning anyone inspecting the code could read the password and bypass the authentication check locally.
+**Learning:** Vite exposes any environment variable prefixed with `VITE_` to the client-side code. Using these variables for sensitive credentials (like passwords) and performing auth checks on the frontend is fundamentally insecure.
+**Prevention:** Never use `VITE_` variables for sensitive passwords or secrets. Always perform authentication logic server-side, returning an opaque token (like a JWT) to the client upon success.
