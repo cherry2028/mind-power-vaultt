@@ -1,0 +1,4 @@
+## 2024-06-01 - [Hardcoded Secret in Frontend Bundle]
+**Vulnerability:** The `VITE_INTERNAL_API_KEY` was exposed in the client-side bundle via `import.meta.env` and used in frontend headers (`x-internal-key`) to interact with Vercel serverless functions.
+**Learning:** API keys required for internal verification shouldn't be accessed on the client-side (frontend) code, because any user can inspect network requests or reverse-engineer the bundled code to steal the secret. Instead, public endpoints must rely on appropriate alternative mechanisms such as session validation or server-side authentication exclusively without exposing internal keys.
+**Prevention:** Never use `import.meta.env` for accessing sensitive secrets in frontend applications. Secure public-facing API routes properly by not requiring such secrets, or handle proxying appropriately from a backend service.
