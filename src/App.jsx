@@ -254,8 +254,6 @@ function PsychBasics({lang, lc}){
 
 function App(){
 
-  // Safe fallback for Admin Password
-  const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
   const SS_KEY = "mpv_session_v1";
 
   // Safely load session avoiding corrupted state
@@ -330,9 +328,31 @@ function App(){
     if(typeof window !== "undefined" && window.location.search.includes("admin=1")) setAdminOpen(true);
   },[]);
 
-  const handleAdminLogin=()=>{
-    if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
-    else{setAdminPwdErr(true);setAdminPwdInput("");}
+  const [adminLoading, setAdminLoading] = useState(false);
+
+  const handleAdminLogin=async ()=>{
+    try {
+      setAdminLoading(true);
+      const res = await fetch('/api/validate-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: adminPwdInput, type: 'admin' })
+      });
+      const data = await res.json();
+      if(data.valid && data.role === 'admin') {
+        setAdminAuth(true);
+        setAdminPwdErr(false);
+      } else {
+        setAdminPwdErr(true);
+        setAdminPwdInput("");
+      }
+    } catch (error) {
+      console.error("Admin login error", error);
+      setAdminPwdErr(true);
+      setAdminPwdInput("");
+    } finally {
+      setAdminLoading(false);
+    }
   };
   const topRef=useRef(null);
 
@@ -402,8 +422,7 @@ function App(){
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ choiceDescriptions, lang: currentLang })
       });
@@ -686,8 +705,7 @@ function App(){
         await fetch("/api/notify", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({
             name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
@@ -1108,8 +1126,8 @@ function App(){
             <div style={{display:"flex",gap:10}}>
               <button onClick={()=>{setAdminOpen(false);setAdminPwdInput("");setAdminPwdErr(false);}}
                 style={{flex:1,padding:"11px",background:"transparent",border:"1px solid rgba(201,168,76,0.25)",color:"#A8A498",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Cancel</button>
-              <button onClick={handleAdminLogin}
-                style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#C9A84C,#9A7020)",color:"#05050A",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700}}>Login →</button>
+              <button onClick={handleAdminLogin} disabled={adminLoading}
+                style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#C9A84C,#9A7020)",color:"#05050A",border:"none",borderRadius:4,cursor:adminLoading?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700}}>{adminLoading ? "Loading..." : "Login →"}</button>
             </div>
           </div>
         </div>
