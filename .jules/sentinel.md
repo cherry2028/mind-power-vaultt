@@ -1,0 +1,4 @@
+## 2025-06-07 - [HTML Injection in Telegram Notifications]
+**Vulnerability:** User input values (name, phone, experience, profile pattern) were unescaped in `api/save-lead.js` when sending the notification via Telegram using `parse_mode: 'HTML'`.
+**Learning:** Telegram API treats messages with `parse_mode: 'HTML'` strictly, and if any user-provided content includes unescaped characters like `<` or `&`, it will either send an improperly formatted message or, worse, reject the message and throw an error causing notification failures.
+**Prevention:** Always use an `escapeHTML` helper to sanitize external inputs before putting them inside the template literal sent to Telegram API when `parse_mode: 'HTML'` is used, or omit `parse_mode` entirely if only plain text is intended.
