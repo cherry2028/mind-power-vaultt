@@ -1,0 +1,4 @@
+## 2024-06-08 - [Unsanitized HTML Payload causing Telegram Notification Delivery Failures & Injection]
+**Vulnerability:** Unsanitized user inputs (`name`, `phone`, `experience`, `profile?.primaryPattern`) were being interpolated directly into an HTML-formatted message payload for the Telegram `sendMessage` API in `api/save-lead.js`.
+**Learning:** When communicating with external APIs like Telegram that parse message text as HTML (using `parse_mode: "HTML"`), any special characters (like `<`, `>`, `&`) in user inputs can break the HTML parsing, causing the API to reject the request and notification delivery to fail. This is effectively an HTML injection vulnerability specific to the integration.
+**Prevention:** All user inputs must be strictly sanitized using an `escapeHTML` utility function before being concatenated or interpolated into HTML templates intended for external APIs.
