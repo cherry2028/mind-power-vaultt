@@ -1,0 +1,4 @@
+## 2024-06-09 - [Telegram HTML Injection in api/save-lead.js]
+**Vulnerability:** Telegram message endpoint with `parse_mode: 'HTML'` directly embedding unsanitized user inputs (`name`, `phone`, `experience`, `profile?.primaryPattern`), risking HTML injection and delivery failures due to unescaped special characters.
+**Learning:** Telegram API endpoints using HTML parse mode require strict sanitization of dynamically inserted variables. If special characters like `<` or `>` or `&` are not properly escaped, the Telegram API can reject the payload entirely resulting in unhandled exceptions and silent notification failures.
+**Prevention:** Always use a utility function like `escapeHTML` to sanitize all user-provided strings before interpolation into strings intended for endpoints with `parse_mode: 'HTML'`, or simply omit `parse_mode` entirely if formatting is unnecessary to guarantee absolute plain text sending.
