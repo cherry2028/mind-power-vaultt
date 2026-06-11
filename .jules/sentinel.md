@@ -1,0 +1,4 @@
+## 2024-06-11 - [Preventing HTML Injection in Template Literals]
+**Vulnerability:** Found HTML injection vector in `api/save-lead.js` where user input was directly inserted into a Telegram message via template literals when `parse_mode: 'HTML'` was used. This could allow maliciously crafted input to break the HTML structure or execute undesired formatting, potentially causing Telegram API errors and blocking lead processing.
+**Learning:** Even when sending data to third-party messaging services (like Telegram) that parse HTML, any dynamically interpolated user input inside template strings must be sanitized. Failing to do so can lead to delivery failures or content spoofing.
+**Prevention:** Always use an `escapeHTML` utility function to safely encode user input (replacing characters like `<`, `>`, `&`, `"`, `'` with their corresponding HTML entities) before interpolation when constructing HTML payloads for any service.
