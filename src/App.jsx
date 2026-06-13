@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
 import Journal from "./pages/Journal";
+import { api } from "./utils/api-client";
 
 const LOGO_IMG = "/logo.jpeg";
 
@@ -254,8 +255,6 @@ function PsychBasics({lang, lc}){
 
 function App(){
 
-  // Safe fallback for Admin Password
-  const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
   const SS_KEY = "mpv_session_v1";
 
   // Safely load session avoiding corrupted state
@@ -330,9 +329,24 @@ function App(){
     if(typeof window !== "undefined" && window.location.search.includes("admin=1")) setAdminOpen(true);
   },[]);
 
-  const handleAdminLogin=()=>{
-    if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
-    else{setAdminPwdErr(true);setAdminPwdInput("");}
+  const [adminLoggingIn,setAdminLoggingIn] = useState(false);
+
+  const handleAdminLogin = async () => {
+    if(!adminPwdInput || adminLoggingIn) return;
+    setAdminLoggingIn(true);
+    setAdminPwdErr(false);
+    try {
+      const { valid } = await api.validateCode(adminPwdInput, 'admin');
+      if (valid) {
+        setAdminAuth(true);
+      } else {
+        setAdminPwdErr(true);
+        setAdminPwdInput("");
+      }
+    } catch (e) {
+      setAdminPwdErr(true);
+    }
+    setAdminLoggingIn(false);
   };
   const topRef=useRef(null);
 
@@ -1099,17 +1113,19 @@ function App(){
             <p style={{fontSize:11,letterSpacing:4,color:"rgba(201,168,76,0.8)",textTransform:"uppercase",marginBottom:8,fontFamily:"'DM Sans',sans-serif"}}>Mind Power Vaultt</p>
             <h3 style={{color:"#F5F2EA",fontSize:18,fontFamily:"'DM Sans',sans-serif",marginBottom:6}}>Admin Access</h3>
             <p style={{color:"#A8A498",fontSize:12,marginBottom:24,fontFamily:"'DM Sans',sans-serif"}}>Reviews panel — authorized only</p>
-            <input type="password" value={adminPwdInput} placeholder="Enter password"
+            <input type="password" value={adminPwdInput} placeholder="Enter password" disabled={adminLoggingIn}
               onChange={e=>{setAdminPwdInput(e.target.value);setAdminPwdErr(false);}}
               onKeyDown={e=>e.key==="Enter"&&handleAdminLogin()}
               style={{width:"100%",padding:"12px 16px",background:"rgba(201,168,76,0.06)",border:`1px solid ${adminPwdErr?"rgba(200,80,80,0.6)":"rgba(201,168,76,0.25)"}`,borderRadius:6,color:"#F5F2EA",fontSize:14,fontFamily:"'DM Sans',sans-serif",marginBottom:adminPwdErr?6:16,outline:"none",textAlign:"center"}}
             />
             {adminPwdErr&&<p style={{color:"rgba(200,80,80,0.9)",fontSize:12,marginBottom:12,fontFamily:"'DM Sans',sans-serif"}}>Incorrect password. Try again.</p>}
             <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setAdminOpen(false);setAdminPwdInput("");setAdminPwdErr(false);}}
+              <button onClick={()=>{setAdminOpen(false);setAdminPwdInput("");setAdminPwdErr(false);}} disabled={adminLoggingIn}
                 style={{flex:1,padding:"11px",background:"transparent",border:"1px solid rgba(201,168,76,0.25)",color:"#A8A498",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Cancel</button>
-              <button onClick={handleAdminLogin}
-                style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#C9A84C,#9A7020)",color:"#05050A",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700}}>Login →</button>
+              <button onClick={handleAdminLogin} disabled={adminLoggingIn}
+                style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#C9A84C,#9A7020)",color:"#05050A",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700}}>
+                {adminLoggingIn ? "Logging in..." : "Login →"}
+              </button>
             </div>
           </div>
         </div>

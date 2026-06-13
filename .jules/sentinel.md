@@ -1,0 +1,4 @@
+## 2024-06-13 - [Exposed Hardcoded Fallback Admin Password in Frontend]
+**Vulnerability:** A hardcoded fallback password (`mpv@kprasad2028`) was stored in the `src/App.jsx` React component for the admin panel login if the environment variable was missing.
+**Learning:** Even if developers intend to use environment variables (`import.meta.env.VITE_ADMIN_PASSWORD`), providing a plaintext fallback string directly in client-side code completely negates the security, as the bundle will contain the secret. Furthermore, client-side authentication is inherently insecure.
+**Prevention:** Never use hardcoded fallbacks for sensitive credentials in frontend code. Always perform authentication checks securely on the backend (e.g., via the `/api/validate-code` endpoint) and maintain session state via tokens instead of hardcoded strings.
