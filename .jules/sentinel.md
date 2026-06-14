@@ -1,0 +1,4 @@
+## 2024-11-20 - [HTML Injection in Telegram Notifications]
+**Vulnerability:** User-provided variables (`name`, `phone`, `experience`, `profile?.primaryPattern`) were directly injected into an HTML-formatted Telegram message string without sanitization.
+**Learning:** Telegram's API with `parse_mode: 'HTML'` strictly rejects invalid HTML. Unsanitized user inputs containing characters like `<`, `>`, or `&` can result in parsing errors and cause message delivery to fail, effectively acting as an injection and denial of service.
+**Prevention:** All user inputs must be HTML-escaped using a utility function (e.g., `escapeHTML`) before being interpolated into template strings intended for APIs that parse HTML. Alternatively, avoiding HTML parsing (as was done in `send-telegram.js`) handles plaintext correctly.
