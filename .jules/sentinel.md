@@ -1,0 +1,4 @@
+## 2025-02-18 - Telegram HTML Injection in Serverless API
+**Vulnerability:** User-provided variables (`name`, `phone`, `experience`, `primaryPattern`) were concatenated directly into a Telegram message string with `parse_mode: 'HTML'` in `api/save-lead.js`.
+**Learning:** Telegram strictly parses HTML and will reject entire messages if user input contains unescaped special characters (e.g., `<` or `>`), leading to failed delivery and potentially silent failure of the lead capture notification system. This is a form of HTML injection that causes a Denial of Service (DoS) for the notification feature.
+**Prevention:** Always sanitize dynamic user input with an HTML escaping utility (like `escapeHTML`) when using `parse_mode: 'HTML'` for Telegram messages, or omit `parse_mode` entirely if formatting is not necessary.
