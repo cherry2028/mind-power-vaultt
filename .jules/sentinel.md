@@ -1,0 +1,4 @@
+## 2026-06-20 - [Hardcoded Admin Password & Access Code Authentication Bypass]
+**Vulnerability:** The `App.jsx` and `Journal.jsx` frontend React components contained hardcoded admin passwords (`mpv@kprasad2028` and `mpv@cherry2028`) and student access codes (`MPV-CHERRY-2024`) in their source code. Authentication checks were performed entirely on the client side, allowing anyone inspecting the source code to find the passwords and bypass authentication.
+**Learning:** Client-side authentication logic is inherently insecure as the source code is fully visible to the user. All authentication validation must happen server-side.
+**Prevention:** Rely exclusively on backend endpoints (e.g., `/api/validate-code`) to verify passwords and access codes. The backend should compare the provided credentials against secure environment variables or a database, and the frontend should only act based on the backend's response.

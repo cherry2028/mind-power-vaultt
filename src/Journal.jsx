@@ -49,20 +49,47 @@ export default function Journal({ lang, onBack }) {
   }, [students]);
 
   // Auth logic
-  const checkAccess = () => {
+  const checkAccess = async () => {
     const match = students.find(s => s.code === accessCode && s.active);
-    if (match || accessCode === 'MPV-CHERRY-2024') {
+    if (match) {
       setAccessLocked(false);
-    } else {
-      alert("Invalid Access Code. Please contact K Prasad.");
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/validate-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: accessCode, type: 'journal' })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAccessLocked(false);
+      } else {
+        alert("Invalid Access Code. Please contact K Prasad.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error verifying access code.");
     }
   };
 
-  const handleAdminLogin = () => {
-    if (adminPwd === "mpv@cherry2028") {
-      setAdminAuth(true);
-    } else {
-      alert("Incorrect Admin Password.");
+  const handleAdminLogin = async () => {
+    try {
+      const res = await fetch('/api/validate-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: adminPwd, type: 'admin' })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAdminAuth(true);
+      } else {
+        alert("Incorrect Admin Password.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error verifying password.");
     }
   };
 

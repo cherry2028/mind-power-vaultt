@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import { supabase } from "./supabase";
+import { api } from "./utils/api-client";
 import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
 import Journal from "./pages/Journal";
@@ -254,8 +255,6 @@ function PsychBasics({lang, lc}){
 
 function App(){
 
-  // Safe fallback for Admin Password
-  const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
   const SS_KEY = "mpv_session_v1";
 
   // Safely load session avoiding corrupted state
@@ -330,9 +329,21 @@ function App(){
     if(typeof window !== "undefined" && window.location.search.includes("admin=1")) setAdminOpen(true);
   },[]);
 
-  const handleAdminLogin=()=>{
-    if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
-    else{setAdminPwdErr(true);setAdminPwdInput("");}
+  const handleAdminLogin = async () => {
+    try {
+      const res = await api.validateCode(adminPwdInput, 'admin');
+      if (res.valid) {
+        setAdminAuth(true);
+        setAdminPwdErr(false);
+      } else {
+        setAdminPwdErr(true);
+        setAdminPwdInput("");
+      }
+    } catch (err) {
+      console.error(err);
+      setAdminPwdErr(true);
+      setAdminPwdInput("");
+    }
   };
   const topRef=useRef(null);
 
