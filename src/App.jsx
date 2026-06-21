@@ -402,8 +402,7 @@ function App(){
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ choiceDescriptions, lang: currentLang })
       });
@@ -686,8 +685,7 @@ function App(){
         await fetch("/api/notify", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "x-internal-key": getEnv('VITE_INTERNAL_API_KEY') || ""
+              "Content-Type": "application/json"
           },
           body: JSON.stringify({
             name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile

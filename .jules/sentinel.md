@@ -1,0 +1,4 @@
+## 2025-06-21 - [CRITICAL] Internal API Key Exposure in Client Bundle
+**Vulnerability:** The backend secret `VITE_INTERNAL_API_KEY` was exposed in the client-side bundle because it was accessed via `import.meta.env` and hardcoded into API requests in `src/utils/api-client.js` and `src/App.jsx`.
+**Learning:** Any environment variable prefixed with `VITE_` is automatically injected into the frontend build by Vite. Using this prefix for sensitive backend secrets causes a critical leak, completely compromising the fail-closed authentication model of internal endpoints.
+**Prevention:** Never prefix backend secrets (like API keys or passwords) with `VITE_`. All sensitive environment variables should remain strictly server-side. Additionally, do not implement pseudo-security checks on the client (like sending `x-internal-key`); rely on backend-to-backend authentication or proper server-side session management.

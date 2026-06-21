@@ -9,13 +9,15 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Telegram configuration missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env.' });
   }
 
+  const escapeHTML = (str = '') => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
   const message = `
 <b>New Lead Captured!</b>
 ━━━━━━━━━━━━━━━━━━━━━
-<b>Name:</b> ${name}
-<b>Phone:</b> ${phone}
-<b>Experience:</b> ${experience}
-<b>Pattern:</b> ${profile?.primaryPattern || 'N/A'}
+<b>Name:</b> ${escapeHTML(name)}
+<b>Phone:</b> ${escapeHTML(phone)}
+<b>Experience:</b> ${escapeHTML(experience)}
+<b>Pattern:</b> ${escapeHTML(profile?.primaryPattern || 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━
 `;
 
