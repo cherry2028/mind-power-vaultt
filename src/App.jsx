@@ -218,6 +218,8 @@ const PSYCH_TOPICS = {
   ]
 };
 
+import { api } from "./utils/api-client";
+
 function PsychBasics({lang, lc}){
   const [open, setOpen] = useState(null);
   const topics = PSYCH_TOPICS[lang] || PSYCH_TOPICS.te;
@@ -254,8 +256,6 @@ function PsychBasics({lang, lc}){
 
 function App(){
 
-  // Safe fallback for Admin Password
-  const ADMIN_PWD = getEnv('VITE_ADMIN_PASSWORD') || "mpv@kprasad2028";
   const SS_KEY = "mpv_session_v1";
 
   // Safely load session avoiding corrupted state
@@ -330,9 +330,20 @@ function App(){
     if(typeof window !== "undefined" && window.location.search.includes("admin=1")) setAdminOpen(true);
   },[]);
 
-  const handleAdminLogin=()=>{
-    if(adminPwdInput===ADMIN_PWD){setAdminAuth(true);setAdminPwdErr(false);}
-    else{setAdminPwdErr(true);setAdminPwdInput("");}
+  const handleAdminLogin=async ()=>{
+    try {
+      const { valid } = await api.validateCode(adminPwdInput, 'admin');
+      if (valid) {
+        setAdminAuth(true);
+        setAdminPwdErr(false);
+      } else {
+        setAdminPwdErr(true);
+        setAdminPwdInput("");
+      }
+    } catch(e) {
+      setAdminPwdErr(true);
+      setAdminPwdInput("");
+    }
   };
   const topRef=useRef(null);
 
