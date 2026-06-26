@@ -1,0 +1,4 @@
+## 2023-10-27 - [Client-Side Hardcoded Admin Password & API Key Leakage]
+**Vulnerability:** A hardcoded admin password fallback (`"mpv@kprasad2028"`) and internal API key logic were present in `src/App.jsx`, exposing sensitive authentication details directly to end-users examining the client-side JavaScript bundle.
+**Learning:** Developers sometimes implement quick local state checks or pass internal API keys in the frontend for convenience, assuming obfuscation or minification is sufficient. However, anything in the client bundle is public.
+**Prevention:** All authentication validation and API key handling must occur server-side (e.g., in `/api/validate-code`), using environment variables that are strictly not exposed via Vite (i.e., avoiding the `VITE_` prefix for secrets). Public APIs shouldn't be guarded by client-exposed secrets; instead, rely on proper CORS or server-side auth layers.
