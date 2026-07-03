@@ -77,7 +77,7 @@ export default function StudentPortal() {
       // 3. AUTO-SYNC CURRENT DEVICE LOGIC
       let localDeviceId = localStorage.getItem('mpv_device_id');
       if (!localDeviceId) {
-        localDeviceId = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        localDeviceId = 'DEV-' + window.crypto.getRandomValues(new Uint32Array(4)).join('-') + '-' + Date.now().toString(36);
         localStorage.setItem('mpv_device_id', localDeviceId);
       }
 

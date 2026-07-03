@@ -67,7 +67,7 @@ export default function Journal({ lang, onBack }) {
   };
 
   const addStudent = (name, city, phone) => {
-    const code = "MPV-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    const code = "MPV-" + window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36).substring(0, 6).toUpperCase().padStart(6, '0');
     const newStudent = { id: Date.now(), name, city, phone, code, active: true, joined: new Date().toLocaleDateString() };
     setStudents([...students, newStudent]);
     return code;
