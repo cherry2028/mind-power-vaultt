@@ -1,0 +1,4 @@
+## 2024-07-04 - HTML Injection in Telegram Bot Endpoint
+**Vulnerability:** Unsanitized user inputs (`name`, `phone`, `experience`, `profile?.primaryPattern`) were being interpolated directly into a Telegram message payload with `parse_mode: 'HTML'` in `api/save-lead.js`.
+**Learning:** If a user submits input containing unescaped HTML entities (like `<`, `>`, `&`), the Telegram API will reject the request with a "Bad Request: can't parse entities" error. This leads to lost leads and creates a potential Denial of Service (DoS) vector by exploiting the endpoint's error handling.
+**Prevention:** Always sanitize user-provided data before embedding it into structured payloads intended for external APIs, particularly when specific parsing modes (like HTML or Markdown) are enabled. Use an `escapeHTML` helper function to encode special characters.
