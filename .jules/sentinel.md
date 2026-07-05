@@ -1,0 +1,4 @@
+## 2025-02-14 - Fix Weak Random Number Generation
+**Vulnerability:** Found `Math.random()` used for generating sensitive values like `orderId` in `api/create-order.js`, `newAccessCode` in `api/verify-payment.js`, `localDeviceId` in `src/pages/StudentPortal.jsx`, student `code` in `src/Journal.jsx`, and image name in `src/AdminPanel.jsx`. `Math.random()` is cryptographically weak and predictable, which could allow attackers to guess order IDs, access codes, or device IDs, potentially leading to unauthorized access, SSRF, or object reference vulnerabilities.
+**Learning:** `Math.random()` should never be used for security-sensitive operations. Although convenient, it doesn't provide enough randomness for secure code or ID generation.
+**Prevention:** Always use `crypto.randomBytes` in Node.js environments (backend) and `window.crypto.getRandomValues()` in browser environments (frontend) for generating unpredictable and secure random values.

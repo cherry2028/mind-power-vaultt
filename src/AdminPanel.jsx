@@ -101,7 +101,10 @@ export default function AdminPanel({ onClose }) {
     if (imageFiles && imageFiles.length > 0) {
       const uploadedUrls = [];
       for (const file of imageFiles) {
-        const imgName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`;
+        const array = new Uint8Array(4);
+        window.crypto.getRandomValues(array);
+        const randomHex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+        const imgName = `${Date.now()}_${randomHex}_${file.name}`;
         const { data: imgData, error: imgErr } = await supabase.storage.from('review_images').upload(imgName, file);
         if (!imgErr) {
           const { data: imgPublicData } = supabase.storage.from('review_images').getPublicUrl(imgName);
