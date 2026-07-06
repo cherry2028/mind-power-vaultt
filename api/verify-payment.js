@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 // /api/verify-payment.js — Verify Cashfree Payment Order Status & Create Subscription
 export default async function handler(req, res) {
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
 
     if (response.ok && data.order_status === 'PAID') {
       const customerEmail = data.customer_details.customer_email;
-      const newAccessCode = `MPV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const newAccessCode = `MPV-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
       
       // Save Subscription to Supabase
       const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
