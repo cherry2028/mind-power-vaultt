@@ -33,7 +33,11 @@ export default function Journal() {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (data?.session) {
-          
+          // Supabase auto-refreshes the session, but the journal iframe reads this
+          // stored token for API calls — keep it in sync or it goes stale after ~1 hour
+          sessionStorage.setItem('mpv_journal_token', data.session.access_token);
+
+
           // Verify if THIS is still the active device
           const localDeviceId = localStorage.getItem('mpv_device_id');
           const email = data.session.user.email;
