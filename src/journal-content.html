@@ -894,7 +894,7 @@ function fi(n){return Math.abs(Number(n||0)).toLocaleString('en-IN');}
 function pc(v){return Number(v)>=0?'#4CAF82':'#CF6679';}
 function ps2(v){var n=Number(v||0);return(n>=0?'+':'-')+'₹'+fi(n);}
 var tt;
-function toast(m){var t=ge('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none';},2500);}
+function toast(m,ms){var t=ge('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none';},ms||2500);}
 var ft2;
 function showFeedback(msg,col){var p=ge('feedbackPopup');p.textContent=msg;p.style.color=col||'#E2C97A';p.style.borderColor=col||'#7A6530';p.classList.add('show');clearTimeout(ft2);ft2=setTimeout(function(){p.classList.remove('show');},3500);}
 
@@ -1383,8 +1383,10 @@ function drawEmotionPnl(){
 // ════════ EMAIL REPORT ════════
 function emailReport(){
   ge('sharePanel').classList.remove('open');
-  var email=prompt('Report send చేయాల్సిన Email address enter చేయి:');
-  if(!email||!email.includes('@')){toast('Valid email enter చేయి!');return;}
+  var email=prompt('Report ఎవరికి పంపాలి? Mentor కి పంపాలంటే "mentor" అని type చేయి — లేదా నీ own email address enter చేయి:');
+  if(!email){return;}
+  email=email.trim();
+  if(email.toLowerCase()!=='mentor' && !email.includes('@')){toast('❌ Valid email enter చేయి — లేదా mentor కి పంపడానికి "mentor" అని type చేయి.',6000);return;}
   var name=prompt('నీ Name (report లో display అవుతుంది):');
   if(!name){toast('Name enter చేయి!');return;}
   var type=prompt('Report Type? (daily / weekly / monthly)','weekly');
@@ -1402,7 +1404,23 @@ function emailReport(){
   if(trRows){reportHtml+='<div style="font-size:11px;color:#C9A84C;margin-bottom:6px;letter-spacing:1px">RECENT TRADES</div><table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px"><tr style="background:#181820"><th style="padding:6px;color:#C9A84C;text-align:left">Date</th><th style="text-align:left;padding:6px;color:#C9A84C">Inst</th><th style="padding:6px;color:#C9A84C">Type</th><th style="padding:6px;color:#C9A84C">P&L</th><th style="padding:6px;color:#C9A84C">Mood</th></tr>'+trRows+'</table>';}
   reportHtml+='<div style="text-align:center;font-size:10px;color:#333;margin-top:20px">Mind Power Vaultt — Trading Psychology Journal | Confidential</div></div>';
   var sessionToken = sessionStorage.getItem('mpv_journal_token') || '';
-  fetch('/api/send-report',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionToken},body:JSON.stringify({to:email,reportType:type,studentName:name,html:reportHtml})}).then(function(r){return r.json();}).then(function(d){if(d.success)toast('📧 Report '+email+' కి send అయింది ✦');else toast('❌ Error: '+(d.error||'Failed'));}).catch(function(e){toast('❌ Network error');});
+  if(!sessionToken){toast('❌ Session లేదు — Student Portal లో login అయ్యి మళ్ళీ try చేయి.',7000);return;}
+  if(sessionToken.indexOf('EMERGENCY_')===0){toast('❌ Emergency access లో report send అవ్వదు — normal OTP login తో మళ్ళీ login అవ్వు.',7000);return;}
+  // This page runs inside a blob: iframe, so relative URLs like '/api/...' cannot
+  // resolve — build an absolute URL from the app origin instead.
+  var apiOrigin='';
+  try{if(window.origin&&window.origin!=='null')apiOrigin=window.origin;}catch(e0){}
+  if(!apiOrigin){try{apiOrigin=window.parent.location.origin;}catch(e1){}}
+  if(!apiOrigin){toast('❌ Report send fail అయింది — page refresh చేసి మళ్ళీ try చేయి.',7000);return;}
+  fetch(apiOrigin+'/api/send-report',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionToken},body:JSON.stringify({to:email,reportType:type,studentName:name,html:reportHtml})})
+    .then(function(r){return r.json().then(function(d){return{status:r.status,d:d};}).catch(function(){return{status:r.status,d:{}};});})
+    .then(function(res){
+      if(res.d&&res.d.success){toast('📧 Report '+(email.toLowerCase()==='mentor'?'Mentor':email)+' కి send అయింది ✦',5000);}
+      else if(res.status===401){toast('❌ Session expire అయింది — Student Portal లో మళ్ళీ login అయ్యి report send చేయి.',8000);}
+      else if(res.status===403){toast('❌ '+((res.d&&res.d.error)||'ఈ email కి పంపలేము — నీ own email లేదా "mentor" మాత్రమే.'),8000);}
+      else{toast('❌ Report send fail: '+((res.d&&res.d.error)||'Server error')+' — కొద్దిసేపు ఆగి మళ్ళీ try చేయి.',8000);}
+    })
+    .catch(function(e){toast('❌ Network error — internet check చేసి మళ్ళీ try చేయి. Problem repeat అయితే mentor కి WhatsApp చేయి.',8000);});
 }
 
 </script>

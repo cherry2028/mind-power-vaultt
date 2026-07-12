@@ -1,3 +1,5 @@
+import { escapeHTML } from './_lib/utils.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -12,10 +14,10 @@ export default async function handler(req, res) {
   const message = `
 <b>New Lead Captured!</b>
 ━━━━━━━━━━━━━━━━━━━━━
-<b>Name:</b> ${name}
-<b>Phone:</b> ${phone}
-<b>Experience:</b> ${experience}
-<b>Pattern:</b> ${profile?.primaryPattern || 'N/A'}
+<b>Name:</b> ${escapeHTML(name)}
+<b>Phone:</b> ${escapeHTML(phone)}
+<b>Experience:</b> ${escapeHTML(experience)}
+<b>Pattern:</b> ${escapeHTML(profile?.primaryPattern || 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━
 `;
 
