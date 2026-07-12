@@ -7,14 +7,7 @@
 //   TELEGRAM_CHAT_ID    — K Prasad's chat ID
 //   RESEND_API_KEY      — from resend.com (free 100 emails/day)
 
-function escapeHTML(str = '') {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { escapeHTML } from './_lib/utils.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -55,7 +48,7 @@ export default async function handler(req, res) {
     <div style="padding:28px;">
       <!-- Greeting -->
       <p style="color:#F5F2EA;font-size:16px;line-height:1.8;">
-        ${isTE ? `నమస్కారం ${name},` : `Hello ${name},`}<br>
+        ${isTE ? `నమస్కారం ${escapeHTML(name)},` : `Hello ${escapeHTML(name)},`}<br>
         ${isTE ? 'మీ Trading Psychology Analysis report ఇది.' : 'Here is your Trading Psychology Analysis report.'}
       </p>
 
@@ -64,7 +57,7 @@ export default async function handler(req, res) {
         <p style="color:#C9A84C;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px;">
           ${isTE ? '🎯 Primary Pattern' : '🎯 Primary Pattern'}
         </p>
-        <p style="color:#F5F2EA;font-size:15px;line-height:1.8;margin:0;white-space:pre-line;">${report?.primaryPattern || 'N/A'}</p>
+        <p style="color:#F5F2EA;font-size:15px;line-height:1.8;margin:0;white-space:pre-line;">${escapeHTML(report?.primaryPattern || 'N/A')}</p>
       </div>
 
       <!-- Core Insight -->
@@ -72,7 +65,7 @@ export default async function handler(req, res) {
         <p style="color:#C9A84C;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px;">
           💡 Core Insight
         </p>
-        <p style="color:#D0CCBF;font-size:14px;line-height:1.9;margin:0;font-style:italic;">"${report?.coreInsight || 'N/A'}"</p>
+        <p style="color:#D0CCBF;font-size:14px;line-height:1.9;margin:0;font-style:italic;">"${escapeHTML(report?.coreInsight || 'N/A')}"</p>
       </div>
 
       <!-- 4 Situations -->
@@ -82,7 +75,7 @@ export default async function handler(req, res) {
       ${(report?.behaviorLines || []).map((l, i) => `
         <div style="background:rgba(201,168,76,0.03);border:1px solid rgba(201,168,76,0.12);border-radius:6px;padding:14px;margin:8px 0;">
           <span style="color:#C9A84C;font-size:11px;font-weight:bold;">S${i + 1}</span>
-          <span style="color:#D0CCBF;font-size:13px;line-height:1.8;margin-left:10px;">${l}</span>
+          <span style="color:#D0CCBF;font-size:13px;line-height:1.8;margin-left:10px;">${escapeHTML(l)}</span>
         </div>
       `).join('')}
 
@@ -90,21 +83,21 @@ export default async function handler(req, res) {
       ${report?.hiddenStrength ? `
       <div style="background:rgba(107,142,107,0.08);border:1px solid rgba(107,142,107,0.25);border-radius:8px;padding:16px;margin:20px 0;">
         <p style="color:rgba(107,142,107,0.9);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px;">✅ ${isTE ? 'Hidden Strength' : 'Hidden Strength'}</p>
-        <p style="color:#D0CCBF;font-size:13px;line-height:1.8;margin:0;">${report.hiddenStrength}</p>
+        <p style="color:#D0CCBF;font-size:13px;line-height:1.8;margin:0;">${escapeHTML(report.hiddenStrength)}</p>
       </div>` : ''}
 
       <!-- Warning -->
       ${report?.warningLine ? `
       <div style="background:rgba(139,26,26,0.08);border:1px solid rgba(139,26,26,0.25);border-radius:8px;padding:16px;margin:20px 0;">
         <p style="color:rgba(200,80,80,0.9);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px;">⚠️ ${isTE ? 'Warning' : 'Warning'}</p>
-        <p style="color:#D0CCBF;font-size:13px;line-height:1.8;margin:0;">${report.warningLine}</p>
+        <p style="color:#D0CCBF;font-size:13px;line-height:1.8;margin:0;">${escapeHTML(report.warningLine)}</p>
       </div>` : ''}
 
       <!-- Action Step -->
       ${report?.actionStep ? `
       <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:16px;margin:20px 0;">
         <p style="color:#C9A84C;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px;">🔑 ${isTE ? 'ఈ వారం నుండి చేయి' : 'Start This Week'}</p>
-        <p style="color:#F5F2EA;font-size:14px;line-height:1.8;margin:0;font-weight:bold;">${report.actionStep}</p>
+        <p style="color:#F5F2EA;font-size:14px;line-height:1.8;margin:0;font-weight:bold;">${escapeHTML(report.actionStep)}</p>
       </div>` : ''}
 
       <!-- CTA -->
