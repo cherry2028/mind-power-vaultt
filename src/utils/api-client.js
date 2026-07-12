@@ -1,5 +1,3 @@
-const INTERNAL_KEY = import.meta.env.VITE_INTERNAL_API_KEY || '';
-
 export const api = {
   async validateCode(code, type = 'access') {
     const res = await fetch('/api/validate-code', {
@@ -25,8 +23,7 @@ export const api = {
     const res = await fetch('/api/save-lead', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
@@ -39,8 +36,7 @@ export const api = {
     const res = await fetch('/api/send-telegram', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ message })
     });
@@ -51,8 +47,7 @@ export const api = {
     const res = await fetch('/api/notify', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
     });
@@ -65,8 +60,7 @@ export const api = {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(INTERNAL_KEY ? { 'x-internal-key': INTERNAL_KEY } : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ choiceDescriptions, lang })
     });
