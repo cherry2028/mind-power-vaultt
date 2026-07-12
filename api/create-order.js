@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 // /api/create-order.js — Create Cashfree Payment Order
 export default async function handler(req, res) {
   // CORS headers
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
     ? 'https://api.cashfree.com/pg/orders' 
     : 'https://sandbox.cashfree.com/pg/orders';
 
-  const orderId = `MPV_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const orderId = `MPV_${Date.now()}_${crypto.randomInt(0, 1000)}`;
 
   const orderPayload = {
     order_id: orderId,
