@@ -8,6 +8,8 @@
 //   RESEND_API_KEY      — from resend.com (free 100 emails/day)
 
 import { escapeHTML } from './_lib/utils.js';
+import { checkSimpleLimit } from './_lib/ratelimit.js';
+import { logEvent } from './_lib/logger.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,6 +18,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (!checkSimpleLimit(ip, 10)) {
+    logEvent('notify_rate_blocked', { ip });
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
 
   // No API key check needed — Vercel same-origin protection is sufficient
 
