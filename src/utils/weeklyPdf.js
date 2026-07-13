@@ -30,13 +30,14 @@ export function buildReportHtml(p) {
 
   const tradeRows = (p.trades || []).map((t) => {
     const pnl = Number(t.pnl || 0);
+    const isOpen = t.status === 'open';
     return `<tr>
       <td style="${td}">${esc(t.date)}</td>
       <td style="${td}">${esc(t.inst)}</td>
       <td style="${td}">${esc((t.dir || '').toUpperCase())}</td>
       <td style="${td};color:${t.pln ? G.green : G.red};font-weight:600">${t.pln ? 'Planned' : 'Impulse'}</td>
       <td style="${td}">${pretty(t.emo)}</td>
-      <td style="${td};color:${pnl >= 0 ? G.green : G.red};font-weight:700;white-space:nowrap">${signedRupee(pnl)}</td>
+      <td style="${td};color:${isOpen ? G.dim : pnl >= 0 ? G.green : G.red};font-weight:700;white-space:nowrap">${isOpen ? 'OPEN' : signedRupee(pnl)}</td>
       <td style="${td}">${t.mist ? esc(MIST_LABELS[t.mist] || t.mist.replace(/_/g, ' ')) : '—'}</td>
       <td style="${td}">${t.voice ? '🎙 ' + esc(t.voice) : '—'}</td>
     </tr>`;

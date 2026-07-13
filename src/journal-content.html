@@ -295,6 +295,41 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .rec-label{font-size:9px;color:#6A5020;text-transform:uppercase;letter-spacing:1px}
 .rec-val{font-size:12px;color:#9A8870;line-height:1.5;margin-top:2px}
 .rec-del{font-size:10px;color:#2A2A2A;background:none;border:none;float:right;cursor:pointer}
+/* ═══ DAY-FLOW REDESIGN ═══ */
+.sb{display:none!important}
+.mobile-banner{display:none!important}
+.daynav{display:flex;gap:7px;padding:10px 12px;border-bottom:1px solid rgba(201,168,76,0.12);background:#08080D;align-items:center;flex-shrink:0}
+.dpill{flex:1;padding:13px 4px;border-radius:24px;border:1px solid rgba(201,168,76,0.2);background:transparent;color:#9A8870;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:0.3px;min-height:46px}
+.dpill.on{background:linear-gradient(135deg,#7A6530,#C9A84C);color:#05050A;border-color:transparent}
+.dpill.dmore{flex:0 0 auto;padding:13px 16px;border-radius:14px}
+.syncdot{font-size:9px;letter-spacing:0.5px;color:#4CAF82;padding:0 4px;white-space:nowrap;flex:0 0 auto}
+.syncdot.sy{color:#E0A84C}.syncdot.so{color:#CF6679}
+.tapscale{display:flex;gap:8px;margin:6px 0 14px}
+.tapdot{flex:1;min-height:46px;border-radius:10px;border:1px solid rgba(201,168,76,0.18);background:#12121A;color:#6A5A40;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.tapdot.on{border-color:#C9A84C;background:rgba(201,168,76,0.12);color:#E2C97A}
+.tapscale.t10 .tapdot{min-height:40px;font-size:12px;border-radius:8px}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+.chip{padding:12px 14px;border-radius:12px;border:1px solid rgba(201,168,76,0.18);background:#12121A;color:#D0CCBF;font-size:13px;cursor:pointer;font-family:inherit;min-height:46px;font-weight:600}
+.chip.on{border-color:#C9A84C;color:#E2C97A;background:rgba(201,168,76,0.1)}
+.bigbtn{display:block;width:100%;min-height:62px;border:none;border-radius:14px;background:linear-gradient(135deg,#7A6530,#C9A84C);color:#05050A;font-size:16px;font-weight:800;letter-spacing:1px;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(201,168,76,0.25)}
+.bigbtn:disabled{opacity:0.5;cursor:not-allowed}
+.otcard{background:#12121A;border:1px solid rgba(224,168,76,0.4);border-left:4px solid #E0A84C;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
+.otcard .oti{font-size:15px;font-weight:700;color:#F5F2EA}
+.otcard .ott{font-size:11px;color:#9A8870;margin-top:3px}
+.otcard .otc{float:right;font-size:12px;font-weight:700;color:#E0A84C;padding:8px 12px;border:1px solid rgba(224,168,76,0.4);border-radius:20px}
+.sheet{position:fixed;inset:0;background:rgba(5,5,10,0.85);z-index:600;display:none;align-items:flex-end;justify-content:center}
+.sheet.open{display:flex}
+.sheet-card{width:100%;max-width:560px;max-height:88vh;overflow-y:auto;background:#0E0E15;border:1px solid rgba(201,168,76,0.25);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 18px 28px}
+.sheet-title{font-size:15px;font-weight:700;color:#C9A84C;letter-spacing:1px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.sheet-x{background:none;border:none;color:#6A5A40;font-size:18px;cursor:pointer;padding:4px 10px}
+.more-item{display:flex;align-items:center;gap:12px;width:100%;padding:15px 14px;border-radius:12px;border:1px solid rgba(201,168,76,0.12);background:#12121A;color:#D0CCBF;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px;text-align:left}
+.more-item span.mi{font-size:18px}
+.dtl-toggle{background:none;border:none;color:#6A5A40;font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:6px 0}
+.dtl-body{display:none;margin-top:8px}
+.dtl-body.open{display:block}
+.todaytiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.morning-done{background:rgba(76,175,130,0.07);border:1px solid rgba(76,175,130,0.3);border-radius:12px;padding:16px;margin-bottom:14px}
+@media(min-width:700px){.sheet{align-items:center}.sheet-card{border-radius:18px;border-bottom:1px solid rgba(201,168,76,0.25)}}
 </style>
 </head>
 <body>
@@ -358,7 +393,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <div class="ob-num">Step 3 of 3</div>
     <div class="ob-icon">✅</div>
     <div class="ob-title">Ready. ఇప్పుడు మొదలు పెట్టు.</div>
-    <div class="ob-body">Day 1 కి ఒక్క section మాత్రమే: <strong style="color:#C9A84C">Pre-Market Ritual</strong>.<br><br>ఇది complete చేయి. Trade Log automatically unlock అవుతుంది.<br><br>Checklist → Trade → EOD → ఇదే నీ daily loop.</div>
+    <div class="ob-body">App టైం ప్రకారం సరైన screen చూపిస్తుంది — నువ్వు ఏ tab open చేయాలో ఆలోచించాల్సిన పని లేదు.<br><br><strong style="color:#C9A84C">🌅 Morning Ritual</strong> (60 sec) → <strong style="color:#C9A84C">📈 Trade</strong> → <strong style="color:#C9A84C">🌙 Evening Mirror</strong><br><br>Morning Ritual చేస్తేనే Trade unlock అవుతుంది. ఇదే నీ daily loop.</div>
     <button class="ob-next" onclick="finishOnboarding()">Journal తెరువు →</button>
   </div>
 </div>
@@ -407,12 +442,93 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 </div>
 
+<!-- TRADE STEP 1: log entry in ~10 seconds -->
+<div class="sheet" id="ts1">
+  <div class="sheet-card">
+    <div class="sheet-title">⚡ New Trade — 10 seconds<button class="sheet-x" onclick="ge('ts1').classList.remove('open')">✕</button></div>
+    <div class="lbl">Instrument</div>
+    <div class="chiprow" id="ts1-chips"></div>
+    <input id="ts1-inst" placeholder="కొత్తది అయితే type చేయి — NIFTY 24500 CE..." style="margin-bottom:14px"/>
+    <div class="lbl">Trade Type</div>
+    <div class="chiprow" id="ts1-type-row"></div>
+    <div id="ts1-mist" style="display:none">
+      <div class="lbl">Impulse Trigger — ఏది push చేసింది?</div>
+      <select id="trmk" onchange="showMistFeedback(this.value)" style="margin-bottom:8px">
+        <option value="">Select...</option>
+        <option value="revenge">Revenge Trade</option>
+        <option value="fomo">FOMO Entry</option>
+        <option value="early_exit">Early Exit (Fear)</option>
+        <option value="late_exit">Late Exit (Hope)</option>
+        <option value="overtrade">Overtraded</option>
+        <option value="size_up">Size Impulsively Increase చేశాను</option>
+        <option value="ignored_sl">Stop Loss ignore చేశాను</option>
+      </select>
+      <div class="mist-feedback mf-revenge" id="mf-revenge"><div class="mf-title" style="color:#CF6679">🔴 Revenge Trade Detected</div><div class="mf-body">ఈ trade market తో కాదు — నీ ego తో. Exit చేసు. Reset చేసుకో. Market ఎక్కడికీ వెళ్ళదు.</div></div>
+      <div class="mist-feedback mf-fomo" id="mf-fomo"><div class="mf-title" style="color:#E0A84C">⚠️ FOMO Entry Detected</div><div class="mf-body">Move miss అయింది అనిపిస్తోంది. Setup లేకుండా enter అవ్వడం — next setup వస్తుంది.</div></div>
+      <div class="mist-feedback mf-sl" id="mf-ignored_sl"><div class="mf-title" style="color:#CF6679">🚨 Stop Loss Ignored</div><div class="mf-body">ఇది most dangerous behavior. ఇప్పుడే exit చేయి.</div></div>
+    </div>
+    <div class="lbl">Emotion ఇప్పుడు</div>
+    <div class="chiprow" id="ts1-emo-row"></div>
+    <button class="dtl-toggle" onclick="ge('ts1-dtl').classList.toggle('open')">+ Add details (optional — direction, prices, qty, setup)</button>
+    <div class="dtl-body" id="ts1-dtl">
+      <div class="g2">
+        <div class="fld"><div class="lbl">Direction</div><select id="ts1-dir"><option value="">—</option><option value="long">Long (Buy)</option><option value="short">Short (Sell)</option></select></div>
+        <div class="fld"><div class="lbl">Setup</div><input id="ts1-s" placeholder="OB Retest..."/></div>
+      </div>
+      <div class="g3">
+        <div class="fld"><div class="lbl">Entry</div><input type="number" id="ts1-en" placeholder="24450"/></div>
+        <div class="fld"><div class="lbl">Exit</div><input type="number" id="ts1-ex" placeholder="24600"/></div>
+        <div class="fld"><div class="lbl">Qty</div><input type="number" id="ts1-q" placeholder="1"/></div>
+      </div>
+    </div>
+    <button class="bigbtn" style="margin-top:12px" onclick="saveOpenTrade()">Trade Open ✦ (P&amp;L తర్వాత)</button>
+  </div>
+</div>
+
+<!-- TRADE STEP 2: close the trade in ~20 seconds -->
+<div class="sheet" id="ts2">
+  <div class="sheet-card">
+    <div class="sheet-title"><span id="ts2-tt">Close Trade</span><button class="sheet-x" onclick="ge('ts2').classList.remove('open')">✕</button></div>
+    <div class="lbl">Realized P&amp;L (₹) — loss అయితే minus</div>
+    <input type="number" id="ts2-pnl" placeholder="+3750 / -1200" style="font-size:22px;text-align:center;font-weight:700;margin-bottom:14px"/>
+    <div class="lbl">Quick Voice Note (Emotion / Reason — optional)</div>
+    <div class="voice-btn" id="voiceBtn" onclick="toggleVoice()"><div class="voice-indicator"></div><span id="voiceTxt">🎙 Voice record చేయి</span></div>
+    <textarea id="tr-voice" placeholder="Voice note లేదా manually type చేయి..." rows="2"></textarea>
+    <button class="dtl-toggle" onclick="ge('ts2-dtl').classList.toggle('open')">+ Add details (optional — prices, qty)</button>
+    <div class="dtl-body" id="ts2-dtl">
+      <div class="g3">
+        <div class="fld"><div class="lbl">Entry</div><input type="number" id="ts2-en"/></div>
+        <div class="fld"><div class="lbl">Exit</div><input type="number" id="ts2-ex"/></div>
+        <div class="fld"><div class="lbl">Qty</div><input type="number" id="ts2-q"/></div>
+      </div>
+    </div>
+    <button class="bigbtn" style="margin-top:12px" onclick="closeTradeFinish()">Trade Close చేయి ✦</button>
+  </div>
+</div>
+
+<!-- MORE MENU: everything outside the daily flow -->
+<div class="sheet" id="moreSheet">
+  <div class="sheet-card">
+    <div class="sheet-title">☰ More<button class="sheet-x" onclick="ge('moreSheet').classList.remove('open')">✕</button></div>
+    <button class="more-item" onclick="goLegacy('foundation')"><span class="mi">🏛</span>Foundation — నీ anchor</button>
+    <button class="more-item" onclick="goLegacy('strategy')"><span class="mi">📐</span>Strategy Rules</button>
+    <button class="more-item" onclick="goLegacy('psych')"><span class="mi">🧠</span>Psychology Tracker</button>
+    <button class="more-item" onclick="goLegacy('weekly')"><span class="mi">📅</span>Weekly Review</button>
+    <button class="more-item" onclick="goLegacy('monthly')"><span class="mi">📆</span>Monthly Review</button>
+    <button class="more-item" onclick="goLegacy('habits')"><span class="mi">🔥</span>Streak Details</button>
+    <button class="more-item" onclick="goLegacy('history')"><span class="mi">📂</span>Records / History</button>
+    <button class="more-item" onclick="goLegacy('performance')"><span class="mi">📈</span>Performance Dashboard</button>
+    <button class="more-item" onclick="ge('moreSheet').classList.remove('open');ge('sharePanel').classList.add('open')"><span class="mi">📤</span>Export / Share — WhatsApp PDF, Email, Backup</button>
+    <button class="more-item" onclick="ge('moreSheet').classList.remove('open');showPinSet()"><span class="mi">🔐</span>PIN Lock</button>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="app">
   <div class="mobile-banner">💻 Best experience: Laptop/Desktop browser లో open చేయండి. Mobile version coming soon.</div>
   <div class="hdr">
     <div class="hdr-l">
-      <button class="mbtn" onclick="toggleSB()">☰</button>
+      <button class="mbtn" onclick="openMore()">☰</button>
       <div><div class="bn">MIND POWER VAULTT</div><div class="bt">Trading Journal</div></div>
     </div>
     <div class="hdr-r">
@@ -427,6 +543,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <button class="btn bgh bsm" onclick="ge('sharePanel').classList.add('open')" style="padding:5px 10px;font-size:11px">📤 Share</button>
       <button class="btn bgh bsm" onclick="showPinSet()" style="padding:5px 10px;font-size:11px">🔐</button>
     </div>
+  </div>
+  <!-- DAY-FLOW NAV: the app decides which screen — student never picks a tab -->
+  <div class="daynav">
+    <button class="dpill" id="dp-morning" onclick="dayGo('morning')">🌅 Morning</button>
+    <button class="dpill" id="dp-trade" onclick="dayGo('trade')">📈 Trade</button>
+    <button class="dpill" id="dp-evening" onclick="dayGo('evening')">🌙 Evening</button>
+    <button class="dpill dmore" onclick="openMore()">☰ More</button>
+    <span class="syncdot" id="syncdot"></span>
   </div>
   <div class="body">
     <div class="sb" id="sb">
@@ -450,8 +574,96 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <div class="main">
       <div class="wrap">
 
+        <!-- ═══ MORNING RITUAL (condensed — 60 seconds) ═══ -->
+        <div class="sec" id="sec-morning">
+          <div class="sh"><div class="st"><span style="font-size:19px">🌅</span><h2>Morning Ritual</h2></div><div class="ss">60 seconds — ఇది చేస్తేనే Trade unlock అవుతుంది.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="morning-done" id="qm-done" style="display:none">
+            <div style="font-size:14px;font-weight:700;color:#4CAF82;margin-bottom:6px">✦ ఈరోజు Ritual పూర్తయింది</div>
+            <div style="font-size:12px;color:#9A8870" id="qm-done-sum"></div>
+            <button class="dtl-toggle" onclick="editMorning()">మళ్ళీ edit చేయాలా?</button>
+          </div>
+          <div id="qm-form">
+            <div class="card">
+              <div class="lbl">నిద్ర quality ఎలా ఉంది?</div>
+              <div class="tapscale" id="qm-s1"></div>
+              <div class="lbl">Stress level ఎంత?</div>
+              <div class="tapscale" id="qm-s2"></div>
+              <div class="lbl">Distractions ఎన్ని? (1 = అస్సలు లేవు)</div>
+              <div class="tapscale" id="qm-s3"></div>
+            </div>
+            <div class="card">
+              <div class="lbl">ఇప్పుడు నీ feeling</div>
+              <div class="chiprow" id="qm-emo-row"></div>
+              <div class="lbl">Market Bias ఈరోజు</div>
+              <div class="chiprow" id="qm-bias-row"></div>
+              <div class="lbl">Max Loss ఈరోజు (₹) — ఇది దాటితే trading auto-block</div>
+              <div class="chiprow" id="qm-ml-row"></div>
+            </div>
+            <button class="bigbtn" onclick="saveMorning()">Ritual పూర్తి చేయి — Trade unlock ✦</button>
+          </div>
+        </div>
+
+        <!-- ═══ TRADE (market hours) ═══ -->
+        <div class="sec" id="sec-trade">
+          <div class="sh"><div class="st"><span style="font-size:19px">📈</span><h2>Trade</h2></div><div class="ss">ప్రతి trade log చేయి — winner అయినా loser అయినా.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="kill-banner" id="killBanner"><div style="font-size:24px">🛑</div><div><div class="kill-title">DAILY LOSS LIMIT HIT — TRADING BLOCKED</div><div class="kill-msg">Maximum daily loss reach చేశారు. Screen మూసి వెళ్ళు. రేపు fresh start.</div></div></div>
+          <div class="ot-alert" id="otAlert"><div style="font-weight:700;color:#E0A84C;font-size:13px">⚠️ You are no longer trading. You are reacting.</div><div style="font-size:11px;color:#9A8870;margin-top:3px">Overtrading threshold reach అయింది. ఇప్పుడు stop చేయడం professional decision.</div></div>
+          <div id="qt-lock" style="display:none" class="alt"><div class="altt">🔒 Morning Ritual పూర్తి కాలేదు</div><div class="alts">Ritual చేయకుండా trade log అవ్వదు. <button class="dtl-toggle" style="color:#C9A84C" onclick="dayGo('morning')">Morning కి వెళ్ళు →</button></div></div>
+          <div class="todaytiles">
+            <div class="sb2"><div class="sv" id="qt-count">0</div><div class="sl2">ఈరోజు Trades</div></div>
+            <div class="sb2"><div class="sv" id="qt-pnl">₹0</div><div class="sl2">ఈరోజు P&L</div></div>
+            <div class="sb2"><div class="sv" id="qt-disc" style="color:#C9A84C">0</div><div class="sl2">Discipline</div></div>
+          </div>
+          <button class="bigbtn" id="qt-logbtn" onclick="openStep1()">⚡ Trade Log చేయి</button>
+          <div style="text-align:center;margin:10px 0 18px"><button class="dtl-toggle" onclick="goLegacy('checklist')">✓ 8-point checklist చేయాలా? (optional)</button></div>
+          <div id="otlist"></div>
+          <div id="qt-closed"></div>
+        </div>
+
+        <!-- ═══ EVENING MIRROR (after market close) ═══ -->
+        <div class="sec" id="sec-evening">
+          <div class="sh"><div class="st"><span style="font-size:19px">🌙</span><h2>Evening Mirror</h2></div><div class="ss">Market close అయింది — ఈ 2 నిమిషాలు రేపటి clarity.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="morning-done" id="qe-done" style="display:none">
+            <div style="font-size:14px;font-weight:700;color:#4CAF82;margin-bottom:6px">✦ ఈరోజు Mirror పూర్తయింది</div>
+            <div style="font-size:12px;color:#9A8870" id="qe-done-sum"></div>
+          </div>
+          <div id="qe-form">
+            <div class="card">
+              <div class="ib">Process Score = నీ discipline. Outcome Score = Market result. Process మీదే focus.</div>
+              <div class="lbl">Process Score (1–10)</div>
+              <div class="tapscale t10" id="qe-proc"></div>
+              <div class="lbl">Outcome Score (1–10)</div>
+              <div class="tapscale t10" id="qe-out"></div>
+              <div class="lbl">Best Decision ఈరోజు</div>
+              <input id="qe-b" placeholder="Stop loss respect చేశాను..." style="margin-bottom:12px"/>
+              <div class="lbl">Worst Decision ఈరోజు</div>
+              <input id="qe-w" placeholder="FOMO లో entry తీసుకున్నాను"/>
+            </div>
+            <div class="card cg">
+              <div class="ct">🪞 Daily Mirror</div>
+              <div class="ib" id="qe-mirrorNote">ఈ questions కి honest గా జవాబు చెప్పు.</div>
+              <div class="lbl">01. ఈరోజు process follow చేశానా?</div>
+              <div class="chiprow" id="qe-m1-row"></div>
+              <div class="lbl">02. ఎక్కడ నేను నన్నే deceive చేసుకున్నాను?</div>
+              <textarea id="qe-m2" placeholder="Honest గా చెప్పు..." rows="2" style="margin-bottom:12px"></textarea>
+              <div class="lbl">03. ఈరోజు professional లా behave చేశానా?</div>
+              <div class="chiprow" id="qe-m3-row"></div>
+            </div>
+            <div class="card">
+              <div class="lbl" style="margin-bottom:9px">Mood Seal</div>
+              <div class="chiprow" id="qe-mood-row"></div>
+              <button class="dtl-toggle" onclick="ge('qe-extra').classList.toggle('open')">+ రేపు improve / notes (optional)</button>
+              <div class="dtl-body" id="qe-extra">
+                <div class="lbl">రేపు Improve</div><input id="qe-im" placeholder="..." style="margin-bottom:10px"/>
+                <div class="lbl">Notes</div><textarea id="qe-n" placeholder="Market observations..." rows="2"></textarea>
+              </div>
+            </div>
+            <button class="bigbtn" onclick="saveEvening()">Mirror Seal చేయి ✦</button>
+          </div>
+        </div>
+
         <!-- FOUNDATION -->
-        <div class="sec on" id="sec-foundation">
+        <div class="sec" id="sec-foundation">
           <div class="sh"><div class="st"><span style="font-size:19px">🏛</span><h2>The Foundation</h2></div><div class="ss">ఒక్కసారి fill చేయి — ఇది నీ anchor.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
           <div class="card">
             <div class="fld"><div class="lbl">నా Why</div><textarea id="f-why" placeholder="నా family కోసం..."></textarea></div>
@@ -529,8 +741,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <!-- TRADE LOG -->
         <div class="sec" id="sec-tradelog">
           <div class="sh"><div class="st"><span style="font-size:19px">📋</span><h2>Trade Log</h2></div><div class="ss">ప్రతి trade record చేయి — winner అయినా loser అయినా.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
-          <div class="kill-banner" id="killBanner"><div style="font-size:24px">🛑</div><div><div class="kill-title">DAILY LOSS LIMIT HIT — TRADING BLOCKED</div><div class="kill-msg">Maximum daily loss reach చేశారు. Screen మూసి వెళ్ళు. రేపు fresh start.</div></div></div>
-          <div class="ot-alert" id="otAlert"><div style="font-weight:700;color:#E0A84C;font-size:13px">⚠️ You are no longer trading. You are reacting.</div><div style="font-size:11px;color:#9A8870;margin-top:3px">Overtrading threshold reach అయింది. ఇప్పుడు stop చేయడం professional decision.</div></div>
           <div class="g4" style="margin-bottom:12px">
             <div class="sb2"><div class="sv" id="tltot">0</div><div class="sl2">Trades</div></div>
             <div class="sb2"><div class="sv" id="tlwr" style="color:#4CAF82">0%</div><div class="sl2">Win Rate</div></div>
@@ -540,68 +750,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <div class="pvp-grid">
             <div class="pvp-card pvp-loss"><div class="pvp-amt" id="pvpLoss" style="color:#CF6679">₹0</div><div class="pvp-lbl">Lost to Mistakes</div></div>
             <div class="pvp-card pvp-gain"><div class="pvp-amt" id="pvpGain" style="color:#4CAF82">₹0</div><div class="pvp-lbl">Earned via Discipline</div></div>
-          </div>
-          <div style="text-align:right;margin-bottom:10px"><button class="btn bgh bsm" onclick="togTF()">+ Trade Add చేయి</button></div>
-          <div class="fp" id="trform">
-            <div class="ct">New Trade Entry</div>
-            <div class="g3">
-              <div class="fld"><div class="lbl">Date</div><input type="date" id="tr-dt"/></div>
-              <div class="fld"><div class="lbl">Instrument</div><input id="tr-i" placeholder="NIFTY..."/></div>
-              <div class="fld"><div class="lbl">Setup</div><input id="tr-s" placeholder="OB Retest..."/></div>
-            </div>
-            <div class="g3">
-              <div class="fld"><div class="lbl">Direction</div><select id="tr-dir"><option value="long">Long (Buy)</option><option value="short">Short (Sell)</option></select></div>
-              <div class="fld"><div class="lbl">Entry Price</div><input type="number" id="tr-en" placeholder="24450"/></div>
-              <div class="fld"><div class="lbl">Exit Price</div><input type="number" id="tr-ex" placeholder="24600"/></div>
-            </div>
-            <div class="g2">
-              <div class="fld"><div class="lbl">Qty / Lots</div><input type="number" id="tr-q" placeholder="1"/></div>
-              <div class="fld"><div class="lbl">Realized P&L (₹)</div><input type="number" id="tr-pn" placeholder="3750"/></div>
-            </div>
-            <!-- VOICE NOTE -->
-            <div class="fld">
-              <div class="lbl">Quick Voice Note (Emotion / Reason)</div>
-              <div class="voice-btn" id="voiceBtn" onclick="toggleVoice()"><div class="voice-indicator"></div><span id="voiceTxt">🎙 Voice record చేయి</span></div>
-              <textarea id="tr-voice" placeholder="Voice note లేదా manually type చేయి..." rows="2"></textarea>
-            </div>
-            <div class="fld"><div class="lbl">Emotion</div>
-              <div class="ew" id="trew">
-                <button class="eb on" style="color:#4CAF82;border-color:#4CAF82" onclick="pEmo('trew','trev',this,'calm')">😌 Calm</button>
-                <button class="eb" onclick="pEmo('trew','trev',this,'anxious')">😰 Anxious</button>
-                <button class="eb" onclick="pEmo('trew','trev',this,'fearful')">😨 Fearful</button>
-                <button class="eb" onclick="pEmo('trew','trev',this,'greedy')">🤑 Greedy</button>
-                <button class="eb" onclick="pEmo('trew','trev',this,'angry')">😤 Angry</button>
-                <button class="eb" onclick="pEmo('trew','trev',this,'neutral')">😐 Neutral</button>
-              </div>
-              <input type="hidden" id="trev" value="calm">
-            </div>
-            <div class="fld"><div class="lbl">Trade Type</div>
-              <div class="bw" id="trtw">
-                <button class="bb on" onclick="pBias('trtw','trpv',this,'true');sMis(false)">✓ Planned Trade</button>
-                <button class="bb" onclick="pBias('trtw','trpv',this,'false');sMis(true)">⚡ Impulse Trade</button>
-              </div>
-              <input type="hidden" id="trpv" value="true">
-            </div>
-            <div class="fld" id="trmw" style="display:none">
-              <div class="lbl">Impulse Trigger</div>
-              <select id="trmk" onchange="showMistFeedback(this.value)">
-                <option value="">Select...</option>
-                <option value="revenge">Revenge Trade</option>
-                <option value="fomo">FOMO Entry</option>
-                <option value="early_exit">Early Exit (Fear)</option>
-                <option value="late_exit">Late Exit (Hope)</option>
-                <option value="overtrade">Overtraded</option>
-                <option value="size_up">Size Impulsively Increase చేశాను</option>
-                <option value="ignored_sl">Stop Loss ignore చేశాను</option>
-              </select>
-              <div class="mist-feedback mf-revenge" id="mf-revenge"><div class="mf-title" style="color:#CF6679">🔴 Revenge Trade Detected</div><div class="mf-body">ఈ trade market తో కాదు — నీ ego తో. Exit చేసు. Reset చేసుకో. Market ఎక్కడికీ వెళ్ళదు.</div></div>
-              <div class="mist-feedback mf-fomo" id="mf-fomo"><div class="mf-title" style="color:#E0A84C">⚠️ FOMO Entry Detected</div><div class="mf-body">Move miss అయింది అనిపిస్తోంది. Setup లేకుండా enter అవ్వడం — next setup వస్తుంది.</div></div>
-              <div class="mist-feedback mf-sl" id="mf-ignored_sl"><div class="mf-title" style="color:#CF6679">🚨 Stop Loss Ignored</div><div class="mf-body">ఇది most dangerous behavior. ఇప్పుడే exit చేయి.</div></div>
-            </div>
-            <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:9px">
-              <button class="btn bgh bsm" onclick="togTF()">Cancel</button>
-              <button class="btn bpri bsm" onclick="addTrade()">Trade Log చేయి ✦</button>
-            </div>
           </div>
           <div id="tllist"></div>
         </div>
@@ -883,7 +1031,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 <script>
 var MEM={};
 function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return MEM[k]||null;}}
-function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;try{window.parent.postMessage({type:'MPV_DB_DIRTY'},'*');}catch(e2){}}
 function ge(id){return document.getElementById(id);}
 
 var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{}};
@@ -974,7 +1122,8 @@ function updHdr(){
   var r=ge('hritual');if(has){r.textContent='✦ Done';r.className='rbadge rd';}else{r.textContent='⚡ Pending';r.className='rbadge rp';}
 }
 
-function checkKillSwitch(){var f=DB.f||{};var maxDay=Number(f.day||0);if(!maxDay)return false;var t=td(),todayLoss=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)todayLoss+=Number(DB.tr[i].pnl||0);}return todayLoss<=-maxDay;}
+function todayMaxLoss(){var t=td();for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t&&Number(DB.pm[i].ml||0)>0)return Number(DB.pm[i].ml);}return Number((DB.f||{}).day||0);}
+function checkKillSwitch(){var maxDay=todayMaxLoss();if(!maxDay)return false;var t=td(),todayLoss=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t&&DB.tr[i].status!=='open')todayLoss+=Number(DB.tr[i].pnl||0);}return todayLoss<=-maxDay;}
 function checkOvertrading(){var f=DB.f||{};var ota=Number(f.ota||3);var t=td(),cnt=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)cnt++;}return cnt>=ota;}
 function pmDone(){var t=td();for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t)return true;}return false;}
 function daysSinceFirst(){var f=DB.f._firstDay;if(!f)return 999;return Math.floor((new Date()-new Date(f))/(1000*60*60*24));}
@@ -1067,27 +1216,11 @@ function uCS(){var sc=0;for(var k in clSt){if(clSt[k])sc++;}var sn=ge('clsn'),sm
 function logCL(){clSt={};buildCL();toast('Checklist log అయింది ✦');}
 
 // ────── TRADE LOG ──────
-function togTF(){if(checkKillSwitch()){toast('🛑 Daily loss limit hit. Trading blocked.');return;}var f=ge('trform');f.classList.toggle('open');if(f.classList.contains('open'))ge('tr-dt').value=td();}
-function addTrade(){
-  if(checkKillSwitch()){toast('🛑 Daily loss limit hit.');return;}
-  var inst=ge('tr-i').value;if(!inst){toast('Instrument enter చేయి!');return;}
-  var pln=ge('trpv').value==='true',pnl=Number(ge('tr-pn').value||0),mist=pln?'':ge('trmk').value;
-  var t={id:Date.now(),date:ge('tr-dt').value||td(),inst:inst,setup:ge('tr-s').value,dir:ge('tr-dir').value,en:ge('tr-en').value,ex:ge('tr-ex').value,qty:ge('tr-q').value,pnl:pnl,emo:ge('trev').value,pln:pln,mist:mist,voice:ge('tr-voice').value};
-  DB.tr.push(t);ls('mpvtr',DB.tr);
-  if(pln)showFeedback('✦ You executed like a professional.','#4CAF82');
-  else if(mist==='revenge')showFeedback('⚠ Revenge trade. Stop. Reset.','#CF6679');
-  else if(mist==='ignored_sl')showFeedback('🚨 SL ignored. Most dangerous habit.','#CF6679');
-  else showFeedback('⚡ Impulse logged. Awareness is step one.','#E0A84C');
-  if(checkOvertrading())ge('otAlert').classList.add('show');
-  var ids=['tr-i','tr-s','tr-en','tr-ex','tr-q','tr-pn','tr-voice'];for(var i=0;i<ids.length;i++)ge(ids[i]).value='';
-  ge('trmk').value='';var mfs=document.querySelectorAll('.mist-feedback');for(var i=0;i<mfs.length;i++)mfs[i].classList.remove('show');
-  rTr();updHdr();togTF();toast('Trade log అయింది ✦');
-}
 function delT(id){var n=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id!==id)n.push(DB.tr[i]);}DB.tr=n;ls('mpvtr',DB.tr);rTr();updHdr();toast('Trade removed');}
 function rTr(){
-  var T=DB.tr,tot=T.length,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0;
-  for(var i=0;i<T.length;i++){var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){pln++;if(pv>0)gainDisc+=pv;}else{lostMist+=Math.min(pv,0);}}
-  var wr=tot?Math.round(wins/tot*100):0;
+  var T=DB.tr,tot=T.length,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0,closedN=0;
+  for(var i=0;i<T.length;i++){if(T[i].pln)pln++;if(T[i].status==='open')continue;closedN++;var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){if(pv>0)gainDisc+=pv;}else{lostMist+=Math.min(pv,0);}}
+  var wr=closedN?Math.round(wins/closedN*100):0;
   ge('tltot').textContent=tot;var we=ge('tlwr');we.textContent=wr+'%';we.style.color=wr>=50?'#4CAF82':'#CF6679';
   var pe=ge('tlpnl');pe.textContent=(tp>=0?'+':'-')+'₹'+fi(tp);pe.style.color=pc(tp);
   var disc=calcDisciplineScore();var hd=ge('tldisc');hd.textContent=disc;hd.style.color=disc>=0?'#C9A84C':'#CF6679';
@@ -1250,6 +1383,234 @@ function doImport(input){
   reader.readAsText(file);
 }
 
+// ═══════════ DAY-FLOW ENGINE (Morning / Trade / Evening) ═══════════
+function esc2(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function istMinutes(){
+  var t=lg('mpvTestIST'); // test hook: ls('mpvTestIST','08:30')
+  if(t&&/^\d{1,2}:\d{2}$/.test(t)){var p=t.split(':');return Number(p[0])*60+Number(p[1]);}
+  try{
+    var parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+    var h=0,m=0;for(var i=0;i<parts.length;i++){if(parts[i].type==='hour')h=Number(parts[i].value);if(parts[i].type==='minute')m=Number(parts[i].value);}
+    return h*60+m;
+  }catch(e){var d=new Date();return d.getHours()*60+d.getMinutes();}
+}
+function autoDay(){var m=istMinutes();if(m<9*60+15)return 'morning';if(m<=15*60+30)return 'trade';return 'evening';}
+var DAY_IDS=['morning','trade','evening'];
+function dayGo(id){
+  var ss=document.querySelectorAll('.sec');for(var i=0;i<ss.length;i++)ss[i].classList.remove('on');
+  var s=ge('sec-'+id);if(s)s.classList.add('on');
+  for(var i=0;i<DAY_IDS.length;i++){var p=ge('dp-'+DAY_IDS[i]);if(p)p.classList.toggle('on',DAY_IDS[i]===id);}
+  if(id==='morning')renderMorning();
+  if(id==='trade')renderTrade();
+  if(id==='evening')renderEvening();
+  var mn=document.querySelector('.main');if(mn)mn.scrollTop=0;
+}
+function openMore(){ge('moreSheet').classList.add('open');}
+function goLegacy(id){
+  ge('moreSheet').classList.remove('open');
+  for(var i=0;i<DAY_IDS.length;i++){var p=ge('dp-'+DAY_IDS[i]);if(p)p.classList.remove('on');}
+  goToSection(id);
+}
+function buildScale(id,n,cur,cb){
+  var c=ge(id);c.innerHTML='';
+  for(var v=1;v<=n;v++){(function(v){
+    var b=document.createElement('button');b.className='tapdot'+(v===cur?' on':'');b.textContent=v;
+    b.onclick=function(){var bs=c.children;for(var j=0;j<bs.length;j++)bs[j].classList.remove('on');b.classList.add('on');cb(v);};
+    c.appendChild(b);
+  })(v);}
+}
+function buildChips(id,opts,cur,cb){
+  var c=ge(id);c.innerHTML='';
+  for(var i=0;i<opts.length;i++){(function(o){
+    var b=document.createElement('button');b.className='chip'+(o.v===cur?' on':'');b.textContent=o.label;
+    b.onclick=function(){var bs=c.children;for(var j=0;j<bs.length;j++)bs[j].classList.remove('on');b.classList.add('on');cb(o.v);};
+    c.appendChild(b);
+  })(opts[i]);}
+}
+
+// ────── MORNING RITUAL (60 seconds) ──────
+var QM={s1:4,s2:2,s3:2,emo:'calm',bias:'bullish',ml:0,_editing:false};
+function todayPM(){var t=td();for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t)return DB.pm[i];}return null;}
+function renderMorning(){
+  var p=todayPM();
+  if(p&&!QM._editing){
+    ge('qm-done').style.display='';ge('qm-form').style.display='none';
+    ge('qm-done-sum').textContent='Bias: '+(p.bias||'—')+' · Feeling: '+(p.emo||'—')+' · Max Loss: ₹'+fi(p.ml||0);
+    return;
+  }
+  ge('qm-done').style.display='none';ge('qm-form').style.display='';
+  if(p){QM.s1=Math.max(1,Math.min(5,Math.round(Number(p.sl||8)/2)));QM.s2=Math.max(1,Math.min(5,Math.round(Number(p.st||4)/2)));QM.s3=Math.max(1,Math.min(5,Math.round(Number(p.di||4)/2)));QM.emo=p.emo||'calm';QM.bias=p.bias||'bullish';QM.ml=Number(p.ml||0);}
+  if(!QM.ml)QM.ml=Number((DB.f||{}).day||0);
+  buildScale('qm-s1',5,QM.s1,function(v){QM.s1=v;});
+  buildScale('qm-s2',5,QM.s2,function(v){QM.s2=v;});
+  buildScale('qm-s3',5,QM.s3,function(v){QM.s3=v;});
+  buildChips('qm-emo-row',[{v:'calm',label:'😌 Calm'},{v:'anxious',label:'😰 Anxious'},{v:'confident',label:'💪 Confident'},{v:'fearful',label:'😨 Fearful'},{v:'neutral',label:'😐 Neutral'}],QM.emo,function(v){QM.emo=v;});
+  buildChips('qm-bias-row',[{v:'bullish',label:'📈 Bullish'},{v:'bearish',label:'📉 Bearish'},{v:'sideways',label:'↔ Sideways'}],QM.bias,function(v){QM.bias=v;});
+  buildChips('qm-ml-row',[{v:500,label:'₹500'},{v:1000,label:'₹1,000'},{v:2000,label:'₹2,000'},{v:5000,label:'₹5,000'},{v:-1,label:'✏ Custom'}],QM.ml,function(v){
+    if(v===-1){var x=prompt('Max loss ఈరోజు (₹):');QM.ml=Number(x||0)||0;}else QM.ml=v;
+  });
+}
+function editMorning(){QM._editing=true;renderMorning();}
+function saveMorning(){
+  if(!QM.ml||QM.ml<=0){toast('Max Loss select చేయి — ఇది నీ protection.',4000);return;}
+  if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
+  var d={id:Date.now(),date:td(),sl:QM.s1*2,st:QM.s2*2,di:QM.s3*2,emo:QM.emo,bias:QM.bias,lev:'',news:'',ml:QM.ml,foc:''};
+  var f=[];for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date!==d.date)f.push(DB.pm[i]);}f.push(d);DB.pm=f;ls('mpvpm',DB.pm);
+  QM._editing=false;updHdr();loadPMA();
+  showFeedback('✦ Ritual complete. Now you are prepared to trade.','#4CAF82');
+  dayGo('trade');
+}
+
+// ────── TRADE SCREEN + 2-STEP ENTRY ──────
+function tradesToday(){var t=td(),a=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t)a.push(DB.tr[i]);}return a;}
+function renderTrade(){
+  var locked=!pmDone(),killed=checkKillSwitch();
+  ge('qt-lock').style.display=locked?'':'none';
+  ge('qt-logbtn').disabled=locked||killed;
+  if(killed)ge('killBanner').classList.add('show');else ge('killBanner').classList.remove('show');
+  if(checkOvertrading())ge('otAlert').classList.add('show');else ge('otAlert').classList.remove('show');
+  var T=tradesToday(),pnl=0;
+  for(var i=0;i<T.length;i++){if(T[i].status!=='open')pnl+=Number(T[i].pnl||0);}
+  ge('qt-count').textContent=T.length;
+  var pe=ge('qt-pnl');pe.textContent=ps2(pnl);pe.style.color=pc(pnl);
+  var disc=calcDisciplineScore();var de=ge('qt-disc');de.textContent=disc;de.style.color=disc>=0?'#C9A84C':'#CF6679';
+  var ol=ge('otlist');ol.innerHTML='';
+  var opens=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].status==='open')opens.push(DB.tr[i]);}
+  if(opens.length){var h=document.createElement('div');h.className='lbl';h.style.margin='16px 0 8px';h.textContent='OPEN TRADES — close అయ్యాక tap చేయి';ol.appendChild(h);}
+  for(var i=opens.length-1;i>=0;i--){(function(t){
+    var d=document.createElement('div');d.className='otcard';
+    d.innerHTML='<span class="otc">Close →</span><div class="oti">'+esc2(t.inst)+'</div><div class="ott">'+(t.pln?'✓ Planned':'⚡ Impulse')+(t.emo?' · '+esc2(t.emo):'')+' · '+esc2(t.date)+'</div>';
+    d.onclick=function(){openStep2(t.id);};ol.appendChild(d);
+  })(opens[i]);}
+  var cl=ge('qt-closed');cl.innerHTML='';
+  var closed=[];for(var i=0;i<T.length;i++){if(T[i].status!=='open')closed.push(T[i]);}
+  if(closed.length){var h2=document.createElement('div');h2.className='lbl';h2.style.margin='16px 0 8px';h2.textContent='ఈరోజు CLOSED TRADES';cl.appendChild(h2);}
+  for(var i=closed.length-1;i>=0;i--){
+    var t=closed[i],p2=Number(t.pnl||0),d2=document.createElement('div');
+    d2.className='ti';d2.style.borderLeftColor=p2>=0?'#4CAF82':'#CF6679';
+    d2.innerHTML='<div class="tr2"><div><div class="tn">'+esc2(t.inst)+'</div><div class="tm">'+(t.pln?'Planned':'Impulse')+(t.mist?' · ⚠ '+esc2(t.mist.replace(/_/g,' ')):'')+(t.voice?' · 🎙':'')+'</div></div><div class="tpnl" style="color:'+pc(p2)+'">'+ps2(p2)+'</div></div>';
+    cl.appendChild(d2);
+  }
+}
+var TS1={pln:true,emo:'calm'};
+function hideMistFeedback(){var mfs=document.querySelectorAll('.mist-feedback');for(var i=0;i<mfs.length;i++)mfs[i].classList.remove('show');}
+function openStep1(){
+  if(!pmDone()){
+    ge('lockTitle').textContent='YOU ARE NOT PREPARED';
+    ge('lockMsg').textContent='Morning Ritual complete చేయకుండా trade log చేయడం allowed కాదు.';
+    ge('lockBtn').textContent='Ritual Complete చేయి →';
+    ge('lockBtn').onclick=function(){ge('lockOverlay').classList.add('hidden');dayGo('morning');};
+    ge('lockOverlay').classList.remove('hidden');return;
+  }
+  if(checkKillSwitch()){toast('🛑 Daily loss limit hit. Trading blocked.',5000);return;}
+  TS1={pln:true,emo:'calm'};
+  ge('ts1-inst').value='';ge('trmk').value='';ge('ts1-dir').value='';ge('ts1-s').value='';ge('ts1-en').value='';ge('ts1-ex').value='';ge('ts1-q').value='';
+  ge('ts1-mist').style.display='none';ge('ts1-dtl').classList.remove('open');hideMistFeedback();
+  var seen={},chips=[];
+  for(var i=DB.tr.length-1;i>=0&&chips.length<6;i--){var n=(DB.tr[i].inst||'').trim();if(n&&!seen[n.toUpperCase()]){seen[n.toUpperCase()]=1;chips.push(n);}}
+  var c=ge('ts1-chips');c.innerHTML='';
+  for(var i=0;i<chips.length;i++){(function(n){
+    var b=document.createElement('button');b.className='chip';b.textContent=n;
+    b.onclick=function(){var bs=c.children;for(var j=0;j<bs.length;j++)bs[j].classList.remove('on');b.classList.add('on');ge('ts1-inst').value=n;};
+    c.appendChild(b);
+  })(chips[i]);}
+  buildChips('ts1-type-row',[{v:true,label:'✓ Planned Trade'},{v:false,label:'⚡ Impulse Trade'}],true,function(v){
+    TS1.pln=v;ge('ts1-mist').style.display=v?'none':'';
+    if(v){ge('trmk').value='';hideMistFeedback();}
+  });
+  buildChips('ts1-emo-row',[{v:'calm',label:'😌 Calm'},{v:'anxious',label:'😰 Anxious'},{v:'fearful',label:'😨 Fearful'},{v:'greedy',label:'🤑 Greedy'},{v:'angry',label:'😤 Angry'},{v:'neutral',label:'😐 Neutral'}],'calm',function(v){TS1.emo=v;});
+  ge('ts1').classList.add('open');
+}
+function saveOpenTrade(){
+  var inst=ge('ts1-inst').value.trim();
+  if(!inst){toast('Instrument select లేదా type చేయి!');return;}
+  var mist=TS1.pln?'':ge('trmk').value;
+  var t={id:Date.now(),date:td(),inst:inst,setup:ge('ts1-s').value,dir:ge('ts1-dir').value,en:ge('ts1-en').value,ex:ge('ts1-ex').value,qty:ge('ts1-q').value,pnl:0,emo:TS1.emo,pln:TS1.pln,mist:mist,voice:'',status:'open'};
+  DB.tr.push(t);ls('mpvtr',DB.tr);
+  if(t.pln)showFeedback('✦ You executed like a professional.','#4CAF82');
+  else if(mist==='revenge')showFeedback('⚠ Revenge trade. Stop. Reset.','#CF6679');
+  else if(mist==='ignored_sl')showFeedback('🚨 SL ignored. Most dangerous habit.','#CF6679');
+  else showFeedback('⚡ Impulse logged. Awareness is step one.','#E0A84C');
+  ge('ts1').classList.remove('open');
+  renderTrade();updHdr();rTr();
+  toast('Trade open అయింది — close అయ్యాక P&L వేయి ✦',4000);
+}
+var TS2_ID=null;
+function openStep2(id){
+  var t=null;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id===id)t=DB.tr[i];}
+  if(!t)return;TS2_ID=id;
+  ge('ts2-tt').textContent='Close: '+t.inst;
+  ge('ts2-pnl').value='';ge('tr-voice').value='';
+  ge('ts2-en').value=t.en||'';ge('ts2-ex').value=t.ex||'';ge('ts2-q').value=t.qty||'';
+  ge('ts2-dtl').classList.remove('open');
+  ge('ts2').classList.add('open');
+}
+function closeTradeFinish(){
+  var t=null;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id===TS2_ID)t=DB.tr[i];}
+  if(!t){ge('ts2').classList.remove('open');return;}
+  var pv=ge('ts2-pnl').value;
+  if(pv===''){toast('P&L enter చేయి — loss అయితే minus (-1200)');return;}
+  t.pnl=Number(pv)||0;t.voice=ge('tr-voice').value;t.status='closed';t.closedAt=Date.now();
+  if(ge('ts2-en').value)t.en=ge('ts2-en').value;
+  if(ge('ts2-ex').value)t.ex=ge('ts2-ex').value;
+  if(ge('ts2-q').value)t.qty=ge('ts2-q').value;
+  ls('mpvtr',DB.tr);
+  ge('ts2').classList.remove('open');
+  renderTrade();updHdr();rTr();
+  if(checkKillSwitch())showFeedback('🛑 Daily loss limit hit. Screen మూసేయి. రేపు fresh start.','#CF6679');
+  else toast('Trade closed ✦');
+}
+
+// ────── EVENING MIRROR ──────
+var QE={proc:5,out:5,mood:'green',m1:'',m3:''};
+function todayEOD(){var t=td();for(var i=0;i<DB.eod.length;i++){if(DB.eod[i].date===t)return DB.eod[i];}return null;}
+function renderEvening(){
+  var e=todayEOD();
+  if(e){
+    ge('qe-done').style.display='';ge('qe-form').style.display='none';
+    ge('qe-done-sum').textContent='Process '+(e.proc||0)+'/10 · Outcome '+(e.out||0)+'/10 · Mood: '+(e.mood||'—')+' · 🔥 Streak: '+((DB.h&&DB.h.s)||0)+'d';
+    return;
+  }
+  ge('qe-done').style.display='none';ge('qe-form').style.display='';
+  ge('qe-mirrorNote').textContent=mirrorMandatory()?'ఈ questions skip చేయడం save కి allow కాదు. Honest గా చెప్పు.':'First 7 days: Mirror questions optional. తర్వాత mandatory అవుతాయి.';
+  buildScale('qe-proc',10,QE.proc,function(v){QE.proc=v;});
+  buildScale('qe-out',10,QE.out,function(v){QE.out=v;});
+  buildChips('qe-m1-row',[{v:'yes_fully',label:'Yes, fully'},{v:'mostly',label:'Mostly'},{v:'partially',label:'Partially'},{v:'no',label:'No — broke rules'}],QE.m1,function(v){QE.m1=v;});
+  buildChips('qe-m3-row',[{v:'yes',label:'Yes'},{v:'mostly',label:'Mostly'},{v:'no',label:'No — emotional'}],QE.m3,function(v){QE.m3=v;});
+  buildChips('qe-mood-row',[{v:'green',label:'🟢 Calm'},{v:'yellow',label:'🟡 Mixed'},{v:'red',label:'🔴 Emotional'}],QE.mood,function(v){QE.mood=v;});
+}
+function saveEvening(){
+  var opens=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].status==='open')opens++;}
+  if(opens){toast('⚠ '+opens+' open trade(s) ఇంకా close అవ్వలేదు — Trade screen లో close చేసి రా.',6000);dayGo('trade');return;}
+  var mandatory=mirrorMandatory();
+  if(mandatory){
+    if(!QE.m1){toast('Mirror Q1 select చేయి!');return;}
+    if(!ge('qe-m2').value.trim()){toast('Mirror Q2 రాయి!');return;}
+    if(!QE.m3){toast('Mirror Q3 select చేయి!');return;}
+  }
+  var T=tradesToday();
+  var d={id:Date.now(),date:td(),tot:String(T.length),proc:QE.proc,out:QE.out,best:ge('qe-b').value,worst:ge('qe-w').value,imp:ge('qe-im').value,notes:ge('qe-n').value,mood:QE.mood,mirProc:QE.m1,mirLie:ge('qe-m2').value,mirPro:QE.m3};
+  DB.eod.push(d);ls('mpveod',DB.eod);
+  autoCheckStreak(d.date);
+  var todayImp=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===d.date&&!DB.tr[i].pln)todayImp++;}
+  if(todayImp>=3)toast('⚠ 3+ impulse trades today. Streak checked.');
+  ge('qe-b').value='';ge('qe-w').value='';ge('qe-im').value='';ge('qe-n').value='';ge('qe-m2').value='';
+  QE={proc:5,out:5,mood:'green',m1:'',m3:''};
+  rEC();updHdr();renderEvening();
+}
+
+// ────── SYNC STATUS (from parent app) + RESTORE NOTE ──────
+window.addEventListener('message',function(e){
+  var d=e.data||{};
+  if(d.type==='MPV_SYNC_STATUS'){
+    var el=ge('syncdot');if(!el)return;
+    if(d.status==='synced'){el.textContent='✓ synced';el.className='syncdot';}
+    else if(d.status==='syncing'){el.textContent='↻ syncing';el.className='syncdot sy';}
+    else if(d.status==='offline'){el.textContent='⚠ offline';el.className='syncdot so';}
+    else{el.textContent='';el.className='syncdot';}
+  }
+});
+
 // ────── START APP ──────
 function startApp(){
   ge('app').style.display='flex';
@@ -1257,6 +1618,12 @@ function startApp(){
   var e1=ge('eod-dt');if(e1)e1.value=td();var e2=ge('tr-dt');if(e2)e2.value=td();var e3=ge('psy-dt');if(e3)e3.value=td();
   pMood('green');updateMirrorUI();
   if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
+  // The app decides which screen — student never picks a tab
+  dayGo(autoDay());
+  // Tell the parent we're ready (it replies with sync status)
+  try{window.parent.postMessage({type:'MPV_HELLO'},'*');}catch(e){}
+  // Cloud-restore toast (set by parent before the iframe booted)
+  try{var rn=sessionStorage.getItem('mpv_restore_note');if(rn){toast(rn,6000);sessionStorage.removeItem('mpv_restore_note');}}catch(e){}
 }
 
 // ────── INIT ──────
@@ -1401,11 +1768,14 @@ function sendWeeklyPdf(){
   for(i=0;i<DB.tr.length;i++){var t=DB.tr[i];if(t.date>=ws&&t.date<=we)trades.push(t);}
   var eods=[];
   for(i=0;i<DB.eod.length;i++){var d=DB.eod[i];if(d.date>=ws&&d.date<=we)eods.push(d);}
-  var tp=0,wins=0,plnCnt=0,lostMist=0,gainDisc=0,mistCounts={};
+  var tp=0,wins=0,plnCnt=0,lostMist=0,gainDisc=0,mistCounts={},closedN=0;
   for(i=0;i<trades.length;i++){
-    var p=Number(trades[i].pnl||0);tp+=p;if(p>0)wins++;
-    if(trades[i].pln){plnCnt++;if(p>0)gainDisc+=p;}
-    else{lostMist+=Math.min(p,0);var mk=trades[i].mist||'unspecified';mistCounts[mk]=(mistCounts[mk]||0)+1;}
+    if(trades[i].pln)plnCnt++;
+    else{var mk=trades[i].mist||'unspecified';mistCounts[mk]=(mistCounts[mk]||0)+1;}
+    if(trades[i].status==='open')continue;
+    closedN++;var p=Number(trades[i].pnl||0);tp+=p;if(p>0)wins++;
+    if(trades[i].pln){if(p>0)gainDisc+=p;}
+    else{lostMist+=Math.min(p,0);}
   }
   var rules=[];
   for(i=0;i<(DB.rules||[]).length;i++){
@@ -1416,7 +1786,7 @@ function sendWeeklyPdf(){
   var payload={
     studentName:name,weekStart:ws,weekEnd:we,
     identity:calcIdentity(),discipline:calcDisciplineScore(),streak:(DB.h&&DB.h.s)||0,
-    stats:{totalTrades:trades.length,pnl:tp,winRate:trades.length?Math.round(wins/trades.length*100):0,
+    stats:{totalTrades:trades.length,pnl:tp,winRate:closedN?Math.round(wins/closedN*100):0,
       plannedCount:plnCnt,disciplinePct:trades.length?Math.round(plnCnt/trades.length*100):0,
       mistakeCost:Math.abs(lostMist),disciplineEarned:gainDisc},
     trades:trades,eods:eods,mistakes:mistCounts,rules:rules
