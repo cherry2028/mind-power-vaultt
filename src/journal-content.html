@@ -378,6 +378,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 <div id="sharePanel">
   <div class="share-card">
     <div class="share-title">📤 Export / Share</div>
+    <div class="share-btn" onclick="sendWeeklyPdf()" style="border-color:rgba(76,175,130,0.45);background:rgba(76,175,130,0.07)">
+      <div class="share-btn-icon">📱</div>
+      <div><div class="share-btn-title" style="color:#4CAF82">Krishna Prasad కి పంపు — WhatsApp PDF</div><div class="share-btn-sub">ఈ వారం complete report PDF గా WhatsApp లో direct send</div></div>
+    </div>
     <div class="share-btn" onclick="exportPDF()">
       <div class="share-btn-icon">📄</div>
       <div><div class="share-btn-title">Print / Save as PDF</div><div class="share-btn-sub">Current page print చేయి — PDF గా save అవుతుంది</div></div>
@@ -1131,7 +1135,7 @@ function rPs(){
 
 // ────── STRATEGY SECTION ──────
 function addRule(){var inp=ge('new-rule-input');var txt=inp.value.trim();if(!txt)return;if(!DB.rules)DB.rules=[];DB.rules.push({id:Date.now(),text:txt,breaks:0});ls('mpvrules',DB.rules);inp.value='';rStrategy();}
-function breakRule(id){var r=DB.rules.find(function(x){return x.id===id;});if(r){r.breaks=(r.breaks||0)+1;ls('mpvrules',DB.rules);rStrategy();toast('Rule break logged ⚠');}}
+function breakRule(id){var r=DB.rules.find(function(x){return x.id===id;});if(r){r.breaks=(r.breaks||0)+1;if(!r.breakDates)r.breakDates=[];r.breakDates.push(td());ls('mpvrules',DB.rules);rStrategy();toast('Rule break logged ⚠');}}
 function delRule(id){DB.rules=DB.rules.filter(function(x){return x.id!==id;});ls('mpvrules',DB.rules);rStrategy();}
 function rStrategy(){
   var list=ge('rule-list');if(!list)return;list.innerHTML='';
@@ -1378,6 +1382,47 @@ function drawEmotionPnl(){
   for(var i=0;i<keys.length;i++){var k=keys[i],d=emoData[k],avg=Math.round(d.total/d.count);
   var col=d.total>=0?'#4CAF82':'#CF6679';
   grid.innerHTML+='<div style="background:#101018;border:1px solid rgba(201,168,76,0.1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px">'+(emojis[k]||'❓')+'</div><div style="font-size:10px;color:#9A8870;margin:4px 0">'+k+'</div><div style="font-size:14px;font-weight:700;color:'+col+'">'+(d.total>=0?'+':'-')+'₹'+fi(Math.abs(d.total))+'</div><div style="font-size:9px;color:#555">'+d.count+' trades · avg '+(avg>=0?'+':'-')+'₹'+fi(Math.abs(avg))+'</div></div>';}
+}
+
+// ════════ WEEKLY PDF → WHATSAPP (handled by parent app) ════════
+function sendWeeklyPdf(){
+  ge('sharePanel').classList.remove('open');
+  loadDB(); // re-read storage so the report always reflects the latest saves
+  var name=lg('mpvname');
+  if(!name){
+    name=prompt('నీ Name enter చేయి (report లో display అవుతుంది):');
+    if(!name||!name.trim()){toast('Name లేకుండా report పంపలేము.');return;}
+    name=name.trim();ls('mpvname',name);
+  }
+  var end=new Date(),start=new Date();start.setDate(end.getDate()-6);
+  function ds(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  var ws=ds(start),we=ds(end);
+  var trades=[],i;
+  for(i=0;i<DB.tr.length;i++){var t=DB.tr[i];if(t.date>=ws&&t.date<=we)trades.push(t);}
+  var eods=[];
+  for(i=0;i<DB.eod.length;i++){var d=DB.eod[i];if(d.date>=ws&&d.date<=we)eods.push(d);}
+  var tp=0,wins=0,plnCnt=0,lostMist=0,gainDisc=0,mistCounts={};
+  for(i=0;i<trades.length;i++){
+    var p=Number(trades[i].pnl||0);tp+=p;if(p>0)wins++;
+    if(trades[i].pln){plnCnt++;if(p>0)gainDisc+=p;}
+    else{lostMist+=Math.min(p,0);var mk=trades[i].mist||'unspecified';mistCounts[mk]=(mistCounts[mk]||0)+1;}
+  }
+  var rules=[];
+  for(i=0;i<(DB.rules||[]).length;i++){
+    var r=DB.rules[i],wb=0,bd=r.breakDates||[];
+    for(var j=0;j<bd.length;j++){if(bd[j]>=ws&&bd[j]<=we)wb++;}
+    rules.push({text:r.text,totalBreaks:r.breaks||0,weekBreaks:wb,datesTracked:!!r.breakDates});
+  }
+  var payload={
+    studentName:name,weekStart:ws,weekEnd:we,
+    identity:calcIdentity(),discipline:calcDisciplineScore(),streak:(DB.h&&DB.h.s)||0,
+    stats:{totalTrades:trades.length,pnl:tp,winRate:trades.length?Math.round(wins/trades.length*100):0,
+      plannedCount:plnCnt,disciplinePct:trades.length?Math.round(plnCnt/trades.length*100):0,
+      mistakeCost:Math.abs(lostMist),disciplineEarned:gainDisc},
+    trades:trades,eods:eods,mistakes:mistCounts,rules:rules
+  };
+  toast('📄 Weekly PDF generate అవుతోంది...',4000);
+  window.parent.postMessage({type:'MPV_WEEKLY_PDF',payload:payload},'*');
 }
 
 // ════════ EMAIL REPORT ════════

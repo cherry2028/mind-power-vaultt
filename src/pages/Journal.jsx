@@ -5,13 +5,89 @@ import { useNavigate } from 'react-router-dom';
 import journalHtml from '../journal-content.html?raw';
 
 import { supabase } from '../supabase';
+import { generateWeeklyPdf } from '../utils/weeklyPdf';
+
+// Public mentor WhatsApp number for the wa.me fallback (same number as the
+// site's contact button — not a secret, unlike MENTOR_EMAIL which stays server-side).
+const MENTOR_WHATSAPP = (import.meta.env.VITE_MENTOR_WHATSAPP || '919059181616').replace(/\D/g, '');
+const WA_TEXT = 'Weekly report పంపుతున్నాను 📊 — Mind Power Vaultt Journal';
 
 export default function Journal() {
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
+  const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
   const iframeRef = useRef(null);
   const navigate = useNavigate();
+
+  // ═══ WEEKLY PDF → WHATSAPP (triggered from the journal iframe) ═══
+  useEffect(() => {
+    const onMessage = async (e) => {
+      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (!e.data || e.data.type !== 'MPV_WEEKLY_PDF') return;
+      const payload = e.data.payload || {};
+      setPdfShare({ status: 'generating' });
+      try {
+        const { blob, file, fileName } = await generateWeeklyPdf(payload);
+        const url = URL.createObjectURL(blob);
+
+        // Best-effort permanent record in Supabase — sharing works even if this fails.
+        let recordSaved = false;
+        const token = sessionStorage.getItem('mpv_journal_token') || '';
+        if (token && !token.startsWith('EMERGENCY_')) {
+          try {
+            const res = await fetch('/api/save-weekly-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                studentName: payload.studentName,
+                weekStart: payload.weekStart,
+                weekEnd: payload.weekEnd,
+                report: payload,
+              }),
+            });
+            recordSaved = (await res.json())?.success === true;
+          } catch { /* offline or server issue — keep sharing */ }
+        }
+        setPdfShare({ status: 'ready', file, url, fileName, recordSaved, hint: '' });
+      } catch (err) {
+        setPdfShare({ status: 'error', message: err?.message || 'PDF generation failed' });
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const downloadPdf = () => {
+    const a = document.createElement('a');
+    a.href = pdfShare.url;
+    a.download = pdfShare.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const shareToWhatsApp = async () => {
+    const files = [pdfShare.file];
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files, title: pdfShare.fileName, text: WA_TEXT });
+        setPdfShare(s => ({ ...s, hint: '✅ Share sheet లో WhatsApp select చేసి Krishna Prasad కి పంపండి.' }));
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return; // user cancelled the sheet
+        // fall through to wa.me fallback
+      }
+    }
+    downloadPdf();
+    window.open(`https://wa.me/${MENTOR_WHATSAPP}?text=${encodeURIComponent(WA_TEXT)}`, '_blank', 'noopener');
+    setPdfShare(s => ({ ...s, hint: '📥 PDF download అయింది — WhatsApp లో attach చేయండి.' }));
+  };
+
+  const closePdfShare = () => {
+    if (pdfShare?.url) URL.revokeObjectURL(pdfShare.url);
+    setPdfShare(null);
+  };
 
   // ═══ SESSION VALIDATION ═══
   useEffect(() => {
@@ -188,6 +264,48 @@ export default function Journal() {
         style={{ width:'100%', height:'100%', border:'none' }}
         sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
       />
+
+      {/* ═══ WEEKLY PDF SHARE OVERLAY ═══ */}
+      {pdfShare && (
+        <div style={{ position:'fixed', inset:0, zIndex:10000, background:'rgba(5,5,10,0.88)', display:'flex', alignItems:'center', justifyContent:'center', padding:16, fontFamily:"'DM Sans','Noto Sans Telugu',sans-serif" }}>
+          <div style={{ maxWidth:420, width:'100%', background:G.dark1, border:`1px solid ${G.goldDim}`, borderRadius:12, padding:'28px 24px', textAlign:'center', color:G.smoke }}>
+            {pdfShare.status === 'generating' && (
+              <>
+                <div style={{ width:36, height:36, margin:'0 auto 14px', border:`2px solid ${G.goldDim}`, borderTopColor:G.gold, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                <p style={{ color:G.gold, fontSize:13, letterSpacing:2 }}>WEEKLY REPORT PDF తయారవుతోంది...</p>
+              </>
+            )}
+            {pdfShare.status === 'error' && (
+              <>
+                <div style={{ fontSize:36, marginBottom:10 }}>❌</div>
+                <p style={{ fontSize:14, marginBottom:6 }}>PDF generate అవ్వలేదు — మళ్ళీ try చేయండి.</p>
+                <p style={{ fontSize:11, color:G.mid, marginBottom:18 }}>{pdfShare.message}</p>
+                <button onClick={closePdfShare} style={{ padding:'12px 28px', background:'transparent', border:`1px solid ${G.goldDim}`, color:G.mid, borderRadius:6, cursor:'pointer' }}>Close</button>
+              </>
+            )}
+            {pdfShare.status === 'ready' && (
+              <>
+                <div style={{ fontSize:36, marginBottom:8 }}>📊</div>
+                <h3 style={{ color:G.gold, fontSize:17, marginBottom:4 }}>Weekly Report Ready ✦</h3>
+                <p style={{ fontSize:11, color:G.mid, marginBottom:18, wordBreak:'break-all' }}>{pdfShare.fileName}</p>
+                <button onClick={shareToWhatsApp} style={{ width:'100%', padding:15, marginBottom:10, background:'linear-gradient(135deg,#2E7D52,#25D366)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, letterSpacing:1, cursor:'pointer' }}>
+                  📱 Krishna Prasad కి పంపు (WhatsApp)
+                </button>
+                <button onClick={downloadPdf} style={{ width:'100%', padding:13, marginBottom:10, background:'transparent', border:`1px solid ${G.goldDim}`, color:G.gold, borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  ⬇ Download PDF
+                </button>
+                {pdfShare.hint && <p style={{ fontSize:12, color:'#25D366', marginBottom:10, lineHeight:1.6 }}>{pdfShare.hint}</p>}
+                <p style={{ fontSize:10.5, color:G.mid, marginBottom:4 }}>
+                  {pdfShare.recordSaved ? '✅ Report copy mentor records లో save అయింది.' : 'ℹ️ Report copy save అవ్వలేదు (share కి problem లేదు).'}
+                </p>
+                <p style={{ fontSize:10.5, color:G.mid, marginBottom:14 }}>Email గా పంపాలంటే Share panel లో 📧 option వాడండి.</p>
+                <button onClick={closePdfShare} style={{ background:'transparent', border:'none', color:G.mid, fontSize:12, cursor:'pointer', textDecoration:'underline' }}>Close</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
