@@ -6,6 +6,7 @@ import journalHtml from '../journal-content.html?raw';
 
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
+import { pullJournal, pushJournal, markDirty, isDirty } from '../utils/journalSync';
 
 // Public mentor WhatsApp number for the wa.me fallback (same number as the
 // site's contact button — not a secret, unlike MENTOR_EMAIL which stays server-side).
@@ -16,9 +17,62 @@ export default function Journal() {
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
+  const [dataReady, setDataReady] = useState(false); // cloud pull finished (or not applicable)
   const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
   const iframeRef = useRef(null);
+  const pulledRef = useRef(false);      // cloud pull runs once per page load
+  const syncEmailRef = useRef(null);    // null = emergency/local-only mode
+  const syncStatusRef = useRef('off');  // 'synced' | 'syncing' | 'offline' | 'off'
   const navigate = useNavigate();
+
+  const postSyncStatus = (status) => {
+    if (status) syncStatusRef.current = status;
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'MPV_SYNC_STATUS', status: syncStatusRef.current }, '*');
+    } catch { /* iframe not ready yet — it will ask via MPV_HELLO */ }
+  };
+
+  // ═══ CLOUD SYNC ENGINE (local-first, debounced push, last-write-wins) ═══
+  useEffect(() => {
+    if (!authorized || !dataReady) return;
+    let pushTimer = null;
+
+    const doPush = async () => {
+      if (!syncEmailRef.current) return;
+      postSyncStatus('syncing');
+      const ok = await pushJournal(supabase, syncEmailRef.current);
+      postSyncStatus(ok ? 'synced' : 'offline');
+    };
+
+    const onMessage = (e) => {
+      if (e.source !== iframeRef.current?.contentWindow || !e.data) return;
+      if (e.data.type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
+      if (e.data.type === 'MPV_DB_DIRTY') {
+        if (!syncEmailRef.current) return; // emergency login: local-only
+        markDirty();
+        clearTimeout(pushTimer);
+        pushTimer = setTimeout(doPush, 5000);
+      }
+    };
+    const onPageHide = () => {
+      // Best-effort flush — don't lose the debounce window on tab close
+      if (syncEmailRef.current && isDirty()) pushJournal(supabase, syncEmailRef.current);
+    };
+    const onOnline = () => {
+      if (syncEmailRef.current && isDirty()) doPush();
+    };
+
+    window.addEventListener('message', onMessage);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('online', onOnline);
+    return () => {
+      clearTimeout(pushTimer);
+      window.removeEventListener('message', onMessage);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [authorized, dataReady]);
 
   // ═══ WEEKLY PDF → WHATSAPP (triggered from the journal iframe) ═══
   useEffect(() => {
@@ -99,9 +153,12 @@ export default function Journal() {
         return;
       }
       
-      // Emergency bypass validation
+      // Emergency bypass validation — local-only, no cloud sync
       if (token.startsWith('EMERGENCY_')) {
+        syncEmailRef.current = null;
+        syncStatusRef.current = 'off';
         setAuthorized(true);
+        setDataReady(true);
         setChecking(false);
         return;
       }
@@ -133,7 +190,20 @@ export default function Journal() {
             return;
           }
 
+          // Cloud pull — once per page load, BEFORE the journal iframe boots,
+          // so a student on a new phone sees their restored journal immediately.
+          syncEmailRef.current = email;
+          if (!pulledRef.current) {
+            pulledRef.current = true;
+            const result = await pullJournal(supabase, email);
+            if (result === 'restored') {
+              sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+            }
+            syncStatusRef.current = result === 'error' ? 'offline' : 'synced';
+          }
+
           setAuthorized(true);
+          setDataReady(true);
         } else {
           sessionStorage.removeItem('mpv_journal_token');
           setError('Session expired. Please login again.');
@@ -197,13 +267,15 @@ export default function Journal() {
 
   // ═══ RENDER SECURE IFRAME ═══
   useEffect(() => {
-    if (!authorized || !iframeRef.current) return;
+    // dataReady gate: never boot the journal before the cloud pull finishes,
+    // or it would initialize from stale/empty localStorage.
+    if (!authorized || !dataReady || !iframeRef.current) return;
     // Create blob URL — HTML is never in a public URL
     const blob = new Blob([journalHtml], { type: 'text/html' });
     const blobUrl = URL.createObjectURL(blob);
     iframeRef.current.src = blobUrl;
     return () => URL.revokeObjectURL(blobUrl);
-  }, [authorized]);
+  }, [authorized, dataReady]);
 
   const G = {
     gold: "#C9A84C", smoke: "#F5F2EA", black: "#05050A", dark1: "#0A0A10",
