@@ -14,3 +14,8 @@
 **Vulnerability:** The VITE_INTERNAL_API_KEY environment variable was being used in `src/utils/api-client.js` and `src/App.jsx`. Because Vite automatically bundles environment variables prefixed with `VITE_` into the client-side JavaScript, this secret key was publicly exposed.
 **Learning:** Prefixing backend secrets with `VITE_` directly exposes them to the public in Vite applications. Vercel same-origin protections already handle the authorization for these frontend-to-backend API calls (as noted in the backend serverless functions themselves). Therefore, the API key injection in the frontend requests was unnecessary and presented a major risk of leaking the internal key.
 **Prevention:** Never use the `VITE_` prefix for secrets or internal API keys. Rely on appropriate server-side configurations, same-origin policies, and proper authentication flows instead of hardcoding API keys in frontend bundles.
+
+## 2026-07-14 - Hardcoded Secrets in Frontend Components
+**Vulnerability:** Found hardcoded student access code (`MPV-CHERRY-2024`) and admin password (`mpv@cherry2028`) directly in the frontend component `src/Journal.jsx`.
+**Learning:** Hardcoding passwords or secrets in client-side code exposes them to anyone who views the page source or javascript bundle, completely bypassing intended authentication mechanisms.
+**Prevention:** Never store passwords, API keys, or access codes in frontend code. Always validate sensitive credentials server-side via a backend API endpoint (e.g., `/api/validate-code`).

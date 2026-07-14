@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { api } from "./utils/api-client.js";
 
 // Design Tokens (Matching App.jsx)
 const G = {
@@ -49,20 +50,36 @@ export default function Journal({ lang, onBack }) {
   }, [students]);
 
   // Auth logic
-  const checkAccess = () => {
-    const match = students.find(s => s.code === accessCode && s.active);
-    if (match || accessCode === 'MPV-CHERRY-2024') {
-      setAccessLocked(false);
-    } else {
-      alert("Invalid Access Code. Please contact K Prasad.");
+  const checkAccess = async () => {
+    try {
+      const result = await api.validateCode(accessCode, 'journal');
+      if (result.valid) {
+        setAccessLocked(false);
+      } else {
+        const match = students.find(s => s.code === accessCode && s.active);
+        if (match) {
+          setAccessLocked(false);
+        } else {
+          alert("Invalid Access Code. Please contact K Prasad.");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error validating access code.");
     }
   };
 
-  const handleAdminLogin = () => {
-    if (adminPwd === "mpv@cherry2028") {
-      setAdminAuth(true);
-    } else {
-      alert("Incorrect Admin Password.");
+  const handleAdminLogin = async () => {
+    try {
+      const result = await api.validateCode(adminPwd, 'admin');
+      if (result.valid && result.role === 'admin') {
+        setAdminAuth(true);
+      } else {
+        alert("Incorrect Admin Password.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error validating admin password.");
     }
   };
 
