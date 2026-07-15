@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { checkSimpleLimit } from './_lib/ratelimit.js';
 
 // /api/create-order.js — Create Cashfree Payment Order
 export default async function handler(req, res) {
@@ -13,6 +14,11 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (!checkSimpleLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
   const { name, email, phone } = req.body;

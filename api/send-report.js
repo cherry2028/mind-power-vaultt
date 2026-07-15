@@ -3,6 +3,7 @@
 // SECURED: Requires valid Supabase session token
 
 import { createClient } from '@supabase/supabase-js';
+import { checkSimpleLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -47,6 +48,9 @@ export default async function handler(req, res) {
 
   // Rate limit: max 10 emails per hour per IP
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (!checkSimpleLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
 
   try {
     // When the report goes to the mentor, put the student's verified email in the
