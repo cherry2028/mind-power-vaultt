@@ -1,5 +1,6 @@
 // /api/analyze.js — Vercel Serverless Function
 // Uses Groq API (Llama 3) - COMPLETELY FREE, FAST, NO CARD REQUIRED
+import { checkSimpleLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,6 +11,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // No API key check needed — Vercel same-origin protection is sufficient
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (!checkSimpleLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
 
   const { choiceDescriptions, lang } = req.body || {};
   if (!choiceDescriptions) return res.status(400).json({ error: 'Missing data' });
