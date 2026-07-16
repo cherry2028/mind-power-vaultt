@@ -38,8 +38,12 @@ export default async function handler(req, res) {
   if (!DATE_RE.test(weekStart) || !DATE_RE.test(weekEnd)) return res.status(400).json({ error: 'Invalid week range format' });
   if (JSON.stringify(report).length > MAX_REPORT_BYTES) return res.status(413).json({ error: 'Report too large' });
 
+  // Phone-OTP sessions have no email — key the record on the user id and
+  // store whichever contact identifiers the session does carry.
   const { error: dbError } = await supabase.from('weekly_reports').insert({
-    student_email: user.email,
+    user_id: user.id,
+    student_email: user.email || null,
+    student_phone: user.phone || null,
     student_name: String(studentName || '').slice(0, 120),
     week_start: weekStart,
     week_end: weekEnd,
@@ -51,6 +55,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to save report record' });
   }
 
-  console.log(`[MPV-WEEKLY] Report record saved for ${user.email} (${weekStart} → ${weekEnd}) from ${ip}`);
+  console.log(`[MPV-WEEKLY] Report record saved for ${user.email || user.phone || user.id} (${weekStart} → ${weekEnd}) from ${ip}`);
   return res.status(200).json({ success: true });
 }

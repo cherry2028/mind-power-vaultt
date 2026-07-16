@@ -21,8 +21,8 @@ export default function Journal() {
   const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
   const iframeRef = useRef(null);
   const pulledRef = useRef(false);      // cloud pull runs once per page load
-  const syncEmailRef = useRef(null);    // null = emergency/local-only mode
-  const syncStatusRef = useRef('off');  // 'synced' | 'syncing' | 'offline' | 'off'
+  const syncUserRef = useRef(null);     // {id, email?} — null = emergency/local-only mode
+  const syncStatusRef = useRef('off');  // 'synced' | 'syncing' | 'offline' | 'error' | 'off'
   const navigate = useNavigate();
 
   const postSyncStatus = (status) => {
@@ -39,17 +39,17 @@ export default function Journal() {
     let pushTimer = null;
 
     const doPush = async () => {
-      if (!syncEmailRef.current) return;
+      if (!syncUserRef.current) return;
       postSyncStatus('syncing');
-      const ok = await pushJournal(supabase, syncEmailRef.current);
-      postSyncStatus(ok ? 'synced' : 'offline');
+      const result = await pushJournal(supabase, syncUserRef.current); // 'synced' | 'offline' | 'error'
+      postSyncStatus(result);
     };
 
     const onMessage = (e) => {
       if (e.source !== iframeRef.current?.contentWindow || !e.data) return;
       if (e.data.type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
       if (e.data.type === 'MPV_DB_DIRTY') {
-        if (!syncEmailRef.current) return; // emergency login: local-only
+        if (!syncUserRef.current) return; // emergency login: local-only
         markDirty();
         clearTimeout(pushTimer);
         pushTimer = setTimeout(doPush, 5000);
@@ -57,20 +57,27 @@ export default function Journal() {
     };
     const onPageHide = () => {
       // Best-effort flush — don't lose the debounce window on tab close
-      if (syncEmailRef.current && isDirty()) pushJournal(supabase, syncEmailRef.current);
+      if (syncUserRef.current && isDirty()) pushJournal(supabase, syncUserRef.current);
     };
     const onOnline = () => {
-      if (syncEmailRef.current && isDirty()) doPush();
+      if (!syncUserRef.current) return;
+      if (isDirty()) doPush();
+      else postSyncStatus('synced');
+    };
+    const onOffline = () => {
+      if (syncUserRef.current) postSyncStatus('offline');
     };
 
     window.addEventListener('message', onMessage);
     window.addEventListener('pagehide', onPageHide);
     window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
     return () => {
       clearTimeout(pushTimer);
       window.removeEventListener('message', onMessage);
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
     };
   }, [authorized, dataReady]);
 
@@ -155,7 +162,7 @@ export default function Journal() {
       
       // Emergency bypass validation — local-only, no cloud sync
       if (token.startsWith('EMERGENCY_')) {
-        syncEmailRef.current = null;
+        syncUserRef.current = null;
         syncStatusRef.current = 'off';
         setAuthorized(true);
         setDataReady(true);
@@ -171,35 +178,41 @@ export default function Journal() {
           sessionStorage.setItem('mpv_journal_token', data.session.access_token);
 
 
-          // Verify if THIS is still the active device
+          // Verify if THIS is still the active device. The subscriptions
+          // table is keyed on email — phone-OTP sessions have no email claim,
+          // so skip the lookup rather than querying with undefined.
           const localDeviceId = localStorage.getItem('mpv_device_id');
-          const email = data.session.user.email;
-          
-          const { data: sub, error: subError } = await supabase
-            .from('subscriptions')
-            .select('device_id')
-            .eq('email', email)
-            .single();
+          const user = data.session.user;
 
-          if (sub && sub.device_id && sub.device_id !== localDeviceId) {
-            // Another device logged in!
-            await supabase.auth.signOut();
-            sessionStorage.removeItem('mpv_journal_token');
-            setError('Access revoked. You logged into this account on another device.');
-            setChecking(false);
-            return;
+          if (user.email) {
+            const { data: sub, error: subError } = await supabase
+              .from('subscriptions')
+              .select('device_id')
+              .eq('email', user.email)
+              .single();
+
+            if (sub && sub.device_id && sub.device_id !== localDeviceId) {
+              // Another device logged in!
+              await supabase.auth.signOut();
+              sessionStorage.removeItem('mpv_journal_token');
+              setError('Access revoked. You logged into this account on another device.');
+              setChecking(false);
+              return;
+            }
           }
 
           // Cloud pull — once per page load, BEFORE the journal iframe boots,
           // so a student on a new phone sees their restored journal immediately.
-          syncEmailRef.current = email;
+          // Keyed on user.id: present for every auth method incl. phone OTP.
+          syncUserRef.current = { id: user.id, email: user.email || null };
           if (!pulledRef.current) {
             pulledRef.current = true;
-            const result = await pullJournal(supabase, email);
+            const result = await pullJournal(supabase, syncUserRef.current);
             if (result === 'restored') {
               sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
             }
-            syncStatusRef.current = result === 'error' ? 'offline' : 'synced';
+            syncStatusRef.current =
+              (result === 'offline' || result === 'error') ? result : 'synced';
           }
 
           setAuthorized(true);
