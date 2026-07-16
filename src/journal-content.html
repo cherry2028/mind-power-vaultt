@@ -113,8 +113,12 @@ button{cursor:pointer;font-family:inherit;border:none;font-size:13px;-webkit-tap
 .share-close{font-size:12px;color:#555;cursor:pointer;text-decoration:underline;margin-top:8px}
 
 /* VOICE NOTE */
-.voice-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;background:#181820;border:1px solid rgba(201,168,76,0.15);cursor:pointer;font-size:12px;color:#9A8870;margin-bottom:8px}
+.voice-row{display:flex;align-items:stretch;gap:8px;margin-bottom:8px}
+.voice-btn{display:flex;flex:1;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;background:#181820;border:1px solid rgba(201,168,76,0.15);cursor:pointer;font-size:12px;color:#9A8870}
 .voice-btn.recording{border-color:#CF6679;color:#CF6679;animation:pulse 1s infinite}
+.voice-timer{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums;color:#CF6679;font-size:13px}
+.voice-stop{display:none;padding:9px 16px;border-radius:8px;border:none;background:#CF6679;color:#0E0E15;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer}
+.voice-stop.show{display:block}
 .voice-indicator{width:8px;height:8px;border-radius:50%;background:#CF6679;flex-shrink:0}
 
 /* DISCIPLINE / IDENTITY */
@@ -302,8 +306,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .dpill{flex:1;padding:13px 4px;border-radius:24px;border:1px solid rgba(201,168,76,0.2);background:transparent;color:#9A8870;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:0.3px;min-height:46px}
 .dpill.on{background:linear-gradient(135deg,#7A6530,#C9A84C);color:#05050A;border-color:transparent}
 .dpill.dmore{flex:0 0 auto;padding:13px 16px;border-radius:14px}
-.syncdot{font-size:9px;letter-spacing:0.5px;color:#4CAF82;padding:0 4px;white-space:nowrap;flex:0 0 auto}
-.syncdot.sy{color:#E0A84C}.syncdot.so{color:#CF6679}
+.syncdot{font-size:9px;letter-spacing:0.5px;color:#4CAF82;padding:0 4px;white-space:nowrap;flex:0 0 auto;cursor:pointer}
+.syncdot.sy{color:#E0A84C}.syncdot.sof{color:#9A8870}.syncdot.serr{color:#CF6679}
 .tapscale{display:flex;gap:8px;margin:6px 0 14px}
 .tapdot{flex:1;min-height:46px;border-radius:10px;border:1px solid rgba(201,168,76,0.18);background:#12121A;color:#6A5A40;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
 .tapdot.on{border-color:#C9A84C;background:rgba(201,168,76,0.12);color:#E2C97A}
@@ -313,6 +317,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .chip.on{border-color:#C9A84C;color:#E2C97A;background:rgba(201,168,76,0.1)}
 .bigbtn{display:block;width:100%;min-height:62px;border:none;border-radius:14px;background:linear-gradient(135deg,#7A6530,#C9A84C);color:#05050A;font-size:16px;font-weight:800;letter-spacing:1px;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(201,168,76,0.25)}
 .bigbtn:disabled{opacity:0.5;cursor:not-allowed}
+.pnl-signrow{display:flex;gap:10px;margin:6px 0 14px}
+.pnl-sign{flex:1;min-height:56px;border-radius:14px;font-family:inherit;font-size:16px;font-weight:800;letter-spacing:1px;cursor:pointer;background:#12121A;transition:all 0.12s}
+.pnl-sign.pnl-loss{border:2px solid rgba(207,102,121,0.4);color:#CF6679}
+.pnl-sign.pnl-profit{border:2px solid rgba(76,175,130,0.4);color:#4CAF82}
+.pnl-sign.pnl-loss.on{background:#CF6679;color:#0E0E15;border-color:#CF6679;box-shadow:0 4px 18px rgba(207,102,121,0.4)}
+.pnl-sign.pnl-profit.on{background:#4CAF82;color:#0E0E15;border-color:#4CAF82;box-shadow:0 4px 18px rgba(76,175,130,0.4)}
 .otcard{background:#12121A;border:1px solid rgba(224,168,76,0.4);border-left:4px solid #E0A84C;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
 .otcard .oti{font-size:15px;font-weight:700;color:#F5F2EA}
 .otcard .ott{font-size:11px;color:#9A8870;margin-top:3px}
@@ -489,10 +499,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 <div class="sheet" id="ts2">
   <div class="sheet-card">
     <div class="sheet-title"><span id="ts2-tt">Close Trade</span><button class="sheet-x" onclick="ge('ts2').classList.remove('open')">✕</button></div>
-    <div class="lbl">Realized P&amp;L (₹) — loss అయితే minus</div>
-    <input type="number" id="ts2-pnl" placeholder="+3750 / -1200" style="font-size:22px;text-align:center;font-weight:700;margin-bottom:14px"/>
+    <div class="lbl">Result — Loss ఆ Profit ఆ?</div>
+    <div class="pnl-signrow">
+      <button type="button" class="pnl-sign pnl-loss" id="ts2-sign-loss" onclick="setPnlSign(-1)">LOSS −</button>
+      <button type="button" class="pnl-sign pnl-profit" id="ts2-sign-profit" onclick="setPnlSign(1)">PROFIT +</button>
+    </div>
+    <div class="lbl">Amount (₹)</div>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="ts2-pnl" placeholder="3750" oninput="this.value=this.value.replace(/\D/g,'')" style="font-size:22px;text-align:center;font-weight:700;margin-bottom:14px"/>
     <div class="lbl">Quick Voice Note (Emotion / Reason — optional)</div>
-    <div class="voice-btn" id="voiceBtn" onclick="toggleVoice()"><div class="voice-indicator"></div><span id="voiceTxt">🎙 Voice record చేయి</span></div>
+    <div class="voice-row">
+      <div class="voice-btn" id="voiceBtn" onclick="toggleVoice()"><div class="voice-indicator"></div><span id="voiceTxt">🎙 Voice record చేయి</span><span class="voice-timer" id="voiceTimer"></span></div>
+      <button type="button" class="voice-stop" id="voiceStopBtn" onclick="stopVoice()">⏹ STOP</button>
+    </div>
     <textarea id="tr-voice" placeholder="Voice note లేదా manually type చేయి..." rows="2"></textarea>
     <button class="dtl-toggle" onclick="ge('ts2-dtl').classList.toggle('open')">+ Add details (optional — prices, qty)</button>
     <div class="dtl-body" id="ts2-dtl">
@@ -550,7 +568,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <button class="dpill" id="dp-trade" onclick="dayGo('trade')">📈 Trade</button>
     <button class="dpill" id="dp-evening" onclick="dayGo('evening')">🌙 Evening</button>
     <button class="dpill dmore" onclick="openMore()">☰ More</button>
-    <span class="syncdot" id="syncdot"></span>
+    <span class="syncdot" id="syncdot" onclick="explainSync()"></span>
   </div>
   <div class="body">
     <div class="sb" id="sb">
@@ -1170,7 +1188,63 @@ var MC={green:'#4CAF82',yellow:'#E0A84C',red:'#CF6679'};
 function pMood(m){var map={green:'mg',yellow:'my',red:'mr'};var ids=['green','yellow','red'];for(var i=0;i<ids.length;i++){var b=ge(map[ids[i]]);if(!b)continue;b.classList.remove('on');b.style.color='';b.style.borderColor='';b.style.background='';}var btn=ge(map[m]);if(btn){btn.classList.add('on');btn.style.color=MC[m];btn.style.borderColor=MC[m];btn.style.background='rgba(255,255,255,0.04)';}var h=ge('eod-m');if(h)h.value=m;}
 
 // ────── VOICE NOTE ──────
-var recognition=null,voiceActive=false;
+// Long-form dictation: continuous recognition that survives Android Chrome's
+// periodic session kills. Final transcripts accumulate in voiceCommitted, so
+// an auto-restart never loses text; pauses between sentences do NOT stop it.
+var recognition=null,voiceActive=false,voiceStopRequested=false,voiceCapped=false;
+var voiceCommitted='',voiceStartedAt=0,voiceTimerIv=null;
+var VOICE_MAX_MS=3*60*1000;
+function voiceElapsed(){return Date.now()-voiceStartedAt;}
+function fmtVoiceTime(ms){var s=Math.floor(ms/1000);return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);}
+function voiceUiRecording(on){
+  ge('voiceBtn').classList.toggle('recording',on);
+  ge('voiceTxt').textContent=on?'🔴 Recording... మాట్లాడు':'🎙 Voice record చేయి';
+  ge('voiceTimer').textContent=on?fmtVoiceTime(voiceElapsed()):'';
+  ge('voiceStopBtn').classList.toggle('show',on);
+}
+function startRecognition(){
+  // Fresh instance each (re)start — Android Chrome instances go stale after onend
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();
+  recognition.lang='te-IN';recognition.continuous=true;recognition.interimResults=true;
+  recognition.onresult=function(e){
+    var interim='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var txt=e.results[i][0].transcript;
+      if(e.results[i].isFinal){var tr=txt.trim();if(tr)voiceCommitted=(voiceCommitted?voiceCommitted+' ':'')+tr;}
+      else interim+=txt;
+    }
+    var ta=ge('tr-voice');
+    ta.value=voiceCommitted+(interim?(voiceCommitted?' ':'')+interim:'');
+    ta.scrollTop=ta.scrollHeight;
+  };
+  recognition.onend=function(){
+    if(voiceStopRequested||!voiceActive)return finishVoice(voiceCapped);
+    if(voiceElapsed()>=VOICE_MAX_MS)return finishVoice(true);
+    // Android Chrome killed the session mid-recording — restart seamlessly
+    try{startRecognition();}catch(err){finishVoice();}
+  };
+  recognition.onerror=function(e){
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      voiceStopRequested=true;
+      toast('Mic permission ఇవ్వాలి — browser settings లో allow చేయి.');
+    }
+    // no-speech / network / aborted → onend fires next and auto-restarts
+  };
+  recognition.start();
+}
+function finishVoice(capped){
+  voiceActive=false;voiceStopRequested=false;voiceCapped=false;
+  clearInterval(voiceTimerIv);voiceTimerIv=null;
+  ge('tr-voice').value=voiceCommitted; // drop any half-spoken interim text
+  voiceUiRecording(false);
+  if(capped)toast('3 నిమిషాలు అయ్యాయి ✦ Note save అయింది — చాలా బాగా చెప్పావు.',4000);
+}
+function stopVoice(){
+  if(!voiceActive)return;
+  voiceStopRequested=true;
+  try{recognition&&recognition.stop();}catch(err){finishVoice();}
+}
 function toggleVoice(){
   // Voice requires https:// - not available in file:// protocol
   if(location.protocol==='file:'){
@@ -1182,14 +1256,17 @@ function toggleVoice(){
     toast('Voice Chrome browser లో మాత్రమే work అవుతుంది.');
     return;
   }
-  if(voiceActive){if(recognition)recognition.stop();return;}
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  recognition=new SR();recognition.lang='te-IN';recognition.continuous=false;recognition.interimResults=false;
-  recognition.onstart=function(){voiceActive=true;ge('voiceBtn').classList.add('recording');ge('voiceTxt').textContent='🔴 Recording... Click to stop';};
-  recognition.onresult=function(e){var txt=e.results[0][0].transcript;var ta=ge('tr-voice');ta.value=(ta.value?ta.value+' ':'')+txt;};
-  recognition.onend=function(){voiceActive=false;ge('voiceBtn').classList.remove('recording');ge('voiceTxt').textContent='🎙 Voice record చేయి';};
-  recognition.onerror=function(){voiceActive=false;ge('voiceBtn').classList.remove('recording');ge('voiceTxt').textContent='🎙 Voice record చేయి';toast('Voice error. Retry చేయి.');};
-  recognition.start();
+  if(voiceActive){stopVoice();return;}
+  voiceActive=true;voiceStopRequested=false;
+  voiceCommitted=ge('tr-voice').value.trim();
+  voiceStartedAt=Date.now();
+  voiceUiRecording(true);
+  voiceTimerIv=setInterval(function(){
+    if(!voiceActive)return;
+    ge('voiceTimer').textContent=fmtVoiceTime(voiceElapsed());
+    if(voiceElapsed()>=VOICE_MAX_MS){voiceCapped=true;voiceStopRequested=true;try{recognition&&recognition.stop();}catch(err){finishVoice(true);}}
+  },250);
+  try{startRecognition();}catch(err){finishVoice();toast('Voice start అవ్వలేదు. Retry చేయి.');}
 }
 
 // ────── FOUNDATION ──────
@@ -1535,11 +1612,17 @@ function saveOpenTrade(){
   renderTrade();updHdr();rTr();
   toast('Trade open అయింది — close అయ్యాక P&L వేయి ✦',4000);
 }
-var TS2_ID=null;
+var TS2_ID=null,TS2_SIGN=0; // 0 = no choice yet — student MUST tap Loss or Profit
+function setPnlSign(s){
+  TS2_SIGN=s;
+  ge('ts2-sign-loss').classList.toggle('on',s===-1);
+  ge('ts2-sign-profit').classList.toggle('on',s===1);
+}
 function openStep2(id){
   var t=null;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id===id)t=DB.tr[i];}
   if(!t)return;TS2_ID=id;
   ge('ts2-tt').textContent='Close: '+t.inst;
+  TS2_SIGN=0;ge('ts2-sign-loss').classList.remove('on');ge('ts2-sign-profit').classList.remove('on');
   ge('ts2-pnl').value='';ge('tr-voice').value='';
   ge('ts2-en').value=t.en||'';ge('ts2-ex').value=t.ex||'';ge('ts2-q').value=t.qty||'';
   ge('ts2-dtl').classList.remove('open');
@@ -1548,9 +1631,10 @@ function openStep2(id){
 function closeTradeFinish(){
   var t=null;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id===TS2_ID)t=DB.tr[i];}
   if(!t){ge('ts2').classList.remove('open');return;}
-  var pv=ge('ts2-pnl').value;
-  if(pv===''){toast('P&L enter చేయి — loss అయితే minus (-1200)');return;}
-  t.pnl=Number(pv)||0;t.voice=ge('tr-voice').value;t.status='closed';t.closedAt=Date.now();
+  if(TS2_SIGN===0){toast('ముందు LOSS ఆ PROFIT ఆ select చేయి');return;}
+  var pv=ge('ts2-pnl').value.replace(/\D/g,'');
+  if(pv===''){toast('Amount enter చేయి (₹)');return;}
+  t.pnl=TS2_SIGN*(Number(pv)||0);t.voice=ge('tr-voice').value;t.status='closed';t.closedAt=Date.now();
   if(ge('ts2-en').value)t.en=ge('ts2-en').value;
   if(ge('ts2-ex').value)t.ex=ge('ts2-ex').value;
   if(ge('ts2-q').value)t.qty=ge('ts2-q').value;
@@ -1600,16 +1684,27 @@ function saveEvening(){
 }
 
 // ────── SYNC STATUS (from parent app) + RESTORE NOTE ──────
+// 'offline' (no internet — will retry when connection returns) and 'error'
+// (server/login refused — internet is fine) look different and explain
+// themselves on tap, because students report the two very differently.
+var syncState='off';
+var SYNC_UI={
+  synced:{txt:'✓ synced',cls:'syncdot',msg:'Journal cloud లో safe గా ఉంది ✓'},
+  syncing:{txt:'↻ syncing',cls:'syncdot sy',msg:'Cloud కి sync అవుతోంది...'},
+  offline:{txt:'⌁ offline',cls:'syncdot sof',msg:'Internet లేదు — data phone లో safe. Connection రాగానే auto-sync అవుతుంది.'},
+  error:{txt:'⚠ sync error',cls:'syncdot serr',msg:'Internet ఉంది కానీ sync fail అవుతోంది (server/login problem). Logout చేసి మళ్ళీ login చేయి — ఇంకా రాకపోతే mentor కి చెప్పు. Data phone లో safe.'}
+};
 window.addEventListener('message',function(e){
   var d=e.data||{};
   if(d.type==='MPV_SYNC_STATUS'){
     var el=ge('syncdot');if(!el)return;
-    if(d.status==='synced'){el.textContent='✓ synced';el.className='syncdot';}
-    else if(d.status==='syncing'){el.textContent='↻ syncing';el.className='syncdot sy';}
-    else if(d.status==='offline'){el.textContent='⚠ offline';el.className='syncdot so';}
+    var ui=SYNC_UI[d.status];
+    syncState=ui?d.status:'off';
+    if(ui){el.textContent=ui.txt;el.className=ui.cls;}
     else{el.textContent='';el.className='syncdot';}
   }
 });
+function explainSync(){var ui=SYNC_UI[syncState];if(ui)toast(ui.msg,5000);}
 
 // ────── START APP ──────
 function startApp(){
