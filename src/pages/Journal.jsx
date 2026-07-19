@@ -7,6 +7,13 @@ import journalHtml from '../journal-content.html?raw';
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
+import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
+
+const CARD_BUILDERS = {
+  license: { build: buildLicenseCardHtml, file: (p) => `MPV_License_${p.date}.png` },
+  insight: { build: buildInsightCardHtml, file: (p) => `MPV_Mirror_${p.date}.png` },
+  milestone: { build: buildMilestoneCardHtml, file: (p) => `MPV_Streak_${p.days}days.png` },
+};
 
 // Public mentor WhatsApp number for the wa.me fallback (same number as the
 // site's contact button — not a secret, unlike MENTOR_EMAIL which stays server-side).
@@ -20,6 +27,7 @@ export default function Journal() {
   const [dataReady, setDataReady] = useState(false); // cloud pull finished (or not applicable)
   const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
   const [syncConflict, setSyncConflict] = useState(null); // {cloudTrades, cloudEods} — empty local vs real cloud
+  const [cardShare, setCardShare] = useState(null); // {status:'generating'|'ready'|'error', kind, file, url, fileName, hint}
   const iframeRef = useRef(null);
   const pulledRef = useRef(false);      // cloud pull runs once per page load
   const syncUserRef = useRef(null);     // {id, email?} — null = emergency/local-only mode
@@ -142,6 +150,55 @@ export default function Journal() {
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
+
+  // ═══ SHAREABLE CARDS (license / insight / milestone — from the iframe) ═══
+  useEffect(() => {
+    const onMessage = async (e) => {
+      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (!e.data || e.data.type !== 'MPV_SHARE_IMAGE') return;
+      const { kind, payload } = e.data;
+      const builder = CARD_BUILDERS[kind];
+      if (!builder || !payload) return;
+      setCardShare({ status: 'generating', kind });
+      try {
+        const { blob, file } = await generateCardImage(builder.build(payload), builder.file(payload));
+        setCardShare({ status: 'ready', kind, file, url: URL.createObjectURL(blob), fileName: file.name, hint: '' });
+      } catch (err) {
+        setCardShare({ status: 'error', kind, message: err?.message || 'Image generation failed' });
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const downloadCard = () => {
+    const a = document.createElement('a');
+    a.href = cardShare.url;
+    a.download = cardShare.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const shareCard = async () => {
+    const files = [cardShare.file];
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files, title: cardShare.fileName });
+        setCardShare(s => ({ ...s, hint: '✅ Share sheet లో WhatsApp Status select చేయండి.' }));
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    downloadCard();
+    setCardShare(s => ({ ...s, hint: '📥 Image download అయింది — WhatsApp Status లో upload చేయండి.' }));
+  };
+
+  const closeCardShare = () => {
+    if (cardShare?.url) URL.revokeObjectURL(cardShare.url);
+    setCardShare(null);
+  };
 
   const downloadPdf = () => {
     const a = document.createElement('a');
@@ -417,6 +474,41 @@ export default function Journal() {
             <button onClick={resolveConflictLater} style={{ background:'transparent', border:'none', color:G.mid, fontSize:12, cursor:'pointer', textDecoration:'underline' }}>
               తర్వాత decide చేస్తాను
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SHAREABLE CARD OVERLAY (license / insight / milestone) ═══ */}
+      {cardShare && (
+        <div style={{ position:'fixed', inset:0, zIndex:10000, background:'rgba(5,5,10,0.92)', display:'flex', alignItems:'center', justifyContent:'center', padding:16, fontFamily:"'DM Sans','Noto Sans Telugu',sans-serif" }}>
+          <div style={{ maxWidth:400, width:'100%', maxHeight:'92vh', overflowY:'auto', background:G.dark1, border:`1px solid ${G.goldDim}`, borderRadius:12, padding:'22px 20px', textAlign:'center', color:G.smoke }}>
+            {cardShare.status === 'generating' && (
+              <>
+                <div style={{ width:36, height:36, margin:'14px auto', border:`2px solid ${G.goldDim}`, borderTopColor:G.gold, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                <p style={{ color:G.gold, fontSize:13, letterSpacing:2 }}>CARD తయారవుతోంది...</p>
+              </>
+            )}
+            {cardShare.status === 'error' && (
+              <>
+                <div style={{ fontSize:32, margin:'8px 0' }}>❌</div>
+                <p style={{ fontSize:13, marginBottom:16 }}>Card generate అవ్వలేదు — మళ్ళీ try చేయండి.</p>
+                <button onClick={closeCardShare} style={{ padding:'10px 24px', background:'transparent', border:`1px solid ${G.goldDim}`, color:G.mid, borderRadius:6, cursor:'pointer' }}>Close</button>
+              </>
+            )}
+            {cardShare.status === 'ready' && (
+              <>
+                <img src={cardShare.url} alt="card preview" style={{ width:'100%', borderRadius:8, border:`1px solid ${G.goldDim}`, marginBottom:14 }}/>
+                <button onClick={shareCard} style={{ width:'100%', padding:14, marginBottom:8, background:'linear-gradient(135deg,#2E7D52,#25D366)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                  📱 WhatsApp Status లో పెట్టు
+                </button>
+                <button onClick={downloadCard} style={{ width:'100%', padding:12, marginBottom:8, background:'transparent', border:`1px solid ${G.goldDim}`, color:G.gold, borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  ⬇ Download Image
+                </button>
+                {cardShare.hint && <p style={{ fontSize:12, color:'#25D366', marginBottom:8, lineHeight:1.6 }}>{cardShare.hint}</p>}
+                <button onClick={closeCardShare} style={{ background:'transparent', border:'none', color:G.mid, fontSize:12, cursor:'pointer', textDecoration:'underline' }}>Close</button>
+              </>
+            )}
           </div>
         </div>
       )}

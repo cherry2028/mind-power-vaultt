@@ -339,6 +339,42 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .dtl-body.open{display:block}
 .todaytiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .morning-done{background:rgba(76,175,130,0.07);border:1px solid rgba(76,175,130,0.3);border-radius:12px;padding:16px;margin-bottom:14px}
+/* ═══ PHASE 2: LICENSE / HERO / INSIGHT / MILESTONE ═══ */
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;cursor:pointer}
+.hero .hcell{background:#0E0E15;border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:14px 10px;text-align:center}
+.hero .hbig{font-size:24px;font-weight:800;line-height:1.1}
+.hero .hlbl{font-size:9.5px;letter-spacing:1px;color:#9A8870;text-transform:uppercase;margin-top:5px}
+.hero .hper{font-size:9px;color:#6A5A40;margin-top:3px}
+.licstrip{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(201,168,76,0.14),rgba(201,168,76,0.05));border:1px solid rgba(201,168,76,0.55);border-radius:12px;padding:11px 14px;margin-bottom:12px;cursor:pointer}
+.licstrip .lseal{width:34px;height:34px;border:2px solid #C9A84C;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#C9A84C;font-size:15px;flex-shrink:0;transform:rotate(-10deg)}
+.licstrip .lname{font-size:13px;font-weight:700;color:#F5F2EA;line-height:1.3}
+.licstrip .lno{font-size:10px;color:#C9A84C;letter-spacing:1px;font-family:'Courier New',monospace}
+.licstrip .lml{margin-left:auto;font-size:11px;font-weight:700;color:#CF6679;white-space:nowrap}
+.liccard{border:2px solid #C9A84C;border-radius:6px;padding:6px;background:repeating-radial-gradient(circle at 20% 30%,rgba(201,168,76,0.05) 0px,transparent 1px,transparent 8px),repeating-linear-gradient(115deg,rgba(201,168,76,0.03) 0px,transparent 1px,transparent 6px),#0B0B12}
+.liccard-in{border:1px solid rgba(201,168,76,0.5);border-radius:3px;padding:22px 18px;position:relative}
+.licrow{display:flex;align-items:baseline;gap:8px;margin-bottom:11px}
+.licrow .ll{font-size:9px;letter-spacing:2px;color:#9A8870;white-space:nowrap}
+.licrow .ld{flex:1;border-bottom:1.5px dotted rgba(201,168,76,0.4);transform:translateY(-3px)}
+.licrow .lv{font-size:14px;font-weight:700;color:#F5F2EA}
+.licseal{position:absolute;right:14px;bottom:74px;opacity:0.55;width:86px;height:86px;border:2.5px solid rgba(201,168,76,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;transform:rotate(-12deg)}
+.licseal-in{width:68px;height:68px;border:1.5px solid rgba(201,168,76,0.7);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.licmono{font-family:'Courier New',monospace;font-size:12px}
+.licname{font-family:'Cormorant Garamond','Noto Serif Telugu',serif;font-size:30px;font-weight:600;color:#E2C97A;text-align:center;margin:12px 0 18px}
+.licmrz{font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;color:rgba(245,242,234,0.5);line-height:1.6;word-break:break-all;border-top:1px solid rgba(201,168,76,0.35);padding-top:8px;margin-top:10px}
+.insight-card{background:#0E0E15;border:1px solid rgba(201,168,76,0.35);border-left:5px solid #C9A84C;border-radius:12px;padding:20px 18px;text-align:left}
+.insight-card .itxt{font-size:16px;line-height:1.9;color:#F5F2EA;font-weight:600}
+.insight-card .isub{font-size:12px;color:#E2C97A;margin-top:10px;text-align:right}
+.mile-ov{position:fixed;inset:0;background:#05050A;z-index:700;display:none;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.mile-ov.open{display:flex}
+.mile-glow{position:absolute;width:150vmax;height:150vmax;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,0.22),transparent 55%);animation:mglow 2.2s ease-out forwards}
+@keyframes mglow{0%{transform:scale(0.05);opacity:0}40%{opacity:1}100%{transform:scale(1);opacity:0.6}}
+.mile-badge{width:160px;height:160px;margin:0 auto 26px;border:4px solid #C9A84C;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(201,168,76,0.18),transparent 70%);animation:mpop 0.9s cubic-bezier(0.34,1.56,0.64,1) 0.3s both}
+@keyframes mpop{0%{transform:scale(0.2) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.mile-days{font-size:56px;font-weight:800;color:#E2C97A;line-height:1}
+.mile-stmt{font-size:19px;line-height:1.9;color:#F5F2EA;font-weight:700;max-width:320px;margin:0 auto;animation:mfade 0.8s ease 0.9s both}
+@keyframes mfade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.spark{position:absolute;width:7px;height:7px;border-radius:50%;background:#E2C97A;opacity:0;animation:sfly 1.8s ease-out both}
+@keyframes sfly{0%{transform:translate(0,0) scale(0.4);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
 @media(min-width:700px){.sheet{align-items:center}.sheet-card{border-radius:18px;border-bottom:1px solid rgba(201,168,76,0.25)}}
 </style>
 </head>
@@ -524,6 +560,36 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   </div>
 </div>
 
+<!-- TRADING LICENSE (full card) -->
+<div class="sheet" id="licSheet">
+  <div class="sheet-card">
+    <div class="sheet-title">✦ Trading License<button class="sheet-x" onclick="ge('licSheet').classList.remove('open')">✕</button></div>
+    <div id="licCardHost"></div>
+    <button class="bigbtn" style="margin-top:14px" onclick="shareLicense()">📤 Status లో పెట్టు — Share Card</button>
+  </div>
+</div>
+
+<!-- INSIGHT CARD (after Evening Mirror) -->
+<div class="sheet" id="insightOv">
+  <div class="sheet-card">
+    <div class="sheet-title">🪞 Today's Mirror<button class="sheet-x" onclick="ge('insightOv').classList.remove('open')">✕</button></div>
+    <div class="insight-card"><div class="itxt" id="ins-txt"></div><div class="isub" id="ins-sub"></div></div>
+    <button class="bigbtn" style="margin-top:14px" onclick="shareInsight()">📤 Share this Mirror</button>
+  </div>
+</div>
+
+<!-- STREAK MILESTONE CELEBRATION (CSS-only animation) -->
+<div class="mile-ov" id="mileOv">
+  <div class="mile-glow"></div>
+  <div id="mileSparks" style="position:absolute;inset:0"></div>
+  <div style="position:relative;padding:24px;max-width:420px;width:100%">
+    <div class="mile-badge"><div class="mile-days" id="mile-days">7</div><div style="font-size:13px;letter-spacing:4px;color:#C9A84C">DAYS 🔥</div></div>
+    <div class="mile-stmt" id="mile-stmt"></div>
+    <button class="bigbtn" style="margin-top:30px" onclick="shareMilestone()">📤 Status లో పెట్టు</button>
+    <button class="dtl-toggle" style="display:block;margin:16px auto 0;color:#9A8870" onclick="closeMilestone()">Continue →</button>
+  </div>
+</div>
+
 <!-- MORE MENU: everything outside the daily flow -->
 <div class="sheet" id="moreSheet">
   <div class="sheet-card">
@@ -616,6 +682,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
               <div class="chiprow" id="qm-bias-row"></div>
               <div class="lbl">Max Loss ఈరోజు (₹) — ఇది దాటితే trading auto-block</div>
               <div class="chiprow" id="qm-ml-row"></div>
+              <div class="lbl">ఈరోజు Focus word — నీ license మీద ఉంటుంది</div>
+              <div class="chiprow" id="qm-foc-row"></div>
             </div>
             <button class="bigbtn" onclick="saveMorning()">Ritual పూర్తి చేయి — Trade unlock ✦</button>
           </div>
@@ -626,7 +694,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
           <div class="sh"><div class="st"><span style="font-size:19px">📈</span><h2>Trade</h2></div><div class="ss">ప్రతి trade log చేయి — winner అయినా loser అయినా.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
           <div class="kill-banner" id="killBanner"><div style="font-size:24px">🛑</div><div><div class="kill-title">DAILY LOSS LIMIT HIT — TRADING BLOCKED</div><div class="kill-msg">Maximum daily loss reach చేశారు. Screen మూసి వెళ్ళు. రేపు fresh start.</div></div></div>
           <div class="ot-alert" id="otAlert"><div style="font-weight:700;color:#E0A84C;font-size:13px">⚠️ You are no longer trading. You are reacting.</div><div style="font-size:11px;color:#9A8870;margin-top:3px">Overtrading threshold reach అయింది. ఇప్పుడు stop చేయడం professional decision.</div></div>
-          <div id="qt-lock" style="display:none" class="alt"><div class="altt">🔒 Morning Ritual పూర్తి కాలేదు</div><div class="alts">Ritual చేయకుండా trade log అవ్వదు. <button class="dtl-toggle" style="color:#C9A84C" onclick="dayGo('morning')">Morning కి వెళ్ళు →</button></div></div>
+          <div id="qt-lock" style="display:none" class="alt"><div class="altt">🔒 NO LICENSE — ఈరోజు ఇంకా trade అనుమతి లేదు</div><div class="alts">License లేకుండా trade చేస్తావా? 60 seconds — <button class="dtl-toggle" style="color:#C9A84C;font-weight:700" onclick="dayGo('morning')">Ritual complete చేయి →</button></div></div>
+          <div class="licstrip" id="licStrip" style="display:none" onclick="openLicense()">
+            <div class="lseal">✦</div>
+            <div><div class="lname" id="lic-s-name"></div><div class="lno" id="lic-s-no"></div></div>
+            <div class="lml" id="lic-s-ml"></div>
+          </div>
+          <div class="hero" id="heroBlock" onclick="toggleHero()"></div>
           <div class="todaytiles">
             <div class="sb2"><div class="sv" id="qt-count">0</div><div class="sl2">ఈరోజు Trades</div></div>
             <div class="sb2"><div class="sv" id="qt-pnl">₹0</div><div class="sl2">ఈరోజు P&L</div></div>
@@ -1052,10 +1126,10 @@ function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}ca
 function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;try{window.parent.postMessage({type:'MPV_DB_DIRTY'},'*');}catch(e2){}}
 function ge(id){return document.getElementById(id);}
 
-var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{}};
+var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{},insight:{}};
 
 function loadDB(){
-  var keys=[['mpvf','f'],['mpvpm','pm'],['mpvtr','tr'],['mpveod','eod'],['mpvh','h'],['mpvpsyd','psyday'],['mpvmir','mirror'],['mpvwk','weekly'],['mpvmn','monthly'],['mpvrules','rules'],['mpvstrat','strategy']];
+  var keys=[['mpvf','f'],['mpvpm','pm'],['mpvtr','tr'],['mpveod','eod'],['mpvh','h'],['mpvpsyd','psyday'],['mpvmir','mirror'],['mpvwk','weekly'],['mpvmn','monthly'],['mpvrules','rules'],['mpvstrat','strategy'],['mpvinsight','insight']];
   for(var i=0;i<keys.length;i++){var a=lg(keys[i][0]);if(a)DB[keys[i][1]]=a;}
 }
 
@@ -1506,7 +1580,7 @@ function buildChips(id,opts,cur,cb){
 }
 
 // ────── MORNING RITUAL (60 seconds) ──────
-var QM={s1:4,s2:2,s3:2,emo:'calm',bias:'bullish',ml:0,_editing:false};
+var QM={s1:4,s2:2,s3:2,emo:'calm',bias:'bullish',ml:0,foc:'Discipline',_editing:false};
 function todayPM(){var t=td();for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===t)return DB.pm[i];}return null;}
 function renderMorning(){
   var p=todayPM();
@@ -1516,7 +1590,7 @@ function renderMorning(){
     return;
   }
   ge('qm-done').style.display='none';ge('qm-form').style.display='';
-  if(p){QM.s1=Math.max(1,Math.min(5,Math.round(Number(p.sl||8)/2)));QM.s2=Math.max(1,Math.min(5,Math.round(Number(p.st||4)/2)));QM.s3=Math.max(1,Math.min(5,Math.round(Number(p.di||4)/2)));QM.emo=p.emo||'calm';QM.bias=p.bias||'bullish';QM.ml=Number(p.ml||0);}
+  if(p){QM.s1=Math.max(1,Math.min(5,Math.round(Number(p.sl||8)/2)));QM.s2=Math.max(1,Math.min(5,Math.round(Number(p.st||4)/2)));QM.s3=Math.max(1,Math.min(5,Math.round(Number(p.di||4)/2)));QM.emo=p.emo||'calm';QM.bias=p.bias||'bullish';QM.ml=Number(p.ml||0);QM.foc=p.foc||'Discipline';}
   if(!QM.ml)QM.ml=Number((DB.f||{}).day||0);
   buildScale('qm-s1',5,QM.s1,function(v){QM.s1=v;});
   buildScale('qm-s2',5,QM.s2,function(v){QM.s2=v;});
@@ -1526,16 +1600,21 @@ function renderMorning(){
   buildChips('qm-ml-row',[{v:500,label:'₹500'},{v:1000,label:'₹1,000'},{v:2000,label:'₹2,000'},{v:5000,label:'₹5,000'},{v:-1,label:'✏ Custom'}],QM.ml,function(v){
     if(v===-1){var x=prompt('Max loss ఈరోజు (₹):');QM.ml=Number(x||0)||0;}else QM.ml=v;
   });
+  if(!QM.foc)QM.foc='Discipline';
+  buildChips('qm-foc-row',[{v:'Discipline',label:'Discipline'},{v:'Patience',label:'Patience'},{v:'SL Respect',label:'SL Respect'},{v:'No FOMO',label:'No FOMO'},{v:'Process',label:'Process'},{v:'-custom-',label:'✏ Custom'}],QM.foc,function(v){
+    if(v==='-custom-'){var x=prompt('నీ focus word:');QM.foc=(x&&x.trim())?x.trim().slice(0,18):QM.foc;}else QM.foc=v;
+  });
 }
 function editMorning(){QM._editing=true;renderMorning();}
 function saveMorning(){
   if(!QM.ml||QM.ml<=0){toast('Max Loss select చేయి — ఇది నీ protection.',4000);return;}
   if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
-  var d={id:Date.now(),date:td(),sl:QM.s1*2,st:QM.s2*2,di:QM.s3*2,emo:QM.emo,bias:QM.bias,lev:'',news:'',ml:QM.ml,foc:''};
+  var d={id:Date.now(),date:td(),sl:QM.s1*2,st:QM.s2*2,di:QM.s3*2,emo:QM.emo,bias:QM.bias,lev:'',news:'',ml:QM.ml,foc:QM.foc||'Discipline'};
   var f=[];for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date!==d.date)f.push(DB.pm[i]);}f.push(d);DB.pm=f;ls('mpvpm',DB.pm);
   QM._editing=false;updHdr();loadPMA();
   showFeedback('✦ Ritual complete. Now you are prepared to trade.','#4CAF82');
   dayGo('trade');
+  openLicense(); // today's license — the ritual's reward
 }
 
 // ────── TRADE SCREEN + 2-STEP ENTRY ──────
@@ -1543,6 +1622,7 @@ function tradesToday(){var t=td(),a=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[
 function renderTrade(){
   var locked=!pmDone(),killed=checkKillSwitch();
   ge('qt-lock').style.display=locked?'':'none';
+  renderLicense();renderHero();
   ge('qt-logbtn').disabled=locked||killed;
   if(killed)ge('killBanner').classList.add('show');else ge('killBanner').classList.remove('show');
   if(checkOvertrading())ge('otAlert').classList.add('show');else ge('otAlert').classList.remove('show');
@@ -1681,6 +1761,195 @@ function saveEvening(){
   ge('qe-b').value='';ge('qe-w').value='';ge('qe-im').value='';ge('qe-n').value='';ge('qe-m2').value='';
   QE={proc:5,out:5,mood:'green',m1:'',m3:''};
   rEC();updHdr();renderEvening();
+  if(!maybeMilestone())showInsight(); // milestone first; insight after Continue
+}
+
+// ═══════════ PHASE 2: LICENSE / HERO / INSIGHTS / MILESTONES ═══════════
+function studentName(){var n=lg('mpvname');if(n&&String(n).trim())return String(n).trim();return sessionStorage.getItem('mpv_journal_access')||'MPV TRADER';}
+function fmtDateDisp(d){var q=(d||td()).split('-');return q[2]+'-'+q[1]+'-'+q[0];}
+function licNo(){
+  var d=td().replace(/-/g,'');
+  var seed=(sessionStorage.getItem('mpv_journal_access')||'MPV')+'|'+d;
+  var h=0;for(var i=0;i<seed.length;i++){h=((h<<5)-h+seed.charCodeAt(i))|0;}
+  var chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789',out='';h=Math.abs(h)||7;
+  for(var i=0;i<4;i++){out+=chars[h%chars.length];h=Math.floor(h/chars.length)+i*7;}
+  return 'MPV-'+d+'-'+out;
+}
+function licensePayload(){
+  var p=todayPM();if(!p)return null;
+  return {name:studentName(),date:td(),dateDisplay:fmtDateDisp(td()),ml:Number(p.ml||0),mlDisplay:fi(p.ml||0),foc:String(p.foc||'DISCIPLINE').toUpperCase(),licNo:licNo()};
+}
+function mrzLocal(name,no){
+  function cl(x){return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'<');}
+  function pad(x,n){x=x+'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';return x.slice(0,n);}
+  function he(x){return x.replace(/</g,'&lt;');}
+  return he(pad('P<MPV<'+cl(name),36))+'<br>'+he(pad(cl(no)+'<'+td().replace(/-/g,'')+'<MPV',36));
+}
+function renderLicense(){
+  var strip=ge('licStrip');if(!strip)return;
+  var lp=licensePayload();
+  if(!lp){strip.style.display='none';return;}
+  strip.style.display='';
+  ge('lic-s-name').textContent=lp.name;
+  ge('lic-s-no').textContent=lp.licNo+' · '+lp.foc;
+  ge('lic-s-ml').textContent='MAX LOSS ₹'+lp.mlDisplay;
+}
+function openLicense(){
+  var lp=licensePayload();if(!lp){dayGo('morning');return;}
+  ge('licCardHost').innerHTML=
+    '<div class="liccard"><div class="liccard-in">'+
+    '<div style="text-align:center"><div style="font-size:13px;font-weight:700;letter-spacing:5px;color:#C9A84C">MIND POWER VAULTT</div>'+
+    '<div style="font-size:20px;font-weight:700;letter-spacing:7px;color:#F5F2EA;margin-top:10px">TRADING LICENSE</div>'+
+    '<div style="width:110px;height:1.5px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:10px auto"></div></div>'+
+    '<div class="licname">'+esc2(lp.name)+'</div>'+
+    '<div class="licrow"><span class="ll">DATE</span><span class="ld"></span><span class="lv">'+lp.dateDisplay+'</span></div>'+
+    '<div class="licrow"><span class="ll">MAX LOSS</span><span class="ld"></span><span class="lv" style="color:#CF6679">₹'+lp.mlDisplay+'</span></div>'+
+    '<div class="licrow"><span class="ll">FOCUS</span><span class="ld"></span><span class="lv" style="color:#E2C97A">'+esc2(lp.foc)+'</span></div>'+
+    '<div class="licrow"><span class="ll">LICENSE NO</span><span class="ld"></span><span class="lv licmono">'+lp.licNo+'</span></div>'+
+    '<div class="licseal"><div class="licseal-in"><div style="font-size:13px;color:#C9A84C">✦</div><div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#C9A84C">LICENSED</div><div style="font-size:8px;color:rgba(201,168,76,0.8)">MPV</div></div></div>'+
+    '<div style="font-size:11px;color:#9A8870;margin:14px 0 0;text-align:center;font-style:italic">Valid today only — రేపు మళ్ళీ earn చేయాలి.</div>'+
+    '<div class="licmrz">'+mrzLocal(lp.name,lp.licNo)+'</div>'+
+    '</div></div>';
+  ge('licSheet').classList.add('open');
+}
+function shareLicense(){var lp=licensePayload();if(!lp)return;window.parent.postMessage({type:'MPV_SHARE_IMAGE',kind:'license',payload:lp},'*');}
+
+// ── MISTAKE COST HERO (the headline is indiscipline, not P&L) ──
+var HERO_ALL=false;
+function heroCosts(allTime){
+  var ym=td().slice(0,7),cost=0,earn=0;
+  for(var i=0;i<DB.tr.length;i++){var t=DB.tr[i];if(t.status==='open')continue;
+    if(!allTime&&String(t.date||'').slice(0,7)!==ym)continue;
+    var p=Number(t.pnl||0);
+    if(t.pln){if(p>0)earn+=p;}else{if(p<0)cost+=-p;}}
+  return {cost:cost,earn:earn};
+}
+function renderHero(){
+  var el=ge('heroBlock');if(!el)return;
+  var h=heroCosts(HERO_ALL);var per=HERO_ALL?'ALL TIME':'THIS MONTH';
+  el.innerHTML='<div class="hcell"><div class="hbig" style="color:#CF6679">-₹'+fi(h.cost)+'</div><div class="hlbl">నీ Mistakes Cost</div><div class="hper">'+per+' · tap to switch</div></div>'+
+    '<div class="hcell"><div class="hbig" style="color:#4CAF82">+₹'+fi(h.earn)+'</div><div class="hlbl">Discipline Earnings</div><div class="hper">'+per+'</div></div>';
+}
+function toggleHero(){HERO_ALL=!HERO_ALL;renderHero();}
+
+// ── INSIGHT ENGINE (variable reward — one card per Evening Mirror) ──
+function closedTr(){var a=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].status!=='open')a.push(DB.tr[i]);}return a;}
+function daysAgoStr(n){var x=new Date();x.setDate(x.getDate()-n);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
+function trWinRate(list){var w=0;for(var i=0;i<list.length;i++)if(Number(list[i].pnl||0)>0)w++;return list.length?Math.round(w/list.length*100):0;}
+function buildInsight(){
+  var T=closedTr(),all=DB.tr,cands=[];
+  var wk0=daysAgoStr(6),wk1s=daysAgoStr(13),wk1e=daysAgoStr(7),d14=daysAgoStr(13),d7=daysAgoStr(6);
+  function add(id,pri,text,sub){cands.push({id:id,pri:pri,text:text,sub:sub||''});}
+
+  var calmT=[],chgT=[];
+  for(var i=0;i<T.length;i++){var e=T[i].emo||'';if(e==='calm'||e==='neutral')calmT.push(T[i]);else if(e==='angry'||e==='greedy'||e==='fearful'||e==='anxious')chgT.push(T[i]);}
+  if(calmT.length>=3&&chgT.length>=3){var cw=trWinRate(calmT),aw=trWinRate(chgT);
+    if(cw-aw>=20)add('emotion-winrate',85,'Calm లో నీ win rate '+cw+'%. Emotional state లో '+aw+'%. నీ edge strategy కాదు — నీ state.','Same charts. Same market. Different నువ్వు.');}
+
+  var rev=0,revLoss=0;
+  for(var i=0;i<all.length;i++){var t=all[i];if(t.mist==='revenge'&&t.date>=d14){rev++;revLoss+=Math.min(0,Number(t.pnl||0));}}
+  if(rev>=2)add('revenge-pattern',84,'Revenge trade market మీద కాదు — నీ మీదే. ఈ 2 వారాల్లో ₹'+fi(-revLoss)+' పోయింది. Market కి అసలు తెలియదు నువ్వు ఎవరో.');
+
+  var slN=0,slLoss=0;
+  for(var i=0;i<all.length;i++){var t=all[i];if(t.mist==='ignored_sl'&&t.date>=d7){slN++;slLoss+=Math.min(0,Number(t.pnl||0));}}
+  if(slN>0)add('sl-ignored',83,'ఈ వారం '+slN+' సార్లు SL ignore చేశావ్. ప్రతిసారి నువ్వు break చేసేది market rule కాదు — నీ మాటే.',slLoss<0?'Cost: ₹'+fi(-slLoss):'');
+
+  var ps=0;for(var i=T.length-1;i>=0;i--){if(T[i].pln)ps++;else break;}
+  if(ps>=5)add('planned-streak',82,'వరుసగా '+ps+' trades — అన్నీ planned. ఇది luck కాదు. ఇది కొత్త నువ్వు.');
+
+  var buckets={},labels={0:'9:15–11:15',1:'11:15–1:15',2:'1:15–3:30'};
+  for(var i=0;i<all.length;i++){var t=all[i];if(t.pln||!t.id)continue;
+    var dt=new Date(t.id),hh=dt.getHours()+dt.getMinutes()/60;
+    var b=hh<11.25?0:(hh<13.25?1:2);buckets[b]=(buckets[b]||0)+1;}
+  for(var k in buckets){if(buckets[k]>=3){add('impulse-time-cluster',80,'నీ impulse trades ఎక్కువగా '+labels[k]+' లో వస్తున్నాయి ('+buckets[k]+' సార్లు). ఆ time లో market కాదు — నీ patience test అవుతోంది.');break;}}
+
+  function impLoss(a,b){var x=0;for(var i=0;i<T.length;i++){var t=T[i];if(!t.pln&&t.date>=a&&t.date<=b)x+=Math.min(0,Number(t.pnl||0));}return -x;}
+  var cw2=impLoss(wk0,td()),pw=impLoss(wk1s,wk1e);
+  if(pw>0&&cw2>pw*1.2)add('mistake-cost-up',78,'ఈ వారం mistakes కి ₹'+fi(cw2-pw)+' ఎక్కువ pay చేశావు. ఇవి market fees కాదు — emotion fees.');
+  if(pw>0&&cw2<pw*0.8)add('mistake-cost-down',75,'గత వారం కంటే mistakes cost ₹'+fi(pw-cw2)+' తగ్గింది. Market మారలేదు. నువ్వు మారావు.');
+
+  for(var i=0;i<(DB.rules||[]).length;i++){var r=DB.rules[i];var bd=r.breakDates||[];
+    if(bd.length>=2){var loss=0;for(var j=0;j<T.length;j++){var t=T[j];if(!t.pln&&bd.indexOf(t.date)>-1)loss+=Math.min(0,Number(t.pnl||0));}
+      if(loss<0){add('rule-break-cost',77,'ఈ ఒక్క rule — "'+esc2(String(r.text||'').slice(0,60))+'" — break చేసిన రోజుల్లో ₹'+fi(-loss)+' పోయింది. Rule కి తెలుసు. నీకు తెలుసు.');break;}}}
+
+  var byDay={};for(var i=0;i<T.length;i++){var d0=T[i].date;(byDay[d0]=byDay[d0]||[]).push(T[i]);}
+  var ota=Number((DB.f||{}).ota||3),hv=[],lw=[];
+  for(var d0 in byDay){var pn=0;for(var i=0;i<byDay[d0].length;i++)pn+=Number(byDay[d0][i].pnl||0);
+    if(byDay[d0].length>=ota)hv.push(pn);else lw.push(pn);}
+  if(hv.length>=3&&lw.length>=3){var ha=hv.reduce(function(a,b){return a+b;},0)/hv.length,la=lw.reduce(function(a,b){return a+b;},0)/lw.length;
+    if(la>ha)add('overtrading-cost',76,ota+'+ trades రోజుల్లో నీ average '+(ha>=0?'+':'-')+'₹'+fi(ha)+'. తక్కువ trades రోజుల్లో '+(la>=0?'+':'-')+'₹'+fi(la)+'. ఎక్కువ ≠ ఎక్కువ. నీ data నే చెప్తోంది.');}
+
+  var reds=0,e7=DB.eod.slice(-7);for(var i=0;i<e7.length;i++)if(e7[i].mood==='red')reds++;
+  if(reds>=3)add('red-mood-cluster',74,'ఈ వారం '+reds+' red రోజులు. అయినా journal రాస్తున్నావ్ — అంటే ఇంకా fight లోనే ఉన్నావ్. అదే ముఖ్యం.');
+
+  var lowD=[],hiD=[];
+  for(var i=0;i<DB.pm.length;i++){var pm=DB.pm[i];
+    if(!byDay[pm.date])continue;
+    var dayPn=0;for(var j=0;j<byDay[pm.date].length;j++)dayPn+=Number(byDay[pm.date][j].pnl||0);
+    if(Number(pm.sl||0)<=4)lowD.push(dayPn);else if(Number(pm.sl||0)>=8)hiD.push(dayPn);}
+  if(lowD.length>=3&&hiD.length>=3){var lavg=lowD.reduce(function(a,b){return a+b;},0)/lowD.length,havg=hiD.reduce(function(a,b){return a+b;},0)/hiD.length;
+    if(havg>lavg)add('sleep-performance',72,'నిద్ర తక్కువ రోజుల్లో నీ average '+(lavg>=0?'+':'-')+'₹'+fi(lavg)+'. మంచి నిద్ర రోజుల్లో '+(havg>=0?'+':'-')+'₹'+fi(havg)+'. నీ first trade చార్ట్ కాదు — నీ పడక.');}
+
+  var e5=DB.eod.slice(-5);
+  if(e5.length>=5){var pa=0;for(var i=0;i<e5.length;i++)pa+=Number(e5[i].proc||0);pa/=e5.length;
+    var wp=0;for(var i=0;i<T.length;i++)if(T[i].date>=wk0)wp+=Number(T[i].pnl||0);
+    if(pa>=7&&wp<0)add('process-vs-outcome',70,'Process '+Math.round(pa)+'/10. P&L red. ఇదే correct దారి — results late గా వస్తాయి, discipline compound అవుతుంది.');}
+
+  var MS=[7,21,30,66],st=(DB.h&&DB.h.s)||0;
+  for(var i=0;i<MS.length;i++){if(st<MS[i]){var gap=MS[i]-st;
+    if(gap<=2&&st>0)add('streak-proximity',65,'ఇంకా '+gap+' రోజు'+(gap>1?'లు':'')+' — నీ '+MS[i]+'-day milestone. రేపు కూడా రా. అంతే.');break;}}
+
+  if(all.length<5)add('first-steps',60,'మొదటి వారం లో నువ్వు నేర్చుకునేది trading కాదు — నిన్ను నువ్వు చూసుకోవడం. అదే అసలు skill.');
+
+  var tT=tradesToday(),plnN=0;for(var i=0;i<tT.length;i++)if(tT[i].pln)plnN++;
+  var defs=['ఈరోజు '+tT.length+' trades — '+plnN+' planned. రేపు ఒక్క impulse తక్కువ. అంతే గెలుపు.','Journal రాయడం ఆపనంత వరకు — నువ్వు ఓడిపోలేదు.','Market రోజూ మారుతుంది. నీ process మారకపోవడమే నీ strength.'];
+  add('default-mirror',10,defs[(new Date().getDate())%defs.length]);
+
+  var last=(DB.insight&&DB.insight.last)||{};
+  cands.sort(function(a,b){return b.pri-a.pri;});
+  for(var i=0;i<cands.length;i++){if(cands[i].id!==last.tpl)return cands[i];}
+  return cands[0];
+}
+var INS_CUR=null;
+function showInsight(){
+  var ins=buildInsight();if(!ins)return;
+  DB.insight=DB.insight||{};DB.insight.last={tpl:ins.id,date:td()};ls('mpvinsight',DB.insight);
+  INS_CUR=ins;
+  ge('ins-txt').innerHTML=ins.text; // trusted templates; user fragments esc2-ed at build time
+  ge('ins-sub').textContent=ins.sub||'';ge('ins-sub').style.display=ins.sub?'':'none';
+  ge('insightOv').classList.add('open');
+}
+function shareInsight(){
+  if(!INS_CUR)return;
+  var tmp=document.createElement('div');tmp.innerHTML=INS_CUR.text;
+  window.parent.postMessage({type:'MPV_SHARE_IMAGE',kind:'insight',payload:{date:td(),text:tmp.textContent,sub:INS_CUR.sub||''}},'*');
+}
+
+// ── STREAK MILESTONES (process days only — streak logic itself untouched) ──
+var MILE_STMTS={7:'7 రోజులు. నువ్వు start చేశావు — చాలా మంది అది కూడా చేయరు.',21:'21 రోజులు. నువ్వు ఇప్పుడు aware trader వి. Emotional trader కాదు.',30:'30 రోజులు. ఇది streak కాదు — ఇది నీ కొత్త identity.',66:'66 రోజులు. Science ప్రకారం — ఇది ఇక habit. నువ్వు మారిపోయావు.'};
+var MILE_CUR=null;
+function maybeMilestone(){
+  var st=(DB.h&&DB.h.s)||0;
+  if(!MILE_STMTS[st])return false;
+  DB.insight=DB.insight||{};DB.insight.miles=DB.insight.miles||{};
+  if(DB.insight.miles[st]===td())return false;
+  DB.insight.miles[st]=td();ls('mpvinsight',DB.insight);
+  MILE_CUR=st;
+  ge('mile-days').textContent=st;
+  ge('mile-stmt').textContent=MILE_STMTS[st];
+  var sp=ge('mileSparks');sp.innerHTML='';
+  for(var i=0;i<14;i++){var d=document.createElement('div');d.className='spark';
+    d.style.left='50%';d.style.top='40%';
+    d.style.setProperty('--dx',(Math.cos(i/14*6.283)*(90+(i%4)*38))+'px');
+    d.style.setProperty('--dy',(Math.sin(i/14*6.283)*(90+(i%4)*38))+'px');
+    d.style.animationDelay=(0.35+i*0.05)+'s';sp.appendChild(d);}
+  ge('mileOv').classList.add('open');
+  return true;
+}
+function closeMilestone(){ge('mileOv').classList.remove('open');showInsight();}
+function shareMilestone(){
+  if(!MILE_CUR)return;
+  window.parent.postMessage({type:'MPV_SHARE_IMAGE',kind:'milestone',payload:{days:MILE_CUR,statement:MILE_STMTS[MILE_CUR],name:studentName(),date:td(),dateDisplay:fmtDateDisp(td())}},'*');
 }
 
 // ────── SYNC STATUS (from parent app) + RESTORE NOTE ──────
