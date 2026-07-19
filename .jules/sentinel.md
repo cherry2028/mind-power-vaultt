@@ -18,3 +18,7 @@
 **Vulnerability:** Several API endpoints acting as proxies to external third-party services (like Resend in `api/send-report.js` and `api/notify.js`, Groq in `api/analyze.js`, and Cashfree in `api/create-order.js`) lacked proper rate limiting.
 **Learning:** Exposing third-party API proxies without rate limits leaves the application vulnerable to Denial of Wallet (DoW) attacks or quota exhaustion, where attackers can script repeated requests to consume paid API credits or free tiers rapidly.
 **Prevention:** Always implement IP-based rate limiting (e.g., using a utility like `checkSimpleLimit`) on all public-facing or authenticated endpoints that trigger external API calls or perform resource-intensive tasks.
+## 2026-07-19 - [Added missing CORS and Rate Limiting to Lead Capture API]
+**Vulnerability:** The `api/save-lead.js` endpoint lacked standard CORS headers and rate-limiting.
+**Learning:** Publicly accessible endpoints processing leads and interacting with external services (like Telegram) must enforce rate limiting to prevent abuse (DoS/DoW) and should correctly define CORS to specify allowed origins.
+**Prevention:** Integrate standard rate-limiting middleware (like `checkSimpleLimit`) and properly configure `Access-Control-Allow-Origin` headers on all public webhook/lead endpoints.
