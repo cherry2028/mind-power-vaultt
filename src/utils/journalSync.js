@@ -16,6 +16,7 @@
 export const JOURNAL_KEYS = [
   'mpvf', 'mpvpm', 'mpvtr', 'mpveod', 'mpvh', 'mpvpsyd', 'mpvmir',
   'mpvwk', 'mpvmn', 'mpvrules', 'mpvstrat', 'mpvname', 'mpvOnboarded',
+  'mpvinsight', // insight-card + milestone tracking (Phase 2 hook layer)
 ];
 
 const STAMP_KEY = 'mpvCloudUpdatedAt'; // updated_at of the last row we pushed/pulled
