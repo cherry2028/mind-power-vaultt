@@ -1304,7 +1304,7 @@ function rTr(){
   ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
   var list=ge('tllist');list.innerHTML='';
   if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
-  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs"><span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+t.dir.toUpperCase()+'</span><span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+t.date+' · '+(t.setup||'')+' · '+t.en+'→'+t.ex+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs"><span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+(t.dir||'').toUpperCase()+'</span><span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+t.date+' · '+(t.setup||'')+' · '+t.en+'→'+t.ex+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
 }
 
 // ────── EOD ──────
@@ -1703,22 +1703,32 @@ window.addEventListener('message',function(e){
     if(ui){el.textContent=ui.txt;el.className=ui.cls;}
     else{el.textContent='';el.className='syncdot';}
   }
+  if(d.type==='MPV_RELOAD_DB'){
+    // Parent merged/restored the journal in localStorage underneath us —
+    // re-read everything and re-render whatever screen is showing.
+    loadDB();loadF();loadPMA();rTr();rEC();rPs();rWk();rMn();rHb();rStrategy();updHdr();
+    var cur=document.querySelector('.sec.on');
+    var curId=cur?cur.id.replace('sec-',''):'';
+    if(curId==='morning'||curId==='trade'||curId==='evening')dayGo(curId);
+    if(d.note)toast(d.note,5000);
+  }
 });
 function explainSync(){var ui=SYNC_UI[syncState];if(ui)toast(ui.msg,5000);}
 
 // ────── START APP ──────
 function startApp(){
   ge('app').style.display='flex';
+  // Sync handshake + cloud-restore note FIRST — render errors below must
+  // never silently kill sync signaling (learned the hard way).
+  try{window.parent.postMessage({type:'MPV_HELLO'},'*');}catch(e){}
+  setTimeout(function(){if(syncState==='off'){try{window.parent.postMessage({type:'MPV_HELLO'},'*');}catch(e){}}},2500);
+  try{var rn0=sessionStorage.getItem('mpv_restore_note');if(rn0){toast(rn0,6000);sessionStorage.removeItem('mpv_restore_note');}}catch(e){}
   loadDB();loadF();loadPMA();buildCL();rTr();rEC();rPs();rWk();rMn();rHb();rStrategy();updHdr();
   var e1=ge('eod-dt');if(e1)e1.value=td();var e2=ge('tr-dt');if(e2)e2.value=td();var e3=ge('psy-dt');if(e3)e3.value=td();
   pMood('green');updateMirrorUI();
   if(!DB.f._firstDay){DB.f._firstDay=td();ls('mpvf',DB.f);}
   // The app decides which screen — student never picks a tab
   dayGo(autoDay());
-  // Tell the parent we're ready (it replies with sync status)
-  try{window.parent.postMessage({type:'MPV_HELLO'},'*');}catch(e){}
-  // Cloud-restore toast (set by parent before the iframe booted)
-  try{var rn=sessionStorage.getItem('mpv_restore_note');if(rn){toast(rn,6000);sessionStorage.removeItem('mpv_restore_note');}}catch(e){}
 }
 
 // ────── INIT ──────

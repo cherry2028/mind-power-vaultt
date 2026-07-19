@@ -6,7 +6,7 @@ import journalHtml from '../journal-content.html?raw';
 
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
-import { pullJournal, pushJournal, markDirty, isDirty } from '../utils/journalSync';
+import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
 
 // Public mentor WhatsApp number for the wa.me fallback (same number as the
 // site's contact button — not a secret, unlike MENTOR_EMAIL which stays server-side).
@@ -19,6 +19,7 @@ export default function Journal() {
   const [error, setError] = useState('');
   const [dataReady, setDataReady] = useState(false); // cloud pull finished (or not applicable)
   const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
+  const [syncConflict, setSyncConflict] = useState(null); // {cloudTrades, cloudEods} — empty local vs real cloud
   const iframeRef = useRef(null);
   const pulledRef = useRef(false);      // cloud pull runs once per page load
   const syncUserRef = useRef(null);     // {id, email?} — null = emergency/local-only mode
@@ -33,7 +34,30 @@ export default function Journal() {
     } catch { /* iframe not ready yet — it will ask via MPV_HELLO */ }
   };
 
-  // ═══ CLOUD SYNC ENGINE (local-first, debounced push, last-write-wins) ═══
+  // Tell the journal iframe to re-read localStorage (after a merge/restore
+  // changed it underneath a live journal).
+  const postReloadDb = (note) => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage({ type: 'MPV_RELOAD_DB', note: note || '' }, '*');
+    } catch { /* ignore */ }
+  };
+
+  // Shared handling for a push outcome (statuses come from journalSync).
+  const handlePushResult = (result) => {
+    if (result.status === 'blocked-empty') {
+      setSyncConflict({ cloudTrades: result.cloudTrades, cloudEods: result.cloudEods });
+      postSyncStatus('error');
+      return;
+    }
+    if (result.status === 'merged') {
+      postReloadDb('Journal cloud తో sync అయింది ✦');
+      postSyncStatus('synced');
+      return;
+    }
+    postSyncStatus(result.status); // 'synced' | 'offline' | 'error'
+  };
+
+  // ═══ CLOUD SYNC ENGINE (local-first, guarded push, merge on conflict) ═══
   useEffect(() => {
     if (!authorized || !dataReady) return;
     let pushTimer = null;
@@ -41,8 +65,8 @@ export default function Journal() {
     const doPush = async () => {
       if (!syncUserRef.current) return;
       postSyncStatus('syncing');
-      const result = await pushJournal(supabase, syncUserRef.current); // 'synced' | 'offline' | 'error'
-      postSyncStatus(result);
+      const result = await pushJournal(supabase, syncUserRef.current);
+      handlePushResult(result);
     };
 
     const onMessage = (e) => {
@@ -150,6 +174,23 @@ export default function Journal() {
     setPdfShare(null);
   };
 
+  // ═══ SYNC CONFLICT RESOLUTION (empty device vs real cloud journal) ═══
+  const resolveConflictRestore = () => {
+    // Forget local sync markers so the boot pull restores the cloud journal.
+    resetSyncMarkers();
+    sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+    window.location.reload();
+  };
+  const resolveConflictForce = async () => {
+    setSyncConflict(null);
+    postSyncStatus('syncing');
+    const result = await pushJournal(supabase, syncUserRef.current, { force: true });
+    handlePushResult(result);
+  };
+  const resolveConflictLater = () => {
+    setSyncConflict(null); // stays dirty — dot shows ⚠ until they decide
+  };
+
   // ═══ SESSION VALIDATION ═══
   useEffect(() => {
     const validateSession = async () => {
@@ -208,11 +249,18 @@ export default function Journal() {
           if (!pulledRef.current) {
             pulledRef.current = true;
             const result = await pullJournal(supabase, syncUserRef.current);
-            if (result === 'restored') {
+            if (result.status === 'restored') {
               sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
             }
-            syncStatusRef.current =
-              (result === 'offline' || result === 'error') ? result : 'synced';
+            if (result.status === 'blocked-empty') {
+              // Stale dirty flag on a near-empty device vs a real cloud journal —
+              // never auto-resolve; the student decides via the conflict overlay.
+              setSyncConflict({ cloudTrades: result.cloudTrades, cloudEods: result.cloudEods });
+              syncStatusRef.current = 'error';
+            } else {
+              syncStatusRef.current =
+                (result.status === 'offline' || result.status === 'error') ? result.status : 'synced';
+            }
           }
 
           setAuthorized(true);
@@ -349,6 +397,29 @@ export default function Journal() {
         style={{ width:'100%', height:'100%', border:'none' }}
         sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
       />
+
+      {/* ═══ SYNC CONFLICT OVERLAY — empty device vs real cloud journal ═══ */}
+      {syncConflict && (
+        <div style={{ position:'fixed', inset:0, zIndex:10001, background:'rgba(5,5,10,0.92)', display:'flex', alignItems:'center', justifyContent:'center', padding:16, fontFamily:"'DM Sans','Noto Sans Telugu',sans-serif" }}>
+          <div style={{ maxWidth:430, width:'100%', background:G.dark1, border:'1px solid rgba(224,168,76,0.4)', borderRadius:12, padding:'28px 24px', textAlign:'center', color:G.smoke }}>
+            <div style={{ fontSize:36, marginBottom:10 }}>⚠️</div>
+            <h3 style={{ color:'#E0A84C', fontSize:16, marginBottom:10, lineHeight:1.5 }}>Cloud లో మీ పాత journal data ఉంది</h3>
+            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>
+              Cloud లో <b style={{ color:G.smoke }}>{syncConflict.cloudTrades} trades · {syncConflict.cloudEods} EOD reviews</b> ఉన్నాయి —
+              కానీ ఈ device లో journal ఖాళీగా ఉంది. ఖాళీ data తో cloud ని replace చేస్తే మీ పాత journal శాశ్వతంగా పోతుంది.
+            </p>
+            <button onClick={resolveConflictRestore} style={{ width:'100%', padding:15, marginBottom:10, background:`linear-gradient(135deg, ${G.gold}, #9A7020)`, color:G.black, border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' }}>
+              ✦ Cloud data restore చేయి (recommended)
+            </button>
+            <button onClick={resolveConflictForce} style={{ width:'100%', padding:12, marginBottom:10, background:'transparent', border:'1px solid rgba(207,102,121,0.5)', color:'#CF6679', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+              కాదు — ఖాళీ data తో replace చేయి (పాత data పోతుంది)
+            </button>
+            <button onClick={resolveConflictLater} style={{ background:'transparent', border:'none', color:G.mid, fontSize:12, cursor:'pointer', textDecoration:'underline' }}>
+              తర్వాత decide చేస్తాను
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ═══ WEEKLY PDF SHARE OVERLAY ═══ */}
       {pdfShare && (

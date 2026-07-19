@@ -2,25 +2,43 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 
+// Common email domain typos. A typo here creates a brand-new (stray) auth
+// account and the student's journal silently syncs to the wrong identity —
+// so catch it BEFORE the OTP is sent.
+const TYPO_DOMAINS = {
+  'gmil.com': 'gmail.com', 'gmal.com': 'gmail.com', 'gamil.com': 'gmail.com',
+  'gmial.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmaill.com': 'gmail.com',
+  'gmail.co': 'gmail.com', 'gmail.cm': 'gmail.com', 'gmail.om': 'gmail.com',
+  'gmali.com': 'gmail.com', 'gemail.com': 'gmail.com',
+  'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'yahoo.co': 'yahoo.com',
+  'hotmial.com': 'hotmail.com', 'hotmal.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
+  'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com',
+  'rediffmal.com': 'rediffmail.com', 'redifmail.com': 'rediffmail.com',
+};
+
+function suggestEmailFix(addr) {
+  const at = addr.lastIndexOf('@');
+  if (at < 1) return null;
+  const domain = addr.slice(at + 1).toLowerCase();
+  const fixed = TYPO_DOMAINS[domain];
+  return fixed ? addr.slice(0, at + 1) + fixed : null;
+}
+
 export default function StudentPortal() {
   const [step, setStep] = useState(1); // 1: Email, 2: OTP
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [typoSuggestion, setTypoSuggestion] = useState(null); // {typed, suggested}
   const navigate = useNavigate();
 
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-    if (!email.trim() || !email.includes('@')) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+  const actuallySendOtp = async (addr) => {
     setLoading(true);
     setError('');
 
     const { error: signInError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: addr,
     });
 
     if (signInError) {
@@ -35,6 +53,35 @@ export default function StudentPortal() {
       setStep(2);
       setLoading(false);
     }
+  };
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    const addr = email.trim();
+    if (!addr || !addr.includes('@')) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    const suggested = suggestEmailFix(addr);
+    if (suggested) {
+      setTypoSuggestion({ typed: addr, suggested });
+      setError('');
+      return; // student must choose before the OTP goes out
+    }
+    await actuallySendOtp(addr);
+  };
+
+  const acceptSuggestion = async () => {
+    const fixed = typoSuggestion.suggested;
+    setEmail(fixed);
+    setTypoSuggestion(null);
+    await actuallySendOtp(fixed);
+  };
+
+  const keepTypedEmail = async () => {
+    const typed = typoSuggestion.typed;
+    setTypoSuggestion(null);
+    await actuallySendOtp(typed);
   };
 
   const handleVerifyOtp = async (e) => {
@@ -131,16 +178,22 @@ export default function StudentPortal() {
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
       }}>
         <h2 style={{ color: G.gold, fontSize: 24, marginBottom: 8 }}>Student Portal</h2>
-        <p style={{ color: G.mid, fontSize: 14, marginBottom: 32 }}>
-          {step === 1 ? "Enter your registered email to receive an OTP." : "Enter the OTP sent to your email."}
-        </p>
+        {step === 1 ? (
+          <p style={{ color: G.mid, fontSize: 14, marginBottom: 32 }}>Enter your registered email to receive an OTP.</p>
+        ) : (
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ color: G.mid, fontSize: 14, marginBottom: 8 }}>OTP పంపింది:</p>
+            <p style={{ color: G.gold, fontSize: 16, fontWeight: 700, wordBreak: 'break-all', marginBottom: 6 }}>{email.trim()}</p>
+            <p style={{ color: 'rgba(240,237,228,0.4)', fontSize: 11 }}>Email లో typo ఉంటే "Use a different email" నొక్కి సరిచేయండి.</p>
+          </div>
+        )}
         
         {step === 1 ? (
           <form onSubmit={handleSendOtp}>
             <input 
               type="email"
               value={email}
-              onChange={e => {setEmail(e.target.value); setError('');}}
+              onChange={e => {setEmail(e.target.value); setError(''); setTypoSuggestion(null);}}
               placeholder="Your Email Address"
               style={{
                 width: '100%',
@@ -157,6 +210,23 @@ export default function StudentPortal() {
               }}
             />
             {error && <div style={{ color: 'rgba(200,80,80,0.8)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+            {typoSuggestion && (
+              <div style={{ background: 'rgba(224,168,76,0.08)', border: '1px solid rgba(224,168,76,0.4)', borderRadius: 8, padding: '14px 12px', marginBottom: 16, textAlign: 'left' }}>
+                <p style={{ color: '#E0A84C', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ Email లో typo లా ఉంది</p>
+                <p style={{ color: G.mid, fontSize: 12, lineHeight: 1.7, marginBottom: 12, wordBreak: 'break-all' }}>
+                  మీరు type చేసింది: <b style={{ color: G.smoke }}>{typoSuggestion.typed}</b><br/>
+                  మీ ఉద్దేశం ఇదా? <b style={{ color: '#4CAF82' }}>{typoSuggestion.suggested}</b>
+                </p>
+                <button type="button" onClick={acceptSuggestion} disabled={loading}
+                  style={{ width: '100%', padding: 12, marginBottom: 8, background: 'linear-gradient(135deg,#2E7D52,#4CAF82)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                  ✔ అవును — {typoSuggestion.suggested} వాడు
+                </button>
+                <button type="button" onClick={keepTypedEmail} disabled={loading}
+                  style={{ width: '100%', padding: 10, background: 'transparent', border: `1px solid ${G.goldDim}`, color: G.mid, borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
+                  కాదు — నేను type చేసిందే సరైనది
+                </button>
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}
