@@ -6,6 +6,7 @@ import StudentPortal from "./pages/StudentPortal";
 import Journal from "./pages/Journal";
 import { api } from "./utils/api-client";
 import Seo from "./Seo";
+import RouteTracker from "./RouteTracker";
 
 const LOGO_IMG = "/logo.jpeg";
 
@@ -1206,6 +1207,7 @@ function NotFound() {
 export default function RoutedApp() {
   return (
     <BrowserRouter>
+      <RouteTracker />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />
