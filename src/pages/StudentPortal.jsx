@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
+import Seo from '../Seo';
 
 // Common email domain typos. A typo here creates a brand-new (stray) auth
 // account and the student's journal silently syncs to the wrong identity —
@@ -167,6 +168,8 @@ export default function StudentPortal() {
       color: G.smoke,
       userSelect: 'none'
     }}>
+      <Seo title="Student Portal — Mind Power Vaultt" path="/portal" noindex />
+
       <div style={{
         maxWidth: 400,
         width: '100%',

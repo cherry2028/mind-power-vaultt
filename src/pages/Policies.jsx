@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import Seo from '../Seo';
 
 const G = { black: "#05050A", dark1: "#0A0A0F", smoke: "#F5F2EA", gold: "#C9A84C", mid: "#A8A498", goldDim: "rgba(201,168,76,0.15)" };
 
-const PolicyLayout = ({ title, children }) => (
+const PolicyLayout = ({ title, description, path, children }) => (
   <div style={{ minHeight: '100vh', backgroundColor: G.black, color: G.smoke, fontFamily: "'DM Sans', sans-serif", padding: '40px 20px', lineHeight: 1.6 }}>
+    <Seo title={`${title} | Mind Power Vaultt`} description={description} path={path} />
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <Link to="/" style={{ color: G.gold, textDecoration: 'none', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 40, display: 'inline-block' }}>← Back to Home</Link>
       <h1 style={{ color: G.gold, fontSize: 32, marginBottom: 30, letterSpacing: 2 }}>{title}</h1>
@@ -22,7 +24,7 @@ const PolicyLayout = ({ title, children }) => (
 );
 
 export const AboutUs = () => (
-  <PolicyLayout title="About Us">
+  <PolicyLayout title="About Us" path="/about" description="Mind Power Vaultt (ALR Services) — an educational Telugu trading psychology platform and journaling tool by K Prasad. Not SEBI-registered; educational use only.">
     <p>Welcome to Mind Power Vaultt, an educational platform dedicated to trading psychology and behavioral correction.</p>
     <br/>
     <p><strong>Who we are:</strong><br/>Mind Power Vaultt is run by ALR SERVICES (Proprietorship), legally registered under the name MALLADI SRI SAI SIVA RAMA KRISHNAPRASAD. We specialize in providing advanced digital journaling and psychological analysis tools for traders.</p>
@@ -34,7 +36,7 @@ export const AboutUs = () => (
 );
 
 export const TermsAndConditions = () => (
-  <PolicyLayout title="Terms & Conditions">
+  <PolicyLayout title="Terms & Conditions" path="/terms" description="Terms & Conditions for the Mind Power Vaultt Telugu trading psychology journal — subscription access, single-device policy, and educational-only scope.">
     <p>Last updated: May 2026</p>
     <br/>
     <p>By accessing and using Mind Power Vaultt, you agree to comply with the following terms:</p>
@@ -48,7 +50,7 @@ export const TermsAndConditions = () => (
 );
 
 export const PrivacyPolicy = () => (
-  <PolicyLayout title="Privacy Policy">
+  <PolicyLayout title="Privacy Policy" path="/privacy" description="How Mind Power Vaultt handles your data — email for OTP login, device tokens for single-device security, and private trading journal entries.">
     <p>Last updated: May 2026</p>
     <br/>
     <p><strong>Data Collection:</strong><br/>We collect minimal data necessary for the functioning of our application, primarily your email address (for OTP authentication) and device hardware tokens (to enforce single-device policies).</p>
@@ -60,7 +62,7 @@ export const PrivacyPolicy = () => (
 );
 
 export const RefundPolicy = () => (
-  <PolicyLayout title="Refund Policy">
+  <PolicyLayout title="Refund Policy" path="/refund" description="Refund policy for the Mind Power Vaultt trading psychology subscription — digital access, all sales final.">
     <p>Last updated: May 2026</p>
     <br/>
     <p><strong>Digital Goods:</strong><br/>Since Mind Power Vaultt provides immediate access to proprietary digital software and educational frameworks, <strong>all sales are final.</strong></p>
@@ -70,7 +72,7 @@ export const RefundPolicy = () => (
 );
 
 export const ContactUs = () => (
-  <PolicyLayout title="Contact Us">
+  <PolicyLayout title="Contact Us" path="/contact" description="Contact Mind Power Vaultt (ALR Services) — support for the Telugu trading psychology journal, device-lock resets, and mentorship queries.">
     <p>If you have any questions, support requests, or need to request a device lock reset, please reach out to us:</p>
     <br/>
     <p><strong>Business Name:</strong> ALR SERVICES</p>

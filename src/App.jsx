@@ -5,6 +5,7 @@ import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
 import Journal from "./pages/Journal";
 import { api } from "./utils/api-client";
+import Seo from "./Seo";
 
 const LOGO_IMG = "/logo.jpeg";
 
@@ -482,7 +483,7 @@ function App(){
           <img src={LOGO_IMG} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
-          <h1 className={lc} style={{fontSize:"clamp(22px,3.5vw,42px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
+          <h2 className={lc} style={{fontSize:"clamp(22px,3.5vw,42px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h2>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.85s"}}>
           <h2 className={lc} style={{fontSize:"clamp(24px,4vw,48px)",fontWeight:700,color:G.gold,lineHeight:1.15,marginBottom:28,whiteSpace:"pre-line"}}>{L.hro.l2}</h2>
@@ -1041,6 +1042,12 @@ function App(){
 
   return(
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
+      <Seo title="Trading Psychology in Telugu | Mind Power Vaultt" description="Stock Market తెలుసు. Mind తెలియదు. అందుకే loss. Telugu లో first Trading Psychology journal & mentorship — FOMO, revenge trading, discipline fix చేయి." path="/" />
+      {/* SEO h1 — crawlable, visually hidden (absolute + clip, no layout impact).
+          Always in the DOM regardless of funnel phase; the visible hero is unchanged. */}
+      <h1 style={{position:"absolute",width:1,height:1,padding:0,margin:-1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap",border:0}}>
+        Trading Psychology in Telugu — ట్రేడింగ్ సైకాలజీ | Mind Power Vaultt Journal &amp; Mentorship by K Prasad
+      </h1>
       <style>{css}</style>
       <div ref={topRef}/>
 
@@ -1182,6 +1189,20 @@ function App(){
 
 import { AboutUs, TermsAndConditions, PrivacyPolicy, RefundPolicy, ContactUs } from './pages/Policies';
 
+// Catch-all so unknown URLs render a real noindex "not found" page instead of a
+// soft-404 (the SPA rewrite serves index.html with 200 for every path; noindex +
+// clear not-found content keeps Google from indexing garbage URLs as the homepage).
+function NotFound() {
+  return (
+    <div style={{ minHeight:'100vh', background:'#05050A', color:'#F5F2EA', fontFamily:"'DM Sans',sans-serif", display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'24px' }}>
+      <Seo title="Page Not Found — Mind Power Vaultt" noindex />
+      <div style={{ fontSize:64, fontWeight:700, color:'#C9A84C', letterSpacing:4 }}>404</div>
+      <p style={{ fontSize:16, color:'#A8A498', margin:'14px 0 28px' }}>ఈ page దొరకలేదు. — This page could not be found.</p>
+      <Link to="/" style={{ padding:'14px 28px', background:'linear-gradient(135deg,#C9A84C,#9A7020)', color:'#05050A', borderRadius:8, fontWeight:700, textDecoration:'none', letterSpacing:1 }}>← Back to Home</Link>
+    </div>
+  );
+}
+
 export default function RoutedApp() {
   return (
     <BrowserRouter>
@@ -1194,6 +1215,7 @@ export default function RoutedApp() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund" element={<RefundPolicy />} />
         <Route path="/contact" element={<ContactUs />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
