@@ -18,3 +18,7 @@
 **Vulnerability:** Several API endpoints acting as proxies to external third-party services (like Resend in `api/send-report.js` and `api/notify.js`, Groq in `api/analyze.js`, and Cashfree in `api/create-order.js`) lacked proper rate limiting.
 **Learning:** Exposing third-party API proxies without rate limits leaves the application vulnerable to Denial of Wallet (DoW) attacks or quota exhaustion, where attackers can script repeated requests to consume paid API credits or free tiers rapidly.
 **Prevention:** Always implement IP-based rate limiting (e.g., using a utility like `checkSimpleLimit`) on all public-facing or authenticated endpoints that trigger external API calls or perform resource-intensive tasks.
+## 2025-02-27 - [Missing Rate Limiting & CORS on Save Lead Endpoint]
+**Vulnerability:** The public-facing endpoint `api/save-lead.js` lacked rate limiting, making it vulnerable to Denial of Service (DoS) and quota exhaustion by spamming the Telegram API. It also lacked proper CORS headers and `OPTIONS` handling, breaking integration for legitimate frontend usage.
+**Learning:** All public-facing serverless functions acting as proxies to third-party services (like Telegram) must implement IP-based rate limiting to prevent abuse and API quota exhaustion. Standard CORS headers are crucial for public accessibility.
+**Prevention:** Always implement `checkSimpleLimit` and proper CORS handling on Vercel serverless function endpoints.
