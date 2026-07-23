@@ -1,7 +1,19 @@
+/* global process */
 import { escapeHTML } from './_lib/utils.js';
+import { checkSimpleLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', 'https://mindpowervaultt.com');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (!checkSimpleLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
 
   const { name, phone, experience, profile } = req.body;
   const token = process.env.TELEGRAM_BOT_TOKEN;
