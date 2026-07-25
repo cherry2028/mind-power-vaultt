@@ -58,6 +58,8 @@ export const PrivacyPolicy = () => (
     <p><strong>Usage of Data:</strong><br/>Your trading journal entries are stored securely. We do not share, sell, or rent your personal data or journal entries to any third parties.</p>
     <br/>
     <p><strong>Security:</strong><br/>We employ industry-standard security measures including OTP verification and RLS (Row Level Security) databases to protect your information.</p>
+    <br/>
+    <p><strong>Analytics:</strong><br/>We use Google Analytics to understand how visitors use our site (pages viewed, device type, and approximate location). This is collected via cookies for aggregate statistics only and is never linked to your journal entries.</p>
   </PolicyLayout>
 );
 

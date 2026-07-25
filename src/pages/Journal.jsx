@@ -9,6 +9,7 @@ import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
 import Seo from '../Seo';
+import { track } from '../analytics';
 
 const CARD_BUILDERS = {
   license: { build: buildLicenseCardHtml, file: (p) => `MPV_License_${p.date}.png` },
@@ -65,6 +66,13 @@ export default function Journal() {
     }
     postSyncStatus(result.status); // 'synced' | 'offline' | 'error'
   };
+
+  // Analytics: journal session opened (fires once per page load, after auth +
+  // data-ready). Standalone effect — reads nothing the sync engine writes.
+  useEffect(() => {
+    if (!authorized || !dataReady) return;
+    track('journal_opened', { login_mode: syncUserRef.current ? 'account' : 'emergency' });
+  }, [authorized, dataReady]);
 
   // ═══ CLOUD SYNC ENGINE (local-first, guarded push, merge on conflict) ═══
   useEffect(() => {
@@ -179,6 +187,7 @@ export default function Journal() {
     document.body.appendChild(a);
     a.click();
     a.remove();
+    if (cardShare.kind === 'license') track('license_shared', { share_path: 'download_button' });
   };
 
   const shareCard = async () => {
@@ -186,13 +195,20 @@ export default function Journal() {
     if (navigator.canShare && navigator.canShare({ files })) {
       try {
         await navigator.share({ files, title: cardShare.fileName });
+        if (cardShare.kind === 'license') track('license_shared', { share_path: 'native_share' });
         setCardShare(s => ({ ...s, hint: '✅ Share sheet లో WhatsApp Status select చేయండి.' }));
         return;
       } catch (err) {
-        if (err?.name === 'AbortError') return;
+        if (err?.name === 'AbortError') return; // cancelled — not a share, no event
       }
     }
-    downloadCard();
+    const a = document.createElement('a');
+    a.href = cardShare.url;
+    a.download = cardShare.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (cardShare.kind === 'license') track('license_shared', { share_path: 'download_fallback' });
     setCardShare(s => ({ ...s, hint: '📥 Image download అయింది — WhatsApp Status లో upload చేయండి.' }));
   };
 
