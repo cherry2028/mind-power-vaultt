@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /journal
+Disallow: /portal
+
+Sitemap: https://mindpowervaultt.com/sitemap.xml

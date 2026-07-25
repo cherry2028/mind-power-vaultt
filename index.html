@@ -1,17 +1,47 @@
 <!doctype html>
 <html lang="te">
   <head>
+    <!-- Google Analytics 4 (gtag.js) — async, never blocks render.
+         send_page_view:false: the SPA router fires every page_view (initial +
+         route changes) via src/RouteTracker.jsx, so nothing is double-counted. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-18G4BV70GK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-18G4BV70GK', { send_page_view: false });
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mind Power Vaultt — Trading Psychology | K Prasad</title>
-    <meta name="description" content="మీ trading losses వెనక ఉన్న real reason తెలుసుకోండి. Mind Power Vaultt — India's #1 Telugu Trading Psychology Platform by K Prasad." />
-    <meta name="keywords" content="trading psychology, mind power vaultt, K Prasad, Telugu trading, FOMO trading, trading discipline, trading mentorship" />
+    <title>Trading Psychology in Telugu | Mind Power Vaultt</title>
+    <!-- <title> and <meta name="description"> are set per-route by the React
+         <Seo> component so each route is unique (a static description would
+         duplicate onto every route). The <title> above is the crawler/first-paint
+         fallback; React replaces it (title dedupes, description does not). -->
     <meta name="author" content="K Prasad — Mind Power Vaultt" />
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content="Mind Power Vaultt — Trading Psychology" />
-    <meta property="og:description" content="మీ trading లో ఉన్న hidden patterns తెలుసుకోండి. 4 real situations — నీ behavior analysis." />
+    <meta name="theme-color" content="#05050A" />
+    <!-- Canonical is set per-route by the React <Seo> component (src/Seo.jsx) so
+         every URL gets its own; a static one here would apply to all routes. -->
+
+    <!-- Open Graph (WhatsApp/Facebook share preview) -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mind Power Vaultt" />
+    <meta property="og:locale" content="te_IN" />
+    <meta property="og:url" content="https://mindpowervaultt.com/" />
+    <meta property="og:title" content="Trading Psychology in Telugu — Mind Power Vaultt" />
+    <meta property="og:description" content="Stock Market తెలుసు. Mind తెలియదు. అందుకే loss. Telugu లో first trading psychology journal & mentorship by K Prasad." />
+    <meta property="og:image" content="https://mindpowervaultt.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Mind Power Vaultt — Stock Market తెలుసు. Mind తెలియదు. అందుకే loss." />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mindpvault" />
+    <meta name="twitter:title" content="Trading Psychology in Telugu — Mind Power Vaultt" />
+    <meta name="twitter:description" content="Stock Market తెలుసు. Mind తెలియదు. అందుకే loss. Telugu లో first trading psychology journal & mentorship." />
+    <meta name="twitter:image" content="https://mindpowervaultt.com/og-image.jpg" />
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -27,6 +57,68 @@
         background-color: #05050A; /* వెబ్‌సైట్ లోడ్ అయ్యే వరకు నల్లగా ఉండటానికి */
       }
     </style>
+
+    <!-- Structured data (JSON-LD) for search + AI answers -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://mindpowervaultt.com/#org",
+          "name": "Mind Power Vaultt",
+          "alternateName": "MPV",
+          "url": "https://mindpowervaultt.com",
+          "logo": "https://mindpowervaultt.com/logo.jpeg",
+          "description": "Telugu trading psychology platform — journal, discipline training and mentorship for Indian traders by K Prasad.",
+          "founder": { "@type": "Person", "name": "K Prasad" },
+          "sameAs": [
+            "https://www.youtube.com/@mindpowervaultt66",
+            "https://www.instagram.com/mindpowervaultt66",
+            "https://x.com/mindpvault",
+            "https://t.me/mindpowervaultt"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://mindpowervaultt.com/#website",
+          "url": "https://mindpowervaultt.com",
+          "name": "Mind Power Vaultt",
+          "inLanguage": "te",
+          "publisher": { "@id": "https://mindpowervaultt.com/#org" }
+        },
+        {
+          "@type": "WebApplication",
+          "name": "Mind Power Vaultt Trading Journal",
+          "url": "https://mindpowervaultt.com/journal",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web, Android, iOS",
+          "inLanguage": "te",
+          "description": "A Telugu trading psychology journal: morning ritual, discipline score, kill switch, overtrading alerts, streaks and weekly reports.",
+          "publisher": { "@id": "https://mindpowervaultt.com/#org" }
+        },
+        {
+          "@type": "Course",
+          "name": "Trading Psychology Mentorship in Telugu",
+          "description": "One-on-one Telugu trading psychology mentorship by K Prasad — fix FOMO, revenge trading and discipline, and build a consistent trading process.",
+          "inLanguage": "te",
+          "provider": { "@id": "https://mindpowervaultt.com/#org" }
+        },
+        {
+          "@type": "FAQPage",
+          "inLanguage": "te",
+          "mainEntity": [
+            { "@type": "Question", "name": "FOMO అంటే ఏమిటి?", "acceptedAnswer": { "@type": "Answer", "text": "Fear Of Missing Out — Trade miss అవుతానని భయం. ఇది నిన్ను late entries తీసుకోవడానికి, poor setups లో enter అవ్వడానికి force చేస్తుంది. Fix: Entry criteria రాసుకో. Criteria లేకుండా enter అవ్వకు." } },
+            { "@type": "Question", "name": "Revenge Trading ఎందుకు జరుగుతుంది?", "acceptedAnswer": { "@type": "Answer", "text": "Loss తర్వాత ఆ పైకి తక్షణంగా money recover చేయాలని ego react చేస్తుంది. ఇది emotion-driven trade — market analysis కాదు. Fix: Loss వచ్చిన తర్వాత minimum 30 minutes screen నుండి దూరంగా వెళ్ళు." } },
+            { "@type": "Question", "name": "Overconfidence ఎప్పుడు వస్తుంది?", "acceptedAnswer": { "@type": "Answer", "text": "Win streak వచ్చినప్పుడు 'నేను market ని understand చేశాను' అని feel అవుతావు. ఇది position size పెంచడానికి, rules break చేయడానికి lead అవుతుంది. Fix: Good days లో rules మరింత strictly follow చేయి." } },
+            { "@type": "Question", "name": "Loss తర్వాత ఏమి చేయాలి?", "acceptedAnswer": { "@type": "Answer", "text": "1. Screen వదిలేయి. 2. Journal లో రాయి — ఏమి జరిగిందో, ఎందుకు enter అయ్యావో. 3. Rule follow చేశావా లేదా check చేయి. 4. Next trade కి fresh గా రావడానికి rest తీసుకో." } },
+            { "@type": "Question", "name": "Stop Loss పెట్టినా move చేయడం ఎందుకు?", "acceptedAnswer": { "@type": "Answer", "text": "Loss accept చేయలేకపోవడం వల్ల. SL hit అవుతే 'తప్పు అయ్యాను' అని feel అవుతావు. ఆ feeling నుండి escape కోసం SL move చేస్తావు. Fix: SL పెట్టిన తర్వాత screen వదిలేయి." } },
+            { "@type": "Question", "name": "Consistency ఎలా వస్తుంది?", "acceptedAnswer": { "@type": "Answer", "text": "Rules follow చేయడం వల్ల — results వల్ల కాదు. Good trade bad result రావచ్చు. Bad trade good result రావచ్చు. Process correct అయితే long term లో results correct అవుతాయి." } }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

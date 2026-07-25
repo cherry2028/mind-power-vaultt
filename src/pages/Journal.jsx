@@ -8,6 +8,8 @@ import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
+import Seo from '../Seo';
+import { track } from '../analytics';
 
 const CARD_BUILDERS = {
   license: { build: buildLicenseCardHtml, file: (p) => `MPV_License_${p.date}.png` },
@@ -64,6 +66,13 @@ export default function Journal() {
     }
     postSyncStatus(result.status); // 'synced' | 'offline' | 'error'
   };
+
+  // Analytics: journal session opened (fires once per page load, after auth +
+  // data-ready). Standalone effect — reads nothing the sync engine writes.
+  useEffect(() => {
+    if (!authorized || !dataReady) return;
+    track('journal_opened', { login_mode: syncUserRef.current ? 'account' : 'emergency' });
+  }, [authorized, dataReady]);
 
   // ═══ CLOUD SYNC ENGINE (local-first, guarded push, merge on conflict) ═══
   useEffect(() => {
@@ -178,6 +187,7 @@ export default function Journal() {
     document.body.appendChild(a);
     a.click();
     a.remove();
+    if (cardShare.kind === 'license') track('license_shared', { share_path: 'download_button' });
   };
 
   const shareCard = async () => {
@@ -185,13 +195,20 @@ export default function Journal() {
     if (navigator.canShare && navigator.canShare({ files })) {
       try {
         await navigator.share({ files, title: cardShare.fileName });
+        if (cardShare.kind === 'license') track('license_shared', { share_path: 'native_share' });
         setCardShare(s => ({ ...s, hint: '✅ Share sheet లో WhatsApp Status select చేయండి.' }));
         return;
       } catch (err) {
-        if (err?.name === 'AbortError') return;
+        if (err?.name === 'AbortError') return; // cancelled — not a share, no event
       }
     }
-    downloadCard();
+    const a = document.createElement('a');
+    a.href = cardShare.url;
+    a.download = cardShare.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (cardShare.kind === 'license') track('license_shared', { share_path: 'download_fallback' });
     setCardShare(s => ({ ...s, hint: '📥 Image download అయింది — WhatsApp Status లో upload చేయండి.' }));
   };
 
@@ -404,6 +421,7 @@ export default function Journal() {
   if (checking) {
     return (
       <div style={{ minHeight:'100vh', background:G.black, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
+        <Seo title="Journal — Mind Power Vaultt" path="/journal" noindex />
         <div style={{ width:40, height:40, border:`2px solid ${G.goldDim}`, borderTopColor:G.gold, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         <p style={{ color:G.gold, fontSize:12, letterSpacing:3, fontFamily:"'DM Sans',sans-serif" }}>VERIFYING SESSION...</p>
@@ -415,6 +433,7 @@ export default function Journal() {
   if (!authorized) {
     return (
       <div style={{ minHeight:'100vh', background:G.black, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans',sans-serif", color:G.smoke, userSelect:'none' }}>
+        <Seo title="Journal — Mind Power Vaultt" path="/journal" noindex />
         <div style={{ maxWidth:400, width:'100%', padding:'40px', background:G.dark1, border:`1px solid ${G.goldDim}`, borderRadius:12, textAlign:'center', boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}>
           <div style={{ fontSize:48, marginBottom:16 }}>🔒</div>
           <h2 style={{ color:'#CF6679', fontSize:20, marginBottom:8 }}>Access Denied</h2>

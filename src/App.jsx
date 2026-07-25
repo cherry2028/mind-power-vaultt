@@ -5,6 +5,9 @@ import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
 import Journal from "./pages/Journal";
 import { api } from "./utils/api-client";
+import Seo from "./Seo";
+import RouteTracker from "./RouteTracker";
+import { track } from "./analytics";
 
 const LOGO_IMG = "/logo.jpeg";
 
@@ -482,7 +485,7 @@ function App(){
           <img src={LOGO_IMG} alt="Mind Power Vaultt" style={{width:88,height:88,objectFit:"contain",background:"transparent",margin:"0 auto 16px",display:"block"}} onError={e=>e.target.style.display="none"}/>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.45s"}}>
-          <h1 className={lc} style={{fontSize:"clamp(22px,3.5vw,42px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h1>
+          <h2 className={lc} style={{fontSize:"clamp(22px,3.5vw,42px)",fontWeight:600,fontStyle:"italic",color:G.soft,lineHeight:1.35,marginBottom:16}}>{L.hro.l1}</h2>
         </div>
         <div style={{opacity:heroIn?1:0,transform:heroIn?"none":"translateY(18px)",transition:"all 0.9s ease 0.85s"}}>
           <h2 className={lc} style={{fontSize:"clamp(24px,4vw,48px)",fontWeight:700,color:G.gold,lineHeight:1.15,marginBottom:28,whiteSpace:"pre-line"}}>{L.hro.l2}</h2>
@@ -544,7 +547,7 @@ function App(){
         <button className="bg" onClick={()=>{setScIdx(0);setAnswers([]);setRefText(null);setShowEsc(false);setEscPend(null);goTo(4);}} style={gBtn}>{L.int.cta}</button>
       </div>
       <div style={{position:"fixed",bottom:24,right:24,display:"flex",flexDirection:"column",gap:12,zIndex:99}}>
-        <a href={`https://wa.me/${KPRASAD_WA}`} target="_blank" style={{padding:"12px",background:G.gold,borderRadius:"50%",display:"flex"}}>💬</a>
+        <a href={`https://wa.me/${KPRASAD_WA}`} target="_blank" onClick={()=>track("mentorship_enquiry_click",{source:"floating_whatsapp"})} style={{padding:"12px",background:G.gold,borderRadius:"50%",display:"flex"}}>💬</a>
       </div>
     </div>
   );
@@ -800,6 +803,7 @@ function App(){
         return;
       }
       setCoLoading(true); setCoError('');
+      track("subscription_checkout_started");
       try {
         const res = await fetch('/api/create-order', {
           method: 'POST',
@@ -942,7 +946,7 @@ function App(){
           <h2 className={lc} style={{fontFamily:serif,fontSize:"clamp(26px,4vw,46px)",color:G.gold,fontWeight:700,marginBottom:12}}>{CV.h2}</h2>
           <p className={lc} style={{fontSize:12,letterSpacing:2,color:G.mid,textTransform:"uppercase",marginBottom:40}}>{CV.s2}</p>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <button className="bg" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${mMsg}`,"_blank")} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,cursor:"pointer"}}>{CV.b1}</button>
+            <button className="bg" onClick={()=>{track("mentorship_enquiry_click",{source:"conversion_cta"});window.open(`https://wa.me/${KPRASAD_WA}?text=${mMsg}`,"_blank");}} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,cursor:"pointer"}}>{CV.b1}</button>
             <button className="bo" onClick={()=>window.open(`https://wa.me/${KPRASAD_WA}?text=${cMsg}`,"_blank")} style={{...oBtn,width:"100%",padding:"16px",fontSize:12,borderRadius:4,cursor:"pointer"}}>{CV.b2}</button>
           </div>
           <div style={{marginTop:20,padding:"14px",background:`${G.gold}06`,borderRadius:4,border:`1px solid ${G.goldDim}`}}>
@@ -1041,6 +1045,12 @@ function App(){
 
   return(
     <div style={{background:G.black,color:G.smoke,fontFamily:sans,minHeight:"100vh",overflowX:"hidden"}}>
+      <Seo title="Trading Psychology in Telugu | Mind Power Vaultt" description="Stock Market తెలుసు. Mind తెలియదు. అందుకే loss. Telugu లో first Trading Psychology journal & mentorship — FOMO, revenge trading, discipline fix చేయి." path="/" />
+      {/* SEO h1 — crawlable, visually hidden (absolute + clip, no layout impact).
+          Always in the DOM regardless of funnel phase; the visible hero is unchanged. */}
+      <h1 style={{position:"absolute",width:1,height:1,padding:0,margin:-1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap",border:0}}>
+        Trading Psychology in Telugu — ట్రేడింగ్ సైకాలజీ | Mind Power Vaultt Journal &amp; Mentorship by K Prasad
+      </h1>
       <style>{css}</style>
       <div ref={topRef}/>
 
@@ -1052,7 +1062,7 @@ function App(){
         <a href="https://t.me/mindpowervaultt" target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#2AABEE",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(42,171,238,0.4)",transition:"transform 0.2s"}} title="Telegram">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.196 13.4l-2.965-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.957.159z"/></svg>
         </a>
-        <a href={`https://wa.me/${KPRASAD_WA}`} target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#25D366",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(37,211,102,0.4)",transition:"transform 0.2s"}} title="WhatsApp">
+        <a href={`https://wa.me/${KPRASAD_WA}`} target="_blank" rel="noopener noreferrer" onClick={()=>track("mentorship_enquiry_click",{source:"floating_whatsapp"})} style={{width:52,height:52,borderRadius:"50%",background:"#25D366",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(37,211,102,0.4)",transition:"transform 0.2s"}} title="WhatsApp">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         </a>
       </div>}
@@ -1182,9 +1192,24 @@ function App(){
 
 import { AboutUs, TermsAndConditions, PrivacyPolicy, RefundPolicy, ContactUs } from './pages/Policies';
 
+// Catch-all so unknown URLs render a real noindex "not found" page instead of a
+// soft-404 (the SPA rewrite serves index.html with 200 for every path; noindex +
+// clear not-found content keeps Google from indexing garbage URLs as the homepage).
+function NotFound() {
+  return (
+    <div style={{ minHeight:'100vh', background:'#05050A', color:'#F5F2EA', fontFamily:"'DM Sans',sans-serif", display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'24px' }}>
+      <Seo title="Page Not Found — Mind Power Vaultt" noindex />
+      <div style={{ fontSize:64, fontWeight:700, color:'#C9A84C', letterSpacing:4 }}>404</div>
+      <p style={{ fontSize:16, color:'#A8A498', margin:'14px 0 28px' }}>ఈ page దొరకలేదు. — This page could not be found.</p>
+      <Link to="/" style={{ padding:'14px 28px', background:'linear-gradient(135deg,#C9A84C,#9A7020)', color:'#05050A', borderRadius:8, fontWeight:700, textDecoration:'none', letterSpacing:1 }}>← Back to Home</Link>
+    </div>
+  );
+}
+
 export default function RoutedApp() {
   return (
     <BrowserRouter>
+      <RouteTracker />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />
@@ -1194,6 +1219,7 @@ export default function RoutedApp() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund" element={<RefundPolicy />} />
         <Route path="/contact" element={<ContactUs />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
+import Seo from '../Seo';
+import { track } from '../analytics';
 
 // Common email domain typos. A typo here creates a brand-new (stray) auth
 // account and the student's journal silently syncs to the wrong identity —
@@ -36,6 +38,7 @@ export default function StudentPortal() {
   const actuallySendOtp = async (addr) => {
     setLoading(true);
     setError('');
+    track('portal_login_started', { method: 'email_otp' });
 
     const { error: signInError } = await supabase.auth.signInWithOtp({
       email: addr,
@@ -167,6 +170,8 @@ export default function StudentPortal() {
       color: G.smoke,
       userSelect: 'none'
     }}>
+      <Seo title="Student Portal — Mind Power Vaultt" path="/portal" noindex />
+
       <div style={{
         maxWidth: 400,
         width: '100%',
