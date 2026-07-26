@@ -21,6 +21,12 @@
          fallback; React replaces it (title dedupes, description does not). -->
     <meta name="author" content="K Prasad — Mind Power Vaultt" />
     <meta name="theme-color" content="#05050A" />
+
+    <!-- PWA (manifest link is injected at build time by vite-plugin-pwa) -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MPV Journal" />
     <!-- Canonical is set per-route by the React <Seo> component (src/Seo.jsx) so
          every URL gets its own; a static one here would apply to all routes. -->
 

@@ -7,6 +7,7 @@ import Journal from "./pages/Journal";
 import { api } from "./utils/api-client";
 import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
+import PwaUpdateToast from "./PwaUpdateToast";
 import { track } from "./analytics";
 
 const LOGO_IMG = "/logo.jpeg";
@@ -1210,6 +1211,7 @@ export default function RoutedApp() {
   return (
     <BrowserRouter>
       <RouteTracker />
+      <PwaUpdateToast />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />
