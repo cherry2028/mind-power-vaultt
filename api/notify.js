@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         <p style="color:#C9A84C;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px;">
           💡 Core Insight
         </p>
-        <p style="color:#D0CCBF;font-size:14px;line-height:1.9;margin:0;font-style:italic;">"${escapeHTML(report?.coreInsight || 'N/A')}"</p>
+        <p style="color:#D0CCBF;font-size:14px;line-height:1.9;margin:0;font-style:italic;">"${escapeHTML(report?.hiddenTruth || report?.coreInsight || 'N/A')}"</p>
       </div>
 
       <!-- 4 Situations -->
@@ -172,13 +172,13 @@ export default async function handler(req, res) {
 ${escapeHTML(report?.primaryPattern || 'N/A')}
 
 💡 <b>CORE INSIGHT:</b>
-${escapeHTML(report?.coreInsight || 'N/A')}
+${escapeHTML(report?.hiddenTruth || report?.coreInsight || 'N/A')}
 
 📋 <b>SITUATIONS:</b>
 ${(report?.behaviorLines || []).map((l, i) => `<b>S${i + 1}:</b> ${escapeHTML(l)}`).join('\n')}
 
 ✅ <b>STRENGTH:</b> ${escapeHTML(report?.hiddenStrength || 'N/A')}
-⚠️ <b>WARNING:</b> ${escapeHTML(report?.warningLine || 'N/A')}
+🧠 <b>STATE:</b> ${escapeHTML(report?.emotionalState || report?.warningLine || 'N/A')}
 🔑 <b>ACTION:</b> ${escapeHTML(report?.actionStep || 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━
 📅 ${timestamp}
