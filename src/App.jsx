@@ -9,7 +9,10 @@ import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
 import { track } from "./analytics";
 
-const LOGO_IMG = "/logo.jpeg";
+// 640px WebP (19 KB) instead of the 1600px JPEG (297 KB) — the logo is never
+// rendered larger than 88px, so this is a pure win on mobile data. logo.jpeg is
+// kept in /public for the JSON-LD org logo and the PDF/share-card renderers.
+const LOGO_IMG = "/logo.webp";
 
 // Safe Environment Variable Reader (Prevents App Crashes)
 const getEnv = (key) => {
@@ -404,35 +407,33 @@ function App(){
     setAiProfile(null);
     goTo(5);
 
+    const choiceLabels = finalAnswers.map((ci, i) => SCENARIOS[i][currentLang].ch[ci].l);
     const choiceDescriptions = finalAnswers.map((ci, i) => {
       const s = SCENARIOS[i];
-      const chosen = s[currentLang].ch[ci].l;
       const sit    = s[currentLang].sit.replace(/\n/g," ");
-      return `Situation ${i+1}: "${sit}" → User chose: "${chosen}"`;
+      return `Situation ${i+1}: "${sit}" → User chose: "${choiceLabels[i]}"`;
     }).join("\n");
 
     let parsed = null;
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ choiceDescriptions, lang: currentLang })
+        // choiceLabels let the server verify each behaviour line actually
+        // engages with what THIS student picked.
+        body: JSON.stringify({ choiceDescriptions, choiceLabels, lang: currentLang })
       });
       if(res.ok) parsed = await res.json();
     } catch(e) { console.log("API err:", e); }
 
-    if(!parsed || !parsed.primaryPattern) {
-      const sp = buildProfile(finalAnswers, currentLang);
-      parsed = {
-        primaryPattern: sp.primaryLine,
-        coreInsight:    sp.coreInsight,
-        behaviorLines:  sp.behaviorLines,
-        hiddenStrength: sp.strengthLine,
-        warningLine:    sp.warningLine,
-        actionStep:     "",
-      };
+    // Use the local reveal when the model is unreachable OR when it could not
+    // hit the voice (_voiceOk === false). An off-voice reveal is worse than a
+    // well-written template one — this is the emotional peak of the funnel.
+    if(!parsed || !parsed.primaryPattern || parsed._voiceOk === false) {
+      if (parsed && parsed._violations) console.warn("[MPV] reveal failed voice check:", parsed._violations);
+      parsed = buildProfile(finalAnswers, currentLang);
     }
 
     setAiProfile(parsed);
@@ -640,7 +641,11 @@ function App(){
         </div>
       );
     }
-    const {primaryPattern,coreInsight,behaviorLines=[],hiddenStrength,warningLine,actionStep}=aiProfile;
+    // hiddenTruth/emotionalState are the current fields; coreInsight/warningLine
+    // are only still read so a profile cached in sessionStorage from before this
+    // release keeps rendering instead of going blank mid-session.
+    const {primaryPattern,hiddenTruth,emotionalState,coreInsight,behaviorLines=[],hiddenStrength,warningLine,actionStep}=aiProfile;
+    const truthLine = hiddenTruth || coreInsight;
     return(
       <div style={{...sec,textAlign:"center"}}>
         <Tg>{L.res.tag}</Tg>
@@ -656,8 +661,14 @@ function App(){
         <div style={{padding:"32px 28px",background:G.dark2,border:`1px solid ${G.gold}30`,borderRadius:8,marginBottom:20,maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
           <p style={{fontSize:10,letterSpacing:4,color:`${G.gold}80`,textTransform:"uppercase",marginBottom:16,fontFamily:sans}}>{L.res.primary}</p>
           <h2 className={lc} style={{fontSize:"clamp(17px,2.5vw,26px)",color:G.smoke,lineHeight:1.8,marginBottom:16,whiteSpace:"pre-line"}}>{primaryPattern}</h2>
-          <p className={lc} style={{fontSize:"clamp(14px,1.9vw,18px)",color:G.mid,lineHeight:2,fontStyle:"italic"}}>"{coreInsight}"</p>
+          {truthLine&&<p className={lc} style={{fontSize:"clamp(14px,1.9vw,18px)",color:G.mid,lineHeight:2,fontStyle:"italic"}}>"{truthLine}"</p>}
         </div>
+        {emotionalState&&(
+          <div style={{maxWidth:620,margin:"0 auto 20px",padding:"18px 22px",background:`${G.gold}05`,border:`1px solid ${G.goldDim}`,borderRadius:6,textAlign:"left"}}>
+            <p style={{fontSize:10,letterSpacing:3,color:`${G.gold}80`,textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{lang==="te"?"నీ లోపల ఏమి జరుగుతోంది":"What's Happening Inside"}</p>
+            <p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.9,whiteSpace:"pre-line"}}>{emotionalState}</p>
+          </div>
+        )}
         {behaviorLines.length>0&&(
           <div style={{maxWidth:620,margin:"0 auto 20px",textAlign:"left"}}>
             <p style={{fontSize:10,letterSpacing:4,color:`${G.gold}70`,textTransform:"uppercase",marginBottom:16,textAlign:"center",fontFamily:sans}}>{L.res.breakdown}</p>
@@ -876,9 +887,21 @@ function App(){
               <div key={i} style={{background:G.dark2,border:`1px solid ${G.goldDim}`,borderRadius:8,padding:"22px 20px",textAlign:"left"}}>
                 <div style={{color:G.gold,fontSize:16,marginBottom:12}}>{"★".repeat(r.stars)}</div>
                 
-                {r[lang] && r[lang].trim() !== "" && (
-                  <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.85,fontStyle:"italic",marginBottom:16}}>"{r[lang]}"</p>
-                )}
+                {(() => {
+                  // Guard: some rows carry a label like "ajay garu from palakollu"
+                  // in the review-text column. Rendering that as the student's
+                  // quote reads like a placeholder, so suppress it when the text
+                  // is really just the name/city again. The voice note and the
+                  // scanned letter below are untouched.
+                  const txt = (r[lang] || "").trim();
+                  if (!txt) return null;
+                  const norm = (x) => (x || "").toLowerCase().replace(/[^a-zఀ-౿]+/g, "");
+                  const isJustNameCity = norm(txt) === norm(r.name) ||
+                    norm(txt) === norm(`${r.name}${r.city}`) ||
+                    norm(txt) === norm(`${r.name}from${r.city}`);
+                  if (isJustNameCity) return null;
+                  return <p className={lc} style={{fontSize:13,color:G.mid,lineHeight:1.85,fontStyle:"italic",marginBottom:16}}>"{txt}"</p>;
+                })()}
 
                 {r.type === 'audio' && r.audio_url && (
                   <div style={{marginBottom: 16}}>

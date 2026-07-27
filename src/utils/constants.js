@@ -119,13 +119,172 @@ export const TM = {
   s3_2: { id: "PROCESS_AWARE", neg: false, te: "Quality focus చేస్తావు — profit లో కూడా neutral గా?", en: "You focus on quality — but can you stay neutral even in profit?" },
 };
 
+// ── Fallback reveal ────────────────────────────────────────────────────────
+// Used when Groq is down, rate-limited, or its output fails the voice
+// validator. Written in Cherry's voice (informal "నువ్వు", short contrastive
+// lines) so an outage degrades gracefully instead of dropping the student into
+// formal textbook Telugu — or, as it did before, a blank headline.
+//
+// One line per (situation, choice) so the fallback always references what the
+// student actually picked, exactly like the model is required to.
+const FB_LINES = [
+  [ // S0 — missed trade
+    { te: "మళ్ళీ setup వస్తుందని wait చేస్తాను అన్నావ్ — తెలియడం వేరు, ఆ క్షణంలో ఆగడం వేరు.",
+      en: "You said you'd wait for the next setup — knowing it is one thing. Doing it in that moment is another." },
+    { te: "Price వెళ్ళిన direction లోనే enter అవుతావ్ — analysis వల్ల కాదు, miss ఐపోతానేమో అనే భయం వల్ల.",
+      en: "You enter in the direction the price moved. Not from analysis — from the fear of missing out." },
+    { te: "Frustrate అయి screen వదిలేస్తావ్ — అది discipline కాదు, ఆ feeling నుండి escape.",
+      en: "You step away from the screen frustrated — that's not discipline, that's escape from the feeling." },
+  ],
+  [ // S1 — after a loss
+    { te: "వెంటనే మళ్ళీ enter అవుతావ్ — ట్రెండ్ కోసం కాదు, ఓడిపోయాననే feeling ని భరించలేక.",
+      en: "You re-enter immediately — not for the trend, but because you can't sit with having lost." },
+    { te: "ఈ రోజు ఇక trade వద్దు అంటావ్ — rule వల్ల ఆపావా, నొప్పి వల్ల ఆపావా?",
+      en: "You say no more trades today. Did a rule stop you — or did the pain?" },
+    { te: "Journal లో రాసుకుని next setup కోసం wait చేస్తావ్ — process తెలుసు, ఇక consistency ఒక్కటే మిగిలింది.",
+      en: "You journal it and wait for the next setup. You know the process — only consistency is left." },
+  ],
+  [ // S2 — a friend's "sure" setup after three losses
+    { te: "Recover అవ్వాలని వేరేవాళ్ళ setup try చేస్తావ్ — నమ్మకం వాళ్ళ మీద కాదు, నీ clarity లేకపోవడం.",
+      en: "You try someone else's setup to recover. That isn't trust in them — it's your own clarity missing." },
+    { te: "నా ప్లాన్ మాత్రమే ఫాలో అవుతాను అన్నావ్ — ఆ ప్లాన్ రాసి పెట్టుకున్నావా, లేక తలలోనే ఉందా?",
+      en: "You said you stick to your plan. Is it written down — or only in your head?" },
+    { te: "Setup analyze చేసి decide అవుతావ్. కానీ మూడు losses తర్వాత ఆ analysis neutral గా ఉంటుందా?",
+      en: "You analyze the setup before deciding. But after three losses, is that analysis still neutral?" },
+  ],
+  [ // S3 — a big profit
+    { te: "ఈ రోజు అన్నీ వర్క్ అవుతున్నాయి అని enter అవుతావ్ — అది confidence కాదు, mood.",
+      en: "You enter because everything is working today — that's not confidence, that's mood." },
+    { te: "Target hit అయ్యాక ఆపేస్తావ్ — ఆగగలిగే control నీలో ఉంది. Bad days లో కూడా అలాగే ఆగుతావా?",
+      en: "You stop once the target is hit — you have the control to stop. Do you stop the same way on bad days?" },
+    { te: "Setup quality చూసి decide చేస్తావ్ — profit రోజున కూడా process పట్టుకున్నావ్. అదే నీ edge.",
+      en: "You decide on setup quality — you held the process even on a profit day. That is your edge." },
+  ],
+];
+
+const FB_PROFILES = {
+  fomo_ego: {
+    te: { p: "నువ్వు trade చేయడంలేదు — మార్కెట్ తో గొడవ పడుతున్నావ్.",
+          h: "ఒక్క red candle — నీ ego ని డైరెక్ట్ గా కొడుతోంది.",
+          e: "ప్రతి entry నేను right అని నిరూపించుకోవాలి అనే attempt. మార్కెట్ ని గెలవడం కాదు — నిన్ను నువ్వు మోసం చేసుకుంటున్నావ్.",
+          a: "ఇకనుండి ఒక rule: loss వచ్చాక 10 నిమిషాలు screen కి దూరంగా ఉండు. ఆగాల్సింది trade కాదు — నీ ego." },
+    en: { p: "You're not trading — you're fighting the market.",
+          h: "One red candle — and it lands straight on your ego.",
+          e: "Every entry is an attempt to prove you were right. This isn't about beating the market — you're deceiving yourself.",
+          a: "One rule from now: after a loss, stay away from the screen for 10 minutes. It's not the trade that must stop — it's the ego." },
+  },
+  fomo_over: {
+    te: { p: "మంచి రోజు వచ్చినప్పుడు నీ process మాయమవుతుంది.",
+          h: "గెలుపు నీకు skill లా అనిపిస్తోంది — నిజానికి అది ఇంకా mood.",
+          e: "Miss అవ్వడం భరించలేవ్. గెలిచాక ఆగలేవ్. రెండూ ఒకటే root — control కావాలనే ఆత్రుత.",
+          a: "ఈ వారం ఒక్కటే: రోజుకి ఎన్ని trades అని ముందే రాసుకో. Number దాటితే screen off." },
+    en: { p: "On a good day, your process quietly disappears.",
+          h: "The winning feels like skill — it's still mood.",
+          e: "You can't sit with missing out. You can't stop after winning. Same root — the rush to feel in control.",
+          a: "One thing this week: write your max trades per day before the open. Cross it and the screen goes off." },
+  },
+  avoid_fear: {
+    te: { p: "నువ్వు మార్కెట్ నుండి కాదు — ఆ feeling నుండి పారిపోతున్నావ్.",
+          h: "Screen వదిలేయడం discipline లా కనిపిస్తోంది. నిజానికి అది తప్పించుకోవడం.",
+          e: "Loss వచ్చినపుడు నొప్పి. Miss అయినపుడు frustration. రెండిటినీ నువ్వు face చేయట్లేదు — తప్పుకుంటున్నావ్.",
+          a: "ఈ వారం loss వచ్చిన ప్రతిసారి ఒక్క లైన్ రాయి — ఏమి feel అయ్యానో. Escape కాదు, record." },
+    en: { p: "You're not running from the market — you're running from the feeling.",
+          h: "Walking away looks like discipline. It's avoidance.",
+          e: "Pain when you lose. Frustration when you miss. You aren't facing either — you're stepping around them.",
+          a: "This week, after every loss write one line — what you felt. Not escape. Record." },
+  },
+  dependent: {
+    te: { p: "నీ దగ్గర plan ఉంది — కానీ నమ్మకం లేదు.",
+          h: "వేరేవాళ్ళ 'confirm' నీకు hope లా వినిపిస్తోంది. అది clarity కాదు.",
+          e: "Losses వచ్చాక నీ మీద నమ్మకం పోతుంది. అప్పుడు ఎవరో ఒకరి మాట పట్టుకుంటావ్.",
+          a: "ఈ వారం ఒక్క trade కూడా వేరేవాళ్ళ call మీద తీసుకోకు. నీ criteria రాసుకుని దాని ప్రకారమే enter అవ్వు." },
+    en: { p: "You have a plan — you just don't trust it.",
+          h: "Someone else's \"confirmed\" sounds like hope to you. That isn't clarity.",
+          e: "After a few losses your self-trust goes. That's when you grab someone else's word.",
+          a: "Not one trade on someone else's call this week. Write your criteria and enter only on that." },
+  },
+  disciplined: {
+    te: { p: "నువ్వు process ని follow అవుతున్నావ్ — కానీ ఇంకా outcome ని నమ్ముతున్నావ్.",
+          h: "నీ discipline నిజం. కానీ ప్రతి green day నీకు \"నేను పట్టుకున్నాను\" అనిపిస్తోంది. అదే next trap.",
+          e: "Calm గా ఉన్నావ్ — కానీ ఆ calmness ఇంకా results మీద depend అవుతోంది. నిజమైన calmness అంటే outcome మారినా మారనిది.",
+          a: "ఇకనుండి P&L కాదు — process score రాయి. Measure చేయాల్సింది result కాదు, నీ decision quality." },
+    en: { p: "You follow the process — but you still believe the outcome.",
+          h: "Your discipline is real. But every green day whispers \"I've got it\". That's the next trap.",
+          e: "You're calm — but the calm still depends on results. Real calm doesn't move when the outcome does.",
+          a: "From now, don't write P&L — write a process score. Measure the decision, not the result." },
+  },
+  mixed: {
+    te: { p: "నీకు ఏమి చేయాలో తెలుసు — ఆ క్షణంలో చేయలేవు.",
+          h: "Gap knowledge లో లేదు. తెలుసుకోవడానికి, చేయడానికి మధ్య ఉంది.",
+          e: "కొన్ని రోజులు process. కొన్ని రోజులు emotion. ఆ మారడమే నీ అసలు problem.",
+          a: "ఈ వారం ప్రతి trade కి ముందు ఒక్క ప్రశ్న రాయి: ఇది setup వల్లా, feeling వల్లా?" },
+    en: { p: "You know what to do — you just can't do it in that moment.",
+          h: "The gap isn't knowledge. It sits between knowing and doing.",
+          e: "Some days process. Some days emotion. That switching is the real problem.",
+          a: "Before every trade this week, write one question. Is this the setup — or is this a feeling?" },
+  },
+};
+
+const FB_STRENGTH = {
+  te: {
+    AWARE: "ఏమి చేయాలో నీకు తెలుసు — ఆ awareness చాలామందికి ఉండదు. అదే నీ మొదలు.",
+    STRUCTURED: "Process ని నువ్వు గౌరవిస్తావ్ — రాసుకునే అలవాటు నీ బలం.",
+    AUTONOMOUS: "సొంత plan మీద నిలబడాలని చూస్తావ్ — ఆ independence అరుదు.",
+    ANALYTICAL: "ఆగి ఆలోచించే అలవాటు నీలో ఉంది — దాన్ని emotion ముందు కూడా వాడు.",
+    DISCIPLINED: "ఆగగలిగే control నీలో ఉంది — greed ని గుర్తించగలవ్ నువ్వు.",
+    PROCESS_AWARE: "Profit రోజున కూడా నీ ఆలోచన process మీదే ఉంది — అది అరుదైన control.",
+    none: "నువ్వు ఇంకా trading చేస్తున్నావ్ అంటే — నువ్వు వదిలేయలేదు. అది weakness కాదు. నీ fight లో తపన ఉంది, clarity లేదు.",
+  },
+  en: {
+    AWARE: "You know what should be done — most never get that far. That's your start.",
+    STRUCTURED: "You respect the process — the habit of writing it down is your strength.",
+    AUTONOMOUS: "You try to stand on your own plan — that independence is rare.",
+    ANALYTICAL: "You have the habit of pausing to think. Now use it before the emotion, not after.",
+    DISCIPLINED: "You can shut it down when the target is met — you spot greed early.",
+    PROCESS_AWARE: "Even on a profit day your mind stayed on the process — that control is rare.",
+    none: "You're still trading — that means you haven't quit. That isn't weakness. There's fight in you, just no clarity yet.",
+  },
+};
+
 export function buildProfile(answers, L) {
+  const lang = L === "en" ? "en" : "te";
+  const traits = answers.map((ci, i) => TM[`s${i}_${ci}`]).filter(Boolean);
+  const nIds = traits.filter(t => t.neg).map(t => t.id);
+  const pIds = traits.filter(t => !t.neg).map(t => t.id);
+  const has = (...xs) => xs.every(x => nIds.includes(x));
+
+  let key = "mixed";
+  if (nIds.length === 0) key = "disciplined";
+  else if (has("FOMO", "EGO")) key = "fomo_ego";
+  else if (has("FOMO", "OVERCONFIDENT")) key = "fomo_over";
+  else if (has("AVOIDER", "FEAR_STOP")) key = "avoid_fear";
+  else if (nIds.includes("DEPENDENT")) key = "dependent";
+  else if (nIds.includes("EGO") || nIds.includes("FOMO")) key = "fomo_ego";
+  else if (nIds.includes("AVOIDER") || nIds.includes("FEAR_STOP")) key = "avoid_fear";
+  else if (nIds.includes("OVERCONFIDENT")) key = "fomo_over";
+
+  const P = FB_PROFILES[key][lang];
+  const strengths = FB_STRENGTH[lang];
+  const strengthKey = pIds.find(id => strengths[id]) || "none";
+
+  return {
+    primaryPattern: P.p,
+    hiddenTruth: P.h,
+    emotionalState: P.e,
+    behaviorLines: answers.map((ci, i) => (FB_LINES[i] && FB_LINES[i][ci] ? FB_LINES[i][ci][lang] : "")).filter(Boolean),
+    hiddenStrength: strengths[strengthKey],
+    actionStep: P.a,
+  };
+}
+
+// Legacy shape kept for any older caller still expecting the pre-2026 fields.
+export function buildProfileLegacy(answers, L) {
   const traits = answers.map((ci, i) => TM[`s${i}_${ci}`]).filter(Boolean);
   const neg = traits.filter(t => t.neg);
   const pos = traits.filter(t => !t.neg);
   const nIds = neg.map(t => t.id);
   const has = (...xs) => xs.every(x => nIds.includes(x));
-  
+
   let p = "", c = "", w = "", s = pos.length ? pos[0][L] : "";
 
   if (has("FOMO", "EGO")) {
