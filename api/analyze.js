@@ -131,7 +131,15 @@ function buildMessages(systemPrompt, userInput, extraNote) {
   ];
 }
 
-async function callGroq(apiKey, messages, temperature) {
+// Telugu tokenizes at roughly 2.2 tokens per CHARACTER on the Llama tokenizer
+// (the script is not in the merge vocabulary, so it degrades to UTF-8 bytes —
+// 3 bytes per akshara). A reveal that is ~1000 chars of JSON therefore costs
+// ~1300 completion tokens, not ~280 like the same text in English. Sizing this
+// budget in characters is what broke the Telugu path: the generation was cut
+// off mid-object and json_object mode rejected the truncated result outright.
+const MAX_TOKENS = { te: 3000, en: 1400 };
+
+async function callGroq(apiKey, messages, temperature, maxTokens) {
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -139,14 +147,23 @@ async function callGroq(apiKey, messages, temperature) {
       model: MODEL,
       messages,
       temperature,
-      max_tokens: 1100,          // short reveal — also cuts latency from ~8s to ~3s
+      max_tokens: maxTokens,
       frequency_penalty: 0.4,    // discourage recycled phrasing
       presence_penalty: 0.3,
       response_format: { type: 'json_object' },
     }),
   });
   const data = await r.json();
-  if (data.error) throw new Error(data.error.message || 'Groq error');
+  if (data.error) {
+    // Groq returns the partial text in failed_generation; without it a JSON
+    // failure is indistinguishable from a prompt problem.
+    const partial = data.error.failed_generation;
+    if (partial) console.error('[MPV-ANALYZE] groq failed_generation (%d chars):', String(partial).length, String(partial).slice(-160));
+    throw new Error(data.error.message || 'Groq error');
+  }
+  if (data.choices?.[0]?.finish_reason === 'length') {
+    console.error('[MPV-ANALYZE] hit max_tokens (%d) — output truncated', maxTokens);
+  }
   let raw = data.choices?.[0]?.message?.content || '{}';
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
@@ -191,8 +208,10 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set in Vercel Environment Variables' });
 
   try {
+    const maxTokens = MAX_TOKENS[ctx.lang];
+
     // Attempt 1
-    let profile = await callGroq(apiKey, buildMessages(systemPrompt, userInput), 0.5);
+    let profile = await callGroq(apiKey, buildMessages(systemPrompt, userInput), 0.5, maxTokens);
     let check = validateProfile(profile, ctx);
 
     // Attempt 2 — feed the exact violations back, colder.
@@ -200,7 +219,7 @@ export default async function handler(req, res) {
       console.warn('[MPV-ANALYZE] attempt 1 failed validation:', check.violations.slice(0, 6));
       const note = check.violations.slice(0, 8).map((x) => `- ${x}`).join('\n');
       try {
-        const retry = await callGroq(apiKey, buildMessages(systemPrompt, userInput, note), 0.35);
+        const retry = await callGroq(apiKey, buildMessages(systemPrompt, userInput, note), 0.35, maxTokens);
         const retryCheck = validateProfile(retry, ctx);
         if (retryCheck.ok) {
           profile = retry;
