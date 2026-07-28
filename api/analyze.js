@@ -157,19 +157,35 @@ async function callGemini(apiKey, messages, temperature, maxTokens) {
       messages,
       temperature,
       max_tokens: maxTokens,
-      frequency_penalty: 0.4,    // discourage recycled phrasing
-      presence_penalty: 0.3,
+      // NOTE: Gemini's OpenAI-compat endpoint does NOT accept OpenAI's
+      // frequency_penalty / presence_penalty — it 400s ("Unknown name ...
+      // Cannot find field"). They are intentionally omitted; the deterministic
+      // validator (cross-section repeat + structural-monotony checks) enforces
+      // anti-repetition regardless of the provider, so nothing is lost.
       response_format: { type: 'json_object' },
     }),
   });
-  const data = await r.json();
-  if (data.error) {
-    throw new Error(data.error.message || `Gemini error (HTTP ${r.status})`);
-  }
-  if (data.choices?.[0]?.finish_reason === 'length') {
+
+  const data = await r.json().catch(() => null);
+  // Gemini returns errors sometimes as an object {error}, sometimes wrapped in
+  // an array [{error}]. Detect BOTH so a provider rejection surfaces loudly
+  // (-> throw -> caller falls back) instead of silently becoming empty JSON.
+  const errObj = Array.isArray(data) ? data.find((d) => d && d.error)?.error : data?.error;
+  if (errObj) throw new Error(errObj.message || `Gemini error (HTTP ${r.status})`);
+  if (!r.ok) throw new Error(`Gemini HTTP ${r.status}`);
+
+  const choice = data?.choices?.[0];
+  const content = choice?.message?.content;
+  if (choice?.finish_reason === 'length') {
     console.error('[MPV-ANALYZE] hit max_tokens (%d) — output truncated', maxTokens);
   }
-  let raw = data.choices?.[0]?.message?.content || '{}';
+  if (!content || String(content).trim().length < 5) {
+    // A 200 with empty content usually means a safety block or a refusal.
+    console.error('[MPV-ANALYZE] empty Gemini content. finish=%s raw=%s',
+      choice?.finish_reason, JSON.stringify(data).slice(0, 400));
+    throw new Error('Gemini returned empty content');
+  }
+  let raw = content;
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
   if (start !== -1 && end !== -1) raw = raw.substring(start, end + 1);
