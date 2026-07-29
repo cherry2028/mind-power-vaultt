@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 /**
  * Sign a JWT token using HMAC-SHA256
@@ -29,7 +29,14 @@ export function verifyJWT(token, secret) {
     if (parts.length !== 3) return null;
     const [header, body, signature] = parts;
     const expectedSig = createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
-    if (signature !== expectedSig) return null;
+
+    const sigBuf = Buffer.from(signature);
+    const expectedSigBuf = Buffer.from(expectedSig);
+
+    if (sigBuf.length !== expectedSigBuf.length || !timingSafeEqual(sigBuf, expectedSigBuf)) {
+      return null;
+    }
+
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
     if (payload.exp < Math.floor(Date.now() / 1000)) return null; // expired
     return payload;
