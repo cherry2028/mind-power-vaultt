@@ -8,10 +8,21 @@
 //   2. Every result is machine-checked by api/_lib/analyzeVoice.js. Fail once
 //      -> retry with the violations fed back. Fail twice -> the caller's local
 //      template profile is used. A student never sees off-voice output.
+//
+// PROVIDER: Gemini (was Groq). Groq's free tier is 12,000 tokens/MINUTE, and a
+// single Telugu reveal costs ~8,000 tokens, so it could serve barely one
+// student a minute site-wide — a WhatsApp blast would rate-limit everyone. The
+// retry (two calls ≈ 15k tokens) exceeded the per-minute ceiling on its own.
+// Gemini's free tier is a DAILY request quota instead, which absorbs bursts,
+// and it tokenizes Telugu far more efficiently. The prompt, the two few-shot
+// examples, the validator and the local fallback are all unchanged — only the
+// model endpoint moved. Gemini's OpenAI-compatible endpoint is used so the
+// system + few-shot-turns + user message structure stays byte-identical.
 import { checkSimpleLimit } from './_lib/ratelimit.js';
 import { validateProfile, LIMITS } from './_lib/analyzeVoice.js';
 
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'gemini-2.0-flash';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
 // ── Cherry's voice anchors ────────────────────────────────────────────────
 // Written by Cherry, used verbatim. The paired input for each is reconstructed
@@ -131,16 +142,14 @@ function buildMessages(systemPrompt, userInput, extraNote) {
   ];
 }
 
-// Telugu tokenizes at roughly 2.2 tokens per CHARACTER on the Llama tokenizer
-// (the script is not in the merge vocabulary, so it degrades to UTF-8 bytes —
-// 3 bytes per akshara). A reveal that is ~1000 chars of JSON therefore costs
-// ~1300 completion tokens, not ~280 like the same text in English. Sizing this
-// budget in characters is what broke the Telugu path: the generation was cut
-// off mid-object and json_object mode rejected the truncated result outright.
-const MAX_TOKENS = { te: 3000, en: 1400 };
+// Gemini tokenizes Telugu efficiently (native SentencePiece coverage, ~1 token
+// per character, unlike Llama's ~2.2), so the old character-vs-token trap is
+// gone. The budget is kept generous on the free tier because unused headroom
+// costs nothing and only the tokens actually generated are billed/waited on.
+const MAX_TOKENS = { te: 2048, en: 1400 };
 
-async function callGroq(apiKey, messages, temperature, maxTokens) {
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+async function callGemini(apiKey, messages, temperature, maxTokens) {
+  const r = await fetch(GEMINI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
@@ -148,27 +157,76 @@ async function callGroq(apiKey, messages, temperature, maxTokens) {
       messages,
       temperature,
       max_tokens: maxTokens,
-      frequency_penalty: 0.4,    // discourage recycled phrasing
-      presence_penalty: 0.3,
+      // NOTE: Gemini's OpenAI-compat endpoint does NOT accept OpenAI's
+      // frequency_penalty / presence_penalty — it 400s ("Unknown name ...
+      // Cannot find field"). They are intentionally omitted; the deterministic
+      // validator (cross-section repeat + structural-monotony checks) enforces
+      // anti-repetition regardless of the provider, so nothing is lost.
       response_format: { type: 'json_object' },
     }),
   });
-  const data = await r.json();
-  if (data.error) {
-    // Groq returns the partial text in failed_generation; without it a JSON
-    // failure is indistinguishable from a prompt problem.
-    const partial = data.error.failed_generation;
-    if (partial) console.error('[MPV-ANALYZE] groq failed_generation (%d chars):', String(partial).length, String(partial).slice(-160));
-    throw new Error(data.error.message || 'Groq error');
-  }
-  if (data.choices?.[0]?.finish_reason === 'length') {
+
+  const data = await r.json().catch(() => null);
+  // Gemini returns errors sometimes as an object {error}, sometimes wrapped in
+  // an array [{error}]. Detect BOTH so a provider rejection surfaces loudly
+  // (-> throw -> caller falls back) instead of silently becoming empty JSON.
+  const errObj = Array.isArray(data) ? data.find((d) => d && d.error)?.error : data?.error;
+  if (errObj) throw new Error(errObj.message || `Gemini error (HTTP ${r.status})`);
+  if (!r.ok) throw new Error(`Gemini HTTP ${r.status}`);
+
+  const choice = data?.choices?.[0];
+  const content = choice?.message?.content;
+  if (choice?.finish_reason === 'length') {
     console.error('[MPV-ANALYZE] hit max_tokens (%d) — output truncated', maxTokens);
   }
-  let raw = data.choices?.[0]?.message?.content || '{}';
+  if (!content || String(content).trim().length < 5) {
+    // A 200 with empty content usually means a safety block or a refusal.
+    console.error('[MPV-ANALYZE] empty Gemini content. finish=%s raw=%s',
+      choice?.finish_reason, JSON.stringify(data).slice(0, 400));
+    throw new Error('Gemini returned empty content');
+  }
+  let raw = content;
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
   if (start !== -1 && end !== -1) raw = raw.substring(start, end + 1);
   return JSON.parse(raw);
+}
+
+// The full generate-validate-retry orchestration, with the model call injected
+// so the exact production decision path (attempt 1 → feed violations back →
+// attempt 2 → keep the better of the two) can be exercised in a unit test
+// without a network or an API key. Returns the chosen profile, its validator
+// verdict, and how many model calls were made.
+export async function generateProfile({ call, systemPrompt, userInput, ctx, maxTokens }) {
+  let attempts = 1;
+  let profile = await call(buildMessages(systemPrompt, userInput), 0.5, maxTokens);
+  let check = validateProfile(profile, ctx);
+
+  if (!check.ok) {
+    console.warn('[MPV-ANALYZE] attempt 1 failed validation:', check.violations.slice(0, 6));
+    const note = check.violations.slice(0, 8).map((x) => `- ${x}`).join('\n');
+    try {
+      attempts = 2;
+      const retry = await call(buildMessages(systemPrompt, userInput, note), 0.35, maxTokens);
+      const retryCheck = validateProfile(retry, ctx);
+      if (retryCheck.ok) {
+        profile = retry;
+        check = retryCheck;
+      } else {
+        console.warn('[MPV-ANALYZE] attempt 2 failed too:', retryCheck.violations.slice(0, 6));
+        // Keep whichever had fewer problems; the client still gets a usable
+        // reveal, and _voiceOk tells it the quality was not guaranteed.
+        if (retryCheck.violations.length < check.violations.length) {
+          profile = retry;
+          check = retryCheck;
+        }
+      }
+    } catch (e) {
+      console.warn('[MPV-ANALYZE] retry threw:', e?.message);
+    }
+  }
+
+  return { profile, check, attempts };
 }
 
 export default async function handler(req, res) {
@@ -204,39 +262,17 @@ export default async function handler(req, res) {
     situationLabels,
   };
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set in Vercel Environment Variables' });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set in Vercel Environment Variables' });
 
   try {
-    const maxTokens = MAX_TOKENS[ctx.lang];
-
-    // Attempt 1
-    let profile = await callGroq(apiKey, buildMessages(systemPrompt, userInput), 0.5, maxTokens);
-    let check = validateProfile(profile, ctx);
-
-    // Attempt 2 — feed the exact violations back, colder.
-    if (!check.ok) {
-      console.warn('[MPV-ANALYZE] attempt 1 failed validation:', check.violations.slice(0, 6));
-      const note = check.violations.slice(0, 8).map((x) => `- ${x}`).join('\n');
-      try {
-        const retry = await callGroq(apiKey, buildMessages(systemPrompt, userInput, note), 0.35, maxTokens);
-        const retryCheck = validateProfile(retry, ctx);
-        if (retryCheck.ok) {
-          profile = retry;
-          check = retryCheck;
-        } else {
-          console.warn('[MPV-ANALYZE] attempt 2 failed too:', retryCheck.violations.slice(0, 6));
-          // Keep whichever had fewer problems; the client still gets a usable
-          // reveal, and _voiceOk tells it the quality was not guaranteed.
-          if (retryCheck.violations.length < check.violations.length) {
-            profile = retry;
-            check = retryCheck;
-          }
-        }
-      } catch (e) {
-        console.warn('[MPV-ANALYZE] retry threw:', e?.message);
-      }
-    }
+    const { profile, check } = await generateProfile({
+      call: (messages, temperature, maxTokens) => callGemini(apiKey, messages, temperature, maxTokens),
+      systemPrompt,
+      userInput,
+      ctx,
+      maxTokens: MAX_TOKENS[ctx.lang],
+    });
 
     // Signal quality to the caller so it can prefer its local template when the
     // model could not hit the voice (never show off-voice output as "yours").
