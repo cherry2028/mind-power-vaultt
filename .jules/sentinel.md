@@ -18,3 +18,7 @@
 **Vulnerability:** Several API endpoints acting as proxies to external third-party services (like Resend in `api/send-report.js` and `api/notify.js`, Groq in `api/analyze.js`, and Cashfree in `api/create-order.js`) lacked proper rate limiting.
 **Learning:** Exposing third-party API proxies without rate limits leaves the application vulnerable to Denial of Wallet (DoW) attacks or quota exhaustion, where attackers can script repeated requests to consume paid API credits or free tiers rapidly.
 **Prevention:** Always implement IP-based rate limiting (e.g., using a utility like `checkSimpleLimit`) on all public-facing or authenticated endpoints that trigger external API calls or perform resource-intensive tasks.
+## 2024-08-01 - [Insecure JWT Signature Verification (Timing Attack)]
+**Vulnerability:** JWT signature verification in `api/_lib/jwt.js` used a standard equality operator (`!==`) to compare the provided signature against the expected signature.
+**Learning:** Using standard string comparison for security-sensitive hashes or signatures allows attackers to perform timing attacks. They can observe the response time variations (which fail faster when an early character mismatches) to guess the signature byte by byte.
+**Prevention:** Always use constant-time comparison functions like Node's `crypto.timingSafeEqual` for comparing sensitive hashes, tokens, or signatures. Ensure the lengths of the buffers match prior to comparison to avoid `RangeError` exceptions.
