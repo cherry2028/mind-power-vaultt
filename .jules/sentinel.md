@@ -18,3 +18,7 @@
 **Vulnerability:** Several API endpoints acting as proxies to external third-party services (like Resend in `api/send-report.js` and `api/notify.js`, Groq in `api/analyze.js`, and Cashfree in `api/create-order.js`) lacked proper rate limiting.
 **Learning:** Exposing third-party API proxies without rate limits leaves the application vulnerable to Denial of Wallet (DoW) attacks or quota exhaustion, where attackers can script repeated requests to consume paid API credits or free tiers rapidly.
 **Prevention:** Always implement IP-based rate limiting (e.g., using a utility like `checkSimpleLimit`) on all public-facing or authenticated endpoints that trigger external API calls or perform resource-intensive tasks.
+## 2026-07-25 - [Removed Hardcoded Admin/Master Passwords in React Bundle]
+**Vulnerability:** The application contained hardcoded credentials (`"mpv@cherry2028"` for admin, `"MPV-CHERRY-2024"` for master student access) directly within the frontend `src/Journal.jsx` component.
+**Learning:** Hardcoding credentials in client-side code exposes them to anyone who inspects the compiled JavaScript bundle, allowing an attacker to trivially bypass authentication and gain unauthorized access to sensitive journal data or admin panels.
+**Prevention:** Always handle authentication logic server-side. Replace hardcoded client-side checks with async API requests (e.g., using `api.validateCode`) that verify credentials securely on the backend against environment variables.
