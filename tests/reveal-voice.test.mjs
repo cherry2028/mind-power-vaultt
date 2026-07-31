@@ -4,7 +4,7 @@
 //     (If his writing fails a threshold, the threshold is wrong — not his voice.)
 //  B. The validator must CATCH each failure mode seen in the live production bug.
 //  C. All 81 answer combinations (3^4) of the fallback reveal must validate.
-import { validateProfile, LIMITS } from '../api/_lib/analyzeVoice.js';
+import { validateProfile, latinizeText, latinizeProfile, LIMITS } from '../api/_lib/analyzeVoice.js';
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -111,9 +111,28 @@ check('catches an over-long sentence',
 check('catches a behaviour line ignoring the student\'s choice',
   bad({ behaviorLines: [ 'ఏదో ఒకటి రాశాను ఇక్కడ పూర్తిగా వేరే విషయం.', ...EX1.behaviorLines.slice(1) ] })
     .violations.some(v => /is generic/.test(v)));
+check('ALLOWS a vivid paraphrase that engages the domain, not the exact choice tokens (rule #8 relaxed)',
+  !bad({ behaviorLines: [
+    'మిస్ అయిన trade ని చూసి తట్టుకోలేవు — పరుగెడుతున్న రైలు ఎక్కేస్తావు. ఎంట్రీ ప్లాన్ కోసం కాదు, బాధని భరించలేక.',
+    ...EX1.behaviorLines.slice(1),
+  ] }).violations.some(v => /behaviorLine1 is generic/.test(v)));
 check('catches missing field', bad({ actionStep: '' }).violations.some(v => /missing\/empty/.test(v)));
 check('catches wrong behaviorLines count',
   bad({ behaviorLines: EX1.behaviorLines.slice(0, 3) }).violations.some(v => /exactly 4/.test(v)));
+
+console.log('\n══ B2. Latin-script normalization ══');
+check('latinizes Telugu-script English terms (ట్రేడ్ → trade, సిస్టమ్ → system)',
+  latinizeText('నీ ట్రేడ్ లో సిస్టమ్ లేదు — ఓవర్ కాన్ఫిడెన్స్ తో ఎంటర్ అవుతావు.')
+    === 'నీ trade లో system లేదు — over-confidence తో enter అవుతావు.',
+  latinizeText('నీ ట్రేడ్ లో సిస్టమ్ లేదు — ఓవర్ కాన్ఫిడెన్స్ తో ఎంటర్ అవుతావు.'));
+check('keeps మార్కెట్ in Telugu (Cherry\'s own style) and leaves real Telugu words alone',
+  latinizeText('మార్కెట్ ని భయంతో చూస్తావు') === 'మార్కెట్ ని భయంతో చూస్తావు');
+check('latinizeProfile normalizes behaviorLines too',
+  latinizeProfile({ behaviorLines: ['ప్రాఫిట్ వచ్చాక ఆగవు'] }).behaviorLines[0] === 'profit వచ్చాక ఆగవు');
+check('latinizes general English too (సక్సెస్→success, మైండ్‌సెట్→mindset, రీ-entry→re-entry)',
+  latinizeText('ఒక్క సక్సెస్ నీ మైండ్‌సెట్ మార్చదు — రీ-entry ఇవ్వకు')
+    === 'ఒక్క success నీ mindset మార్చదు — re-entry ఇవ్వకు',
+  latinizeText('ఒక్క సక్సెస్ నీ మైండ్‌సెట్ మార్చదు — రీ-entry ఇవ్వకు'));
 
 console.log('\n══ C. All 81 fallback combinations must validate ══');
 const { buildProfile, SCENARIOS } = await import('../src/utils/constants.js');

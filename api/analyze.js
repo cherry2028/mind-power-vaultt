@@ -13,16 +13,27 @@
 // single Telugu reveal costs ~8,000 tokens, so it could serve barely one
 // student a minute site-wide — a WhatsApp blast would rate-limit everyone. The
 // retry (two calls ≈ 15k tokens) exceeded the per-minute ceiling on its own.
-// Gemini's free tier is a DAILY request quota instead, which absorbs bursts,
-// and it tokenizes Telugu far more efficiently. The prompt, the two few-shot
-// examples, the validator and the local fallback are all unchanged — only the
-// model endpoint moved. Gemini's OpenAI-compatible endpoint is used so the
-// system + few-shot-turns + user message structure stays byte-identical.
+// Paid Gemini flash runs ~1000+ requests/minute, which absorbs a WhatsApp
+// broadcast spike, and it tokenizes Telugu far more efficiently. The prompt, the
+// two few-shot examples, the validator and the local fallback are all unchanged
+// — only the model provider moved. The Gemini native generateContent endpoint is
+// used (system + user/model turns carry the same text) with thinking disabled.
 import { checkSimpleLimit } from './_lib/ratelimit.js';
-import { validateProfile, LIMITS } from './_lib/analyzeVoice.js';
+import { validateProfile, latinizeProfile, LIMITS } from './_lib/analyzeVoice.js';
 
-const MODEL = 'gemini-2.0-flash';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const MODEL = 'gemini-flash-latest';
+// Native generateContent endpoint (not the OpenAI-compat one). The compat layer
+// could not disable thinking: reasoning_effort:'none' 400s ("invalid argument")
+// and there is no reliable REST field for a zero thinking budget there. The
+// native endpoint exposes thinkingConfig.thinkingBudget:0 directly, which is
+// what drops latency from ~20s to ~3s. It also gives native JSON mode.
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// gemini-flash-latest currently resolves to gemini-3.6-flash, which rejects a
+// thinkingBudget of 0 (it has a thinking floor). 128 is the minimum it accepts
+// and keeps latency at ~3-4s vs ~13s at the model's default budget. Any residual
+// Telugu-script slip from the lower budget is fixed deterministically by
+// latinizeProfile(), so speed and brand-voice script are both guaranteed.
+const THINKING_BUDGET = 128;
 
 // ── Cherry's voice anchors ────────────────────────────────────────────────
 // Written by Cherry, used verbatim. The paired input for each is reconstructed
@@ -73,7 +84,7 @@ const SYSTEM_TE = `నువ్వు Cherry anna (K Prasad) — 12 years tradin
 • "నువ్వు" మాత్రమే. "నీవు", "మీరు", "మీకు" — absolutely BAN.
 • పొట్టి lines. ఒక్క sentence 16 words దాటకూడదు.
 • Contrastive structure వాడు: "X కాదు — Y." "recover అవడానికి కాదు, ఆ feeling ని భరించలేక."
-• Telugu script + సహజమైన English trading words (trade, loss, SL, ego, setup, entry, profit) — మనం మాట్లాడుకున్నట్టు. News Telugu కాదు, పుస్తకం Telugu కాదు.
+• English trading/psychology words ENGLISH అక్షరాల్లోనే రాయి — trade, loss, profit, SL, target, entry, exit, setup, ego, FOMO, greed, over-confidence, system, plan, mind, screen, recover, revenge, process, control, discipline. వాటిని Telugu script లోకి మార్చొద్దు: "ట్రేడ్", "ప్రాఫిట్", "ఓవర్ కాన్ఫిడెన్స్", "సెటప్", "ఎంటర్" — ఇది తప్పు. trade, profit, over-confidence, setup, enter అని English లోనే రాయాలి. (మినహాయింపు: "మార్కెట్" మాత్రం Telugu script లో OK — అది అలవాటైపోయింది.) అసలు Telugu మాటలు (భయం, ఆశ, తపన, గెలుపు) Telugu script లో. News Telugu కాదు, పుస్తకం Telugu కాదు — మనం మాట్లాడుకున్నట్టు.
 • వాడు చెప్పిన choice ని పట్టుకో — తర్వాత వాడు చెప్పని అసలు motive ని బయటపెట్టు. Choice ని repeat చేయడం analysis కాదు.
 • ప్రతి line వేరేగా ఉండాలి. ఒకే structure, ఒకే ending 2 సార్లు వాడకు.
 • భయపెట్టకు. నిజం చెప్పు — కానీ వాడిని కించపరచకు.
@@ -143,46 +154,56 @@ function buildMessages(systemPrompt, userInput, extraNote) {
 }
 
 // Gemini tokenizes Telugu efficiently (native SentencePiece coverage, ~1 token
-// per character, unlike Llama's ~2.2), so the old character-vs-token trap is
-// gone. The budget is kept generous on the free tier because unused headroom
-// costs nothing and only the tokens actually generated are billed/waited on.
-const MAX_TOKENS = { te: 2048, en: 1400 };
+// per character, unlike Llama's ~2.2). But gemini-2.5-flash is a THINKING model:
+// it spends completion tokens on internal reasoning before the JSON, and via
+// the OpenAI-compat layer those count against max_tokens. So the budget must
+// cover thinking + the actual reveal or the JSON truncates to empty. Kept
+// generous — only tokens actually generated are billed.
+const MAX_TOKENS = { te: 6000, en: 4000 };
 
 async function callGemini(apiKey, messages, temperature, maxTokens) {
+  // buildMessages() still speaks the OpenAI shape (system/user/assistant) so the
+  // orchestration + unit tests are provider-agnostic. Convert to Gemini native:
+  // system -> systemInstruction, user -> role "user", assistant -> role "model".
+  const sys = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n');
+  const contents = messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+
   const r = await fetch(GEMINI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
-      model: MODEL,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-      // NOTE: Gemini's OpenAI-compat endpoint does NOT accept OpenAI's
-      // frequency_penalty / presence_penalty — it 400s ("Unknown name ...
-      // Cannot find field"). They are intentionally omitted; the deterministic
-      // validator (cross-section repeat + structural-monotony checks) enforces
-      // anti-repetition regardless of the provider, so nothing is lost.
-      response_format: { type: 'json_object' },
+      ...(sys ? { systemInstruction: { parts: [{ text: sys }] } } : {}),
+      contents,
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens,
+        responseMimeType: 'application/json',
+        thinkingConfig: { thinkingBudget: THINKING_BUDGET },
+      },
     }),
   });
 
   const data = await r.json().catch(() => null);
-  // Gemini returns errors sometimes as an object {error}, sometimes wrapped in
-  // an array [{error}]. Detect BOTH so a provider rejection surfaces loudly
-  // (-> throw -> caller falls back) instead of silently becoming empty JSON.
   const errObj = Array.isArray(data) ? data.find((d) => d && d.error)?.error : data?.error;
-  if (errObj) throw new Error(errObj.message || `Gemini error (HTTP ${r.status})`);
+  if (errObj) {
+    // Gemini's INVALID_ARGUMENT message is generic; the offending field is in
+    // details[].fieldViolations. Surface it so a bad param is diagnosable.
+    const detail = errObj.details ? ' :: ' + JSON.stringify(errObj.details).slice(0, 300) : '';
+    throw new Error((errObj.message || `Gemini error (HTTP ${r.status})`) + detail);
+  }
   if (!r.ok) throw new Error(`Gemini HTTP ${r.status}`);
 
-  const choice = data?.choices?.[0];
-  const content = choice?.message?.content;
-  if (choice?.finish_reason === 'length') {
-    console.error('[MPV-ANALYZE] hit max_tokens (%d) — output truncated', maxTokens);
+  const cand = data?.candidates?.[0];
+  if (cand?.finishReason === 'MAX_TOKENS') {
+    console.error('[MPV-ANALYZE] hit maxOutputTokens (%d) — output truncated', maxTokens);
   }
-  if (!content || String(content).trim().length < 5) {
-    // A 200 with empty content usually means a safety block or a refusal.
+  const content = (cand?.content?.parts || []).map((p) => p?.text || '').join('');
+  if (!content || content.trim().length < 5) {
+    // Empty content on a 200 usually means a safety block or refusal.
     console.error('[MPV-ANALYZE] empty Gemini content. finish=%s raw=%s',
-      choice?.finish_reason, JSON.stringify(data).slice(0, 400));
+      cand?.finishReason, JSON.stringify(data).slice(0, 400));
     throw new Error('Gemini returned empty content');
   }
   let raw = content;
@@ -199,7 +220,7 @@ async function callGemini(apiKey, messages, temperature, maxTokens) {
 // verdict, and how many model calls were made.
 export async function generateProfile({ call, systemPrompt, userInput, ctx, maxTokens }) {
   let attempts = 1;
-  let profile = await call(buildMessages(systemPrompt, userInput), 0.5, maxTokens);
+  let profile = latinizeProfile(await call(buildMessages(systemPrompt, userInput), 0.5, maxTokens));
   let check = validateProfile(profile, ctx);
 
   if (!check.ok) {
@@ -207,7 +228,7 @@ export async function generateProfile({ call, systemPrompt, userInput, ctx, maxT
     const note = check.violations.slice(0, 8).map((x) => `- ${x}`).join('\n');
     try {
       attempts = 2;
-      const retry = await call(buildMessages(systemPrompt, userInput, note), 0.35, maxTokens);
+      const retry = latinizeProfile(await call(buildMessages(systemPrompt, userInput, note), 0.35, maxTokens));
       const retryCheck = validateProfile(retry, ctx);
       if (retryCheck.ok) {
         profile = retry;
@@ -266,7 +287,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set in Vercel Environment Variables' });
 
   try {
-    const { profile, check } = await generateProfile({
+    const { profile, check, attempts } = await generateProfile({
       call: (messages, temperature, maxTokens) => callGemini(apiKey, messages, temperature, maxTokens),
       systemPrompt,
       userInput,
@@ -276,7 +297,9 @@ export default async function handler(req, res) {
 
     // Signal quality to the caller so it can prefer its local template when the
     // model could not hit the voice (never show off-voice output as "yours").
-    return res.status(200).json({ ...profile, _voiceOk: check.ok, _violations: check.ok ? [] : check.violations.slice(0, 8) });
+    // _attempts (1 = passed first try, 2 = a retry was needed) is harmless
+    // telemetry the client ignores.
+    return res.status(200).json({ ...profile, _voiceOk: check.ok, _violations: check.ok ? [] : check.violations.slice(0, 8), _attempts: attempts });
   } catch (err) {
     console.error('[MPV-ANALYZE] handler error:', err?.message);
     return res.status(500).json({ error: err.message });

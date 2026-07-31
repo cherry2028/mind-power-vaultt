@@ -74,6 +74,84 @@ const PRAISE = /ధైర్యం|courage|సామర్థ్యం|గొప
 
 const PUNCT_ONLY = /^[\s—–\-•.,;:"'"'()\[\]…!?।]+$/;
 
+// A vivid paraphrase ("పరుగెడుతున్న రైలు ఎక్కేస్తావు" — you jump onto a running
+// train) engages with the situation without echoing the option's exact words.
+// Rule #8 must not punish that (it once flagged Cherry's own Example 1 line 3).
+// A line is "generic" only if it references NEITHER the choice/situation tokens
+// NOR any trading/emotional-domain term. Kept in both scripts through the
+// Latin-script transition; leniency is intentional — better to miss one lazy
+// line than to send good model output to the fallback template.
+const DOMAIN_TERMS_EN = ['trade', 'loss', 'profit', 'sl', 'target', 'entry', 'enter', 'exit', 'setup', 'ego', 'fomo', 'greed', 'recover', 'revenge', 'market', 'system', 'plan', 'mind', 'screen', 'tip', 'chase', 'position', 'book', 'discipline', 'chart', 'terminal', 'streak', 'risk', 'candle', 'trend'];
+const DOMAIN_TERMS_TE = ['ట్రేడ్', 'లాస్', 'లాసె', 'ప్రాఫిట్', 'లాభ', 'నష్ట', 'టార్గెట్', 'ఎంట్రీ', 'ఎంటర్', 'ఎగ్జిట్', 'సెటప్', 'ఈగో', 'గ్రీడ్', 'రికవరీ', 'రివెంజ్', 'పగ', 'మార్కెట్', 'సిస్టమ్', 'ప్లాన్', 'మైండ్', 'స్క్రీన్', 'టిప్', 'ఛార్ట్', 'భయ', 'ఆశ', 'అత్యాశ', 'తపన', 'గెలు', 'ఓట', 'ధైర్య', 'నమ్మ', 'రూల్', 'ప్రాసెస్', 'క్రమశిక్షణ'];
+
+function engagesTradingDomain(line) {
+  const low = String(line).toLowerCase();
+  return DOMAIN_TERMS_EN.some((t) => low.includes(t)) || DOMAIN_TERMS_TE.some((t) => String(line).includes(t));
+}
+
+// Deterministic Latin-script normalization. At a low thinking budget the model
+// sometimes writes English trading terms in Telugu script (ట్రేడ్) instead of
+// Latin (trade) — off Cherry's brand voice. Rather than fight the model with
+// more prompt or more thinking (= slower), convert a curated list of DISTINCTIVE
+// transliterations back to Latin after generation. Telugu suffixes attached to
+// the term stay Telugu ("సిస్టమ్‌ని" -> "system‌ని"), which is exactly Cherry's
+// natural "trade లో" mixing. మార్కెట్ is intentionally NOT converted — he writes
+// it in Telugu himself. Order matters: longer stems before their prefixes.
+const LATINIZE = [
+  [/ట్రేడింగ్/g, 'trading'], [/ట్రేడ్/g, 'trade'],
+  [/ప్రాఫిట్/g, 'profit'],
+  [/సెటప్/g, 'setup'],
+  [/ఎంట్రీ/g, 'entry'], [/ఎంటర్/g, 'enter'],
+  [/ఎగ్జిట్/g, 'exit'],
+  [/సిస్టమ్/g, 'system'],
+  [/స్క్రీన్/g, 'screen'],
+  [/రికవరీ/g, 'recovery'],
+  [/ఓవర్[\s‌]*కాన్ఫిడెన్స్/g, 'over-confidence'], [/కాన్ఫిడెన్స్/g, 'confidence'], [/ఓవర్/g, 'over'],
+  [/ప్రాసెస్/g, 'process'],
+  [/టార్గెట్/g, 'target'],
+  [/రూల్స్/g, 'rules'], [/రూల్/g, 'rule'],
+  [/కంట్రోల్/g, 'control'],
+  [/గ్రీడ్/g, 'greed'],
+  [/రివెంజ్/g, 'revenge'],
+  [/ఈగో/g, 'ego'],
+  [/డిసిప్లిన్/g, 'discipline'],
+  [/పొజిషన్/g, 'position'],
+  [/ఛార్ట్/g, 'chart'],
+  [/ఫోకస్/g, 'focus'],
+  [/రిస్క్/g, 'risk'],
+  [/టిప్స్/g, 'tips'], [/టిప్/g, 'tip'],
+  // General (non-trading) English that the model also transliterates at a low
+  // thinking budget. Distinctive multi-akshara forms, so collision risk is low.
+  [/మైండ్‌?సెట్/g, 'mindset'], [/మైండ్/g, 'mind'],
+  [/రిజల్ట్స్/g, 'results'], [/రిజల్ట్/g, 'result'],
+  [/రీసెట్/g, 'reset'],
+  [/అకౌంట్/g, 'account'],
+  [/సక్సెస్/g, 'success'],
+  [/పవర్/g, 'power'],
+  [/జంప్/g, 'jump'],
+  [/గిల్టీ/g, 'guilty'],
+  [/బెస్ట్/g, 'best'],
+  [/టెంపరరీ/g, 'temporary'],
+  [/రీ-/g, 're-'], // "రీ-entry" -> "re-entry"
+];
+
+export function latinizeText(s) {
+  let t = String(s == null ? '' : s);
+  for (const [re, en] of LATINIZE) t = t.replace(re, en);
+  return t;
+}
+
+// Return a copy of the profile with every text field Latin-normalized.
+export function latinizeProfile(p) {
+  if (!p || typeof p !== 'object') return p;
+  const out = { ...p };
+  for (const k of ['primaryPattern', 'hiddenTruth', 'emotionalState', 'coreInsight', 'hiddenStrength', 'warningLine', 'actionStep']) {
+    if (typeof out[k] === 'string') out[k] = latinizeText(out[k]);
+  }
+  if (Array.isArray(out.behaviorLines)) out.behaviorLines = out.behaviorLines.map(latinizeText);
+  return out;
+}
+
 export function wordsOf(text) {
   return String(text || '')
     .split(/\s+/)
@@ -208,19 +286,20 @@ export function validateProfile(profile, ctx = {}) {
     if (worst >= 3) v.push(`structural monotony: ${worst} of ${lines.length} behaviour lines share the same ending`);
   }
 
-  // 8. each behaviour line must engage with THAT specific situation — matched
-  //    against the choice wording OR the situation wording. Cherry's own
-  //    example line 3 ("Profit వచ్చాక ఆగవు…") anchors on the situation rather
-  //    than echoing the option text, and that is good writing: the rule is
-  //    "must not be generic", not "must parrot the label".
+  // 8. each behaviour line must engage with THAT specific situation — but a good
+  //    line may PARAPHRASE the situation with fresh imagery instead of echoing
+  //    the option's exact tokens (Cherry's Example 1 line 3 does this, and so do
+  //    the best model reveals). So a line is flagged as generic only when it
+  //    references NEITHER the choice/situation tokens NOR any trading/emotional
+  //    domain term — i.e. it is truly off-topic filler, not a vivid paraphrase.
   const situationLabels = ctx.situationLabels || [];
   lines.forEach((line, i) => {
     if (!line) return;
     const toks = [...choiceTokens(choiceLabels[i] || ''), ...choiceTokens(situationLabels[i] || '')];
-    if (!toks.length) return; // nothing distinctive to match on — skip
     const hay = String(line).toLowerCase();
-    if (!toks.some((t) => hay.includes(t))) {
-      v.push(`behaviorLine${i + 1} is generic — engages with neither the choice nor situation ${i + 1}`);
+    const matchesLabel = toks.length > 0 && toks.some((t) => hay.includes(t));
+    if (!matchesLabel && !engagesTradingDomain(line)) {
+      v.push(`behaviorLine${i + 1} is generic — no engagement with situation ${i + 1} or the trading context`);
     }
   });
 
