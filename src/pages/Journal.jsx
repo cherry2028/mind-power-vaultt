@@ -9,6 +9,8 @@ import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
 import Seo from '../Seo';
+import PwaInstallPrompt from '../PwaInstallPrompt';
+import PushOptIn from '../PushOptIn';
 import { track } from '../analytics';
 
 const CARD_BUILDERS = {
@@ -473,6 +475,11 @@ export default function Journal() {
         style={{ width:'100%', height:'100%', border:'none' }}
         sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
       />
+
+      {/* PWA nudges — invested students only, both self-gated and dismissible.
+          Rendered beside the iframe, never inside it. */}
+      <PwaInstallPrompt />
+      <PushOptIn />
 
       {/* ═══ SYNC CONFLICT OVERLAY — empty device vs real cloud journal ═══ */}
       {syncConflict && (
