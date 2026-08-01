@@ -882,7 +882,7 @@ function App(){
             </div>
           ))}
         </div>
-        <div style={{maxWidth:680,margin:"0 auto 52px"}}>
+        <div id="reviews" style={{maxWidth:680,margin:"0 auto 52px",scrollMarginTop:80}}>
           <Tg c="s">{CV.rev}</Tg>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:16}}>
             {(dynamicReviews || []).map((r,i)=>(

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import Seo from '../Seo';
 import { track } from '../analytics';
+import JournalPitch from './JournalPitch';
 
 // Common email domain typos. A typo here creates a brand-new (stray) auth
 // account and the student's journal silently syncs to the wrong identity —
@@ -27,6 +28,10 @@ function suggestEmailFix(addr) {
 }
 
 export default function StudentPortal() {
+  // 'pitch' is the default: anyone landing without an active subscription sees
+  // the value pitch first; existing members tap "Sign in" to reach the login.
+  const [mode, setMode] = useState('pitch'); // 'pitch' | 'login'
+  const [pitchVariant, setPitchVariant] = useState('new'); // 'new' | 'expired'
   const [step, setStep] = useState(1); // 1: Email, 2: OTP
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -115,13 +120,21 @@ export default function StudentPortal() {
         .eq('email', email.trim())
         .single();
 
+      // Authenticated, but no MPV subscription → show the value pitch (not a
+      // cold error). They stay locked out of the journal; they can pitch-browse.
       if (subError || !sub) {
-        throw new Error("No active subscription found for this email.");
+        setPitchVariant('new');
+        setMode('pitch');
+        setLoading(false);
+        return;
       }
 
       const expiryDate = new Date(sub.expires_at);
       if (expiryDate < new Date()) {
-        throw new Error("Your annual subscription has expired.");
+        setPitchVariant('expired');
+        setMode('pitch');
+        setLoading(false);
+        return;
       }
 
       // 3. AUTO-SYNC CURRENT DEVICE LOGIC
@@ -158,6 +171,19 @@ export default function StudentPortal() {
     black: "#05050A",
     dark1: "#0A0A10"
   };
+
+  // Default (and no-subscription / expired) view: the value pitch.
+  if (mode === 'pitch') {
+    return (
+      <>
+        <Seo title="Mind Power Vaultt Journal" path="/portal" noindex />
+        <JournalPitch
+          variant={pitchVariant}
+          onSignIn={() => { setMode('login'); setPitchVariant('new'); setStep(1); setOtp(''); setError(''); }}
+        />
+      </>
+    );
+  }
 
   return (
     <div style={{
