@@ -9,7 +9,6 @@ import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
 import Seo from '../Seo';
-import PwaInstallPrompt from '../PwaInstallPrompt';
 import PushOptIn from '../PushOptIn';
 import { track } from '../analytics';
 
@@ -476,9 +475,9 @@ export default function Journal() {
         sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
       />
 
-      {/* PWA nudges — invested students only, both self-gated and dismissible.
-          Rendered beside the iframe, never inside it. */}
-      <PwaInstallPrompt />
+      {/* Push opt-in stays here (journal is where reminders make sense).
+          The install prompt now mounts globally in RoutedApp so it shows on
+          every screen, not just deep inside the journal. */}
       <PushOptIn />
 
       {/* ═══ SYNC CONFLICT OVERLAY — empty device vs real cloud journal ═══ */}

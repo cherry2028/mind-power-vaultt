@@ -8,6 +8,7 @@ import { api } from "./utils/api-client";
 import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
 import PwaUpdateToast from "./PwaUpdateToast";
+import PwaInstallPrompt from "./PwaInstallPrompt";
 import { track } from "./analytics";
 
 // 640px WebP (19 KB) instead of the 1600px JPEG (297 KB) — the logo is never
@@ -1235,6 +1236,7 @@ export default function RoutedApp() {
     <BrowserRouter>
       <RouteTracker />
       <PwaUpdateToast />
+      <PwaInstallPrompt />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />

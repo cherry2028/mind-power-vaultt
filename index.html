@@ -24,6 +24,10 @@
 
     <!-- PWA (manifest link is injected at build time by vite-plugin-pwa) -->
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
+    <!-- Favicon: browsers auto-request /favicon.ico which the SPA rewrite answered
+         with HTML; an explicit icon link points them at a real PNG instead. -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="shortcut icon" href="/icons/icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MPV Journal" />

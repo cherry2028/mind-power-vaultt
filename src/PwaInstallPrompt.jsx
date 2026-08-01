@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
-// Install banner for students who are already invested — never a first-time
-// visitor. Gates: not already installed, at least one completed Morning Ritual,
-// and not dismissed within the last 7 days.
+// Install banner. Shows as soon as the browser says the app is installable
+// (Chrome fires `beforeinstallprompt` after light engagement) — no longer gated
+// behind a completed ritual, and mounted globally so it appears on every screen
+// (home, portal, journal), not just deep inside the journal. Conditions kept to
+// the minimum: not already installed, and not dismissed in the last 3 days.
 const DISMISS_KEY = 'mpvInstallDismissed';
 const IOS_HINT_KEY = 'mpvIosHintShown';
-const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 
 function isStandalone() {
   return (
@@ -17,23 +19,12 @@ function isStandalone() {
 function isIosSafari() {
   const ua = window.navigator.userAgent;
   const ios = /iPad|iPhone|iPod/.test(ua);
-  // Chrome/Firefox on iOS can't add to home screen from a prompt either, but
-  // only Safari shows the Share → Add to Home Screen flow we describe.
   const safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
   return ios && safari;
 }
 
-function hasCompletedRitual() {
-  try {
-    const pm = JSON.parse(localStorage.getItem('mpvpm') || '[]');
-    return Array.isArray(pm) && pm.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-function dismissedRecently(key) {
-  const ts = Number(localStorage.getItem(key) || 0);
+function dismissedRecently() {
+  const ts = Number(localStorage.getItem(DISMISS_KEY) || 0);
   return ts > 0 && Date.now() - ts < COOLDOWN_MS;
 }
 
@@ -42,40 +33,36 @@ export default function PwaInstallPrompt() {
   const [mode, setMode] = useState(null); // 'android' | 'ios' | null
 
   useEffect(() => {
-    if (isStandalone()) return; // already installed — nothing to sell
+    if (isStandalone()) return; // already installed — nothing to offer
 
+    // Android/desktop Chrome: fires once the app meets install criteria AND the
+    // user has engaged. Capture it and surface our own button immediately.
     const onBip = (e) => {
-      e.preventDefault(); // suppress Chrome's own mini-infobar; we choose the moment
+      e.preventDefault();
       setDeferred(e);
+      if (!dismissedRecently()) setMode('android');
     };
     window.addEventListener('beforeinstallprompt', onBip);
 
-    // iOS Safari never fires beforeinstallprompt — show a one-time manual hint.
-    if (isIosSafari() && !localStorage.getItem(IOS_HINT_KEY) && hasCompletedRitual()) {
-      setMode('ios');
-    }
-    return () => window.removeEventListener('beforeinstallprompt', onBip);
-  }, []);
+    // If it was already installed in this session, Chrome fires appinstalled.
+    const onInstalled = () => { setMode(null); setDeferred(null); };
+    window.addEventListener('appinstalled', onInstalled);
 
-  // Re-evaluate the gate whenever the journal saves (ritual may have just
-  // completed) — MPV_DB_DIRTY already fires on every write.
-  useEffect(() => {
-    if (!deferred) return;
-    const evaluate = () => {
-      if (!isStandalone() && hasCompletedRitual() && !dismissedRecently(DISMISS_KEY)) setMode('android');
+    // iOS Safari never fires beforeinstallprompt — show a one-time manual hint.
+    if (isIosSafari() && !localStorage.getItem(IOS_HINT_KEY)) setMode('ios');
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBip);
+      window.removeEventListener('appinstalled', onInstalled);
     };
-    evaluate();
-    const onMsg = (e) => { if (e.data && e.data.type === 'MPV_DB_DIRTY') evaluate(); };
-    window.addEventListener('message', onMsg);
-    return () => window.removeEventListener('message', onMsg);
-  }, [deferred]);
+  }, []);
 
   const install = async () => {
     if (!deferred) return;
     setMode(null);
     try {
       deferred.prompt();
-      await deferred.userChoice; // installed or dismissed — either way, done asking
+      await deferred.userChoice;
     } catch { /* prompt already consumed */ }
     setDeferred(null);
   };
