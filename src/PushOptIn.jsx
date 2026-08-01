@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 
 // Daily reminder opt-in. Strictly opt-in: we NEVER call requestPermission()
 // on our own — the student sees a Telugu explainer first and taps Enable.
-// Gated to students who have used the journal for 2+ days, so a first-time
-// visitor is never asked (and Chrome never penalises us for a cold prompt).
+// Shows once the student is logged into the journal (a real session is required
+// to store the subscription against their user id). It is still a two-step,
+// explainer-first prompt — not a cold browser permission request — so there is
+// no Chrome penalty. MIN_DAYS_USED can be raised later to defer it to more
+// invested students; 0 keeps it discoverable (and testable) from day one.
 const DISMISS_KEY = 'mpvPushDismissed';
 const DONE_KEY = 'mpvPushSubscribed';
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-const MIN_DAYS_USED = 2;
+const MIN_DAYS_USED = 0;
 const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 function daysSinceFirstUse() {
