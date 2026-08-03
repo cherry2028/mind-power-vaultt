@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Import the journal HTML as raw string — bundled in JS, never publicly accessible
 import journalHtml from '../journal-content.html?raw';
-import { BUILD_ID } from '../pwa';
+import { BUILD_ID, hardReset } from '../pwa';
 
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
@@ -91,6 +91,10 @@ export default function Journal() {
     const onMessage = (e) => {
       if (e.source !== iframeRef.current?.contentWindow || !e.data) return;
       if (e.data.type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
+      // "App Update చేయి" in the More menu: drop every worker + cache and
+      // reload from the network. Journal data (localStorage + Supabase) is not
+      // touched — this only clears the stale app shell.
+      if (e.data.type === 'MPV_FORCE_UPDATE') hardReset();
       if (e.data.type === 'MPV_DB_DIRTY') {
         if (!syncUserRef.current) return; // emergency login: local-only
         markDirty();
