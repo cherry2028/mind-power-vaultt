@@ -11,12 +11,14 @@
 //     sit on a months-old build forever. We now re-check whenever the app comes
 //     to the foreground, and hourly while it stays open.
 //
-//  2. APPLICATION. A detected update still has to be applied. The rule is:
-//       • found at LAUNCH  -> apply silently and reload. Nothing is typed yet,
-//         so there is nothing to lose, and the student just gets the new build.
-//       • found MID-SESSION -> show the Telugu toast and let the student tap.
-//         The journal is a data-entry app; swapping the bundle out from under a
-//         half-entered trade would destroy real work.
+//  2. APPLICATION. A detected update still has to be applied. PHASE 1 keeps
+//     this fully student-driven: every detected update — including one left
+//     waiting from a previous session — surfaces the Telugu toast, and the
+//     bundle only swaps when the student taps Refresh (which posts
+//     SKIP_WAITING and reloads). The journal is a data-entry app, so nothing
+//     is ever swapped out from under a half-entered trade.
+//     Phase 2 (later, once this is proven in the wild) can auto-activate at
+//     launch, where there is nothing typed yet to lose.
 //
 // The service worker itself needs no changes: it already answers SKIP_WAITING
 // with self.skipWaiting() and calls clients.claim() on activate, and its
@@ -27,12 +29,9 @@ import { registerSW } from 'virtual:pwa-register';
 
 const FOREGROUND_THROTTLE_MS = 2 * 60 * 1000; // don't re-check on every tab flick
 const POLL_MS = 60 * 60 * 1000;               // hourly while the app stays open
-const LAUNCH_GRACE_MS = 15 * 1000;            // "found at launch" window
-const AUTO_APPLIED_KEY = 'mpvSwAutoApplied';  // reload-loop guard (per session)
 
 export const BUILD_ID = typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev';
 
-const bootedAt = Date.now();
 let needRefresh = false;
 let applyUpdate = () => {};
 let swRegistration = null;
@@ -60,17 +59,6 @@ function promptForRefresh() {
   emit();
 }
 
-// Apply a waiting update immediately (SKIP_WAITING + reload). Guarded so a
-// pathological update that never "takes" can't put the app in a reload loop —
-// after one automatic attempt per session we fall back to the visible prompt.
-function applyAtLaunch() {
-  let alreadyTried = false;
-  try { alreadyTried = sessionStorage.getItem(AUTO_APPLIED_KEY) === '1'; } catch { /* private mode */ }
-  if (alreadyTried) { promptForRefresh(); return; }
-  try { sessionStorage.setItem(AUTO_APPLIED_KEY, '1'); } catch { /* private mode */ }
-  applyUpdate();
-}
-
 function checkForUpdate(force) {
   if (!swRegistration) return;
   const now = Date.now();
@@ -91,20 +79,16 @@ export function initPwa() {
   try {
     applyUpdate = registerSW({
       immediate: true,
-      onNeedRefresh() {
-        // Within the launch window there is nothing to lose — take the update
-        // now. Later in the session, ask first.
-        if (Date.now() - bootedAt < LAUNCH_GRACE_MS) applyAtLaunch();
-        else promptForRefresh();
-      },
+      onNeedRefresh() { promptForRefresh(); },
       onRegisterError(err) { console.warn('[MPV-PWA] SW registration failed:', err?.message); },
       onRegisteredSW(swUrl, registration) {
         if (!registration) return;
         swRegistration = registration;
         // A worker installed during a previous session can still be waiting
-        // (the student closed the app before refreshing). This is exactly the
-        // stale-forever case — apply it now.
-        if (registration.waiting) applyAtLaunch();
+        // (the student closed the app before tapping Refresh). vite-plugin-pwa
+        // does not re-fire onNeedRefresh for it, so surface the toast here —
+        // this is precisely the stale-forever case.
+        if (registration.waiting) promptForRefresh();
         lastCheck = Date.now();
         setInterval(() => checkForUpdate(true), POLL_MS);
       },
