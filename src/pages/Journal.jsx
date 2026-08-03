@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Import the journal HTML as raw string — bundled in JS, never publicly accessible
 import journalHtml from '../journal-content.html?raw';
+import { BUILD_ID } from '../pwa';
 
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
@@ -407,7 +408,9 @@ export default function Journal() {
     // or it would initialize from stale/empty localStorage.
     if (!authorized || !dataReady || !iframeRef.current) return;
     // Create blob URL — HTML is never in a public URL
-    const blob = new Blob([journalHtml], { type: 'text/html' });
+    // Stamp the build id into the document so the More menu can show which
+    // version this student is actually running (our update-reached-them check).
+    const blob = new Blob([journalHtml.replace(/__MPV_BUILD__/g, BUILD_ID)], { type: 'text/html' });
     const blobUrl = URL.createObjectURL(blob);
     iframeRef.current.src = blobUrl;
     return () => URL.revokeObjectURL(blobUrl);
