@@ -50,8 +50,80 @@ export function onNeedRefresh(fn) {
   return () => listeners.delete(fn);
 }
 
+// Apply a waiting update — deterministically, without delegating to
+// workbox-window.
+//
+// The bug this replaces: we surface the toast from our OWN
+// registration.waiting check (a worker left waiting by a previous session).
+// vite-plugin-pwa's updateSW() asks workbox-window to message the waiting
+// worker, but workbox only holds that reference when ITS OWN 'waiting' event
+// fired. Toast shown by us + no workbox reference = messageSkipWaiting() is a
+// no-op, so the student taps Refresh and nothing happens.
+//
+// The correct sequence, done here explicitly:
+//   1. postMessage {type:'SKIP_WAITING'} to registration.waiting
+//   2. the SW calls self.skipWaiting() -> activates
+//   3. its activate handler calls clients.claim() -> takes control
+//   4. 'controllerchange' fires on this page
+//   5. reload -> now served by the NEW worker, so the new bundle loads
+// with a timeout fallback in case any link in that chain is missing (e.g. a
+// very old worker that never answers SKIP_WAITING).
 export function refreshNow() {
-  applyUpdate();
+  if (typeof window === 'undefined') return;
+  let done = false;
+  const reload = () => {
+    if (done) return;
+    done = true;
+    window.location.reload();
+  };
+
+  try {
+    const waiting = swRegistration && swRegistration.waiting;
+    if (waiting && navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+      // If the worker never hands over, reload anyway: navigation is
+      // network-first, so a plain reload still fetches the newest index.html.
+      setTimeout(reload, 2500);
+      return;
+    }
+    // Nothing waiting (or no SW at all) — let the library try, then reload.
+    try { applyUpdate(); } catch { /* fall through to the reload below */ }
+    setTimeout(reload, 600);
+  } catch {
+    reload();
+  }
+}
+
+// Escape hatch for a client wedged on a stale worker: drop every service
+// worker and cache, then reload from the network. Journal data lives in
+// localStorage + Supabase and is NOT touched. Exposed as window.MPV_RESET().
+export async function hardReset() {
+  try {
+    if (navigator.serviceWorker) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister().catch(() => {})));
+    }
+    if (typeof caches !== 'undefined') {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k).catch(() => {})));
+    }
+  } catch { /* best effort — the reload below is what matters */ }
+  window.location.reload();
+}
+
+// Diagnostic: what worker is actually in control, and on which build.
+export function swState() {
+  const r = swRegistration;
+  return {
+    build: BUILD_ID,
+    controller: (navigator.serviceWorker && navigator.serviceWorker.controller
+      && navigator.serviceWorker.controller.scriptURL) || null,
+    installing: !!(r && r.installing),
+    waiting: !!(r && r.waiting),
+    active: !!(r && r.active),
+    needRefresh,
+  };
 }
 
 function promptForRefresh() {
@@ -75,7 +147,9 @@ export function checkForUpdateNow() {
 
 export function initPwa() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-  window.MPV_BUILD = BUILD_ID; // so a student can be asked "what version?"
+  window.MPV_BUILD = BUILD_ID;   // so a student can be asked "what version?"
+  window.MPV_RESET = hardReset;  // escape hatch for a wedged worker
+  window.MPV_SW_STATE = swState; // diagnostic: who is controlling, on what build
   try {
     applyUpdate = registerSW({
       immediate: true,

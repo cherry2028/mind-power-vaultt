@@ -546,7 +546,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <button type="button" class="voice-stop" id="voiceStopBtn" onclick="stopVoice()">⏹ STOP</button>
     </div>
     <textarea id="tr-voice" placeholder="Voice note లేదా manually type చేయి..." rows="2"></textarea>
-    <button class="dtl-toggle" onclick="ge('ts2-dtl').classList.toggle('open');rerenderSeg2()">+ Add details (optional — prices, qty)</button>
+    <button class="dtl-toggle" onclick="ge('ts2-dtl').classList.toggle('open');rerenderSeg2()">+ Add details (optional — segment, prices, auto P&amp;L)</button>
     <div class="dtl-body" id="ts2-dtl">
       <div id="segFields2"></div>
       <div id="autoPnlRow" style="display:none;margin:4px 0 8px;padding:10px 12px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.35);border-radius:10px;font-size:12.5px;color:#E2C97A">
@@ -603,7 +603,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <button class="more-item" onclick="ge('moreSheet').classList.remove('open');ge('sharePanel').classList.add('open')"><span class="mi">📤</span>Export / Share — WhatsApp PDF, Email, Backup</button>
     <button class="more-item" onclick="ge('moreSheet').classList.remove('open');showPinSet()"><span class="mi">🔐</span>PIN Lock</button>
     <!-- Build id — replaced at runtime by Journal.jsx. Lets us confirm a
-         student's installed app actually picked up a deploy. -->
+         student's installed app actually picked up a deploy. The button is the
+         escape hatch for a client wedged on a stale service worker: most
+         students can't open a console, so it must be tappable. -->
+    <button class="more-item" onclick="forceAppUpdate()"><span class="mi">🔄</span>App Update చేయి</button>
     <div style="font-size:10px;color:#6A5A40;text-align:center;padding:10px 0 4px;letter-spacing:0.5px">Version __MPV_BUILD__</div>
   </div>
 </div>
@@ -1995,6 +1998,14 @@ function openLicense(){
     '<div class="licmrz">'+mrzLocal(lp.name,lp.licNo)+'</div>'+
     '</div></div>';
   ge('licSheet').classList.add('open');
+}
+// Escape hatch for a client wedged on a stale service worker. The parent drops
+// every worker + cache and reloads from the network. Journal data lives in
+// localStorage + Supabase and is NOT touched — but sync first to be safe.
+function forceAppUpdate(){
+  if(!confirm('App ని update చేయాలా? Latest version load అవుతుంది.'))return;
+  try{window.parent.postMessage({type:'MPV_FORCE_UPDATE'},'*');}catch(e){}
+  toast('Update అవుతోంది…');
 }
 function shareLicense(){var lp=licensePayload();if(!lp)return;window.parent.postMessage({type:'MPV_SHARE_IMAGE',kind:'license',payload:lp},'*');}
 
