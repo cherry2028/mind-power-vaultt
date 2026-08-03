@@ -602,6 +602,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <button class="more-item" onclick="goLegacy('performance')"><span class="mi">📈</span>Performance Dashboard</button>
     <button class="more-item" onclick="ge('moreSheet').classList.remove('open');ge('sharePanel').classList.add('open')"><span class="mi">📤</span>Export / Share — WhatsApp PDF, Email, Backup</button>
     <button class="more-item" onclick="ge('moreSheet').classList.remove('open');showPinSet()"><span class="mi">🔐</span>PIN Lock</button>
+    <!-- Build id — replaced at runtime by Journal.jsx. Lets us confirm a
+         student's installed app actually picked up a deploy. -->
+    <div style="font-size:10px;color:#6A5A40;text-align:center;padding:10px 0 4px;letter-spacing:0.5px">Version __MPV_BUILD__</div>
   </div>
 </div>
 
