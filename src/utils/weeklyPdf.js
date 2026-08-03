@@ -28,13 +28,36 @@ export function buildReportHtml(p) {
   const secTitle = (t) => `<div style="margin:18px 0 8px;font-size:12px;font-weight:700;color:${G.gold};letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid ${G.line};padding-bottom:4px">${t}</div>`;
   const stat = (label, value, color) => `<td style="width:16.6%;padding:10px 6px;border:1px solid ${G.line};text-align:center;background:${G.bgSoft}"><div style="font-size:15px;font-weight:700;color:${color || G.ink}">${value}</div><div style="font-size:8.5px;color:${G.dim};letter-spacing:0.5px;text-transform:uppercase;margin-top:3px">${label}</div></td>`;
 
+  // Segment-aware detail summary (strike/expiry for options, pair/leverage for
+  // crypto, prices + SL/target everywhere). All fields optional — old trades
+  // without details render '—'.
+  const SEG_SHORT = { options: 'OPT', cash: 'CASH', futures: 'FUT', crypto: 'CRYPTO' };
+  const tradeDetail = (t) => {
+    const bits = [];
+    if (t.seg) bits.push(SEG_SHORT[t.seg] || t.seg);
+    if (t.seg === 'options') {
+      const o = [t.strike, t.optType].filter(Boolean).join(' ');
+      if (o) bits.push(o);
+      if (t.expiry) bits.push('exp ' + t.expiry);
+    }
+    if (t.seg === 'crypto' && t.pair) bits.push(t.pair + (t.mkt === 'perp' ? ` perp${t.lev ? ' ' + t.lev + '×' : ''}` : ''));
+    if (t.en && t.ex) bits.push(`${t.en}→${t.ex}${t.qty ? ' ×' + t.qty + (t.lotSize ? `(${t.lotSize})` : '') : ''}`);
+    if (t.sl) bits.push('SL ' + t.sl);
+    if (t.tgt) bits.push('T ' + t.tgt);
+    return bits.length ? esc(bits.join(' · ')) : '—';
+  };
+  const dirLabel = (t) => (t.seg === 'options'
+    ? (t.dir === 'short' ? 'SOLD' : t.dir === 'long' ? 'BOUGHT' : '')
+    : (t.dir || '').toUpperCase());
+
   const tradeRows = (p.trades || []).map((t) => {
     const pnl = Number(t.pnl || 0);
     const isOpen = t.status === 'open';
     return `<tr>
       <td style="${td}">${esc(t.date)}</td>
       <td style="${td}">${esc(t.inst)}</td>
-      <td style="${td}">${esc((t.dir || '').toUpperCase())}</td>
+      <td style="${td}">${esc(dirLabel(t))}</td>
+      <td style="${td};font-size:9px">${tradeDetail(t)}</td>
       <td style="${td};color:${t.pln ? G.green : G.red};font-weight:600">${t.pln ? 'Planned' : 'Impulse'}</td>
       <td style="${td}">${pretty(t.emo)}</td>
       <td style="${td};color:${isOpen ? G.dim : pnl >= 0 ? G.green : G.red};font-weight:700;white-space:nowrap">${isOpen ? 'OPEN' : signedRupee(pnl)}</td>
@@ -97,7 +120,7 @@ export function buildReportHtml(p) {
     <div style="font-size:9px;color:${G.dim};margin-top:5px">Discipline % = planned trades / total trades (${s.plannedCount ?? 0}/${s.totalTrades ?? 0}) · Overall discipline score: ${Number(p.discipline || 0)}</div>
 
     ${secTitle('All Trades This Week')}
-    ${tradeRows ? `<table style="width:100%;border-collapse:collapse"><tr><th style="${th}">Date</th><th style="${th}">Instrument</th><th style="${th}">Dir</th><th style="${th}">Type</th><th style="${th}">Emotion</th><th style="${th}">P&amp;L</th><th style="${th}">Mistake</th><th style="${th}">Voice Note</th></tr>${tradeRows}</table>` : empty('ఈ వారం trades log అవ్వలేదు')}
+    ${tradeRows ? `<table style="width:100%;border-collapse:collapse"><tr><th style="${th}">Date</th><th style="${th}">Instrument</th><th style="${th}">Dir</th><th style="${th}">Details</th><th style="${th}">Type</th><th style="${th}">Emotion</th><th style="${th}">P&amp;L</th><th style="${th}">Mistake</th><th style="${th}">Voice Note</th></tr>${tradeRows}</table>` : empty('ఈ వారం trades log అవ్వలేదు')}
 
     ${secTitle('EOD Reviews')}
     ${eodRows ? `<table style="width:100%;border-collapse:collapse"><tr><th style="${th}">Date</th><th style="${th}">Process</th><th style="${th}">Outcome</th><th style="${th}">Mood</th><th style="${th}">Best Decision</th><th style="${th}">Worst Decision</th><th style="${th}">Mirror Answers</th></tr>${eodRows}</table>` : empty('ఈ వారం EOD reviews లేవు')}

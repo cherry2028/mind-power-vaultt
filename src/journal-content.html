@@ -246,9 +246,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .tshort{background:rgba(207,102,121,0.13);color:#CF6679}
 .tplan{background:rgba(91,143,212,0.13);color:#5B8FD4}
 .timp{background:rgba(224,168,76,0.13);color:#E0A84C}
-.tm{font-size:10px;color:#2A2A2A;margin-top:4px;line-height:1.6}
+.tm{font-size:10.5px;color:#9A8870;margin-top:4px;line-height:1.6}
 .tpnl{font-size:19px;font-weight:900;text-align:right}
-.tdel{font-size:10px;color:#2A2A2A;background:none;border:none;display:block;text-align:right;margin-top:4px}
+.tdel{font-size:10px;color:#6A5A40;background:none;border:none;display:block;text-align:right;margin-top:4px;cursor:pointer}
 .bc{display:flex;align-items:flex-end;gap:4px;height:75px}
 .brc{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
 .br{width:100%;border-radius:3px 3px 0 0;min-height:3px}
@@ -515,17 +515,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     </div>
     <div class="lbl">Emotion ఇప్పుడు</div>
     <div class="chiprow" id="ts1-emo-row"></div>
-    <button class="dtl-toggle" onclick="ge('ts1-dtl').classList.toggle('open')">+ Add details (optional — direction, prices, qty, setup)</button>
+    <button class="dtl-toggle" onclick="ge('ts1-dtl').classList.toggle('open');renderSegUI1()">+ Add details (optional — segment, prices, SL/target, setup)</button>
     <div class="dtl-body" id="ts1-dtl">
+      <div class="lbl">Segment</div>
+      <div class="chiprow" id="seg-row"></div>
       <div class="g2">
-        <div class="fld"><div class="lbl">Direction</div><select id="ts1-dir"><option value="">—</option><option value="long">Long (Buy)</option><option value="short">Short (Sell)</option></select></div>
+        <div class="fld"><div class="lbl" id="dirLbl">Direction</div><div class="chiprow" id="dir-row" style="margin:0 0 6px"></div></div>
         <div class="fld"><div class="lbl">Setup</div><input id="ts1-s" placeholder="OB Retest..."/></div>
       </div>
-      <div class="g3">
-        <div class="fld"><div class="lbl">Entry</div><input type="number" id="ts1-en" placeholder="24450"/></div>
-        <div class="fld"><div class="lbl">Exit</div><input type="number" id="ts1-ex" placeholder="24600"/></div>
-        <div class="fld"><div class="lbl">Qty</div><input type="number" id="ts1-q" placeholder="1"/></div>
-      </div>
+      <div id="segFields"></div>
     </div>
     <button class="bigbtn" style="margin-top:12px" onclick="saveOpenTrade()">Trade Open ✦ (P&amp;L తర్వాత)</button>
   </div>
@@ -548,12 +546,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <button type="button" class="voice-stop" id="voiceStopBtn" onclick="stopVoice()">⏹ STOP</button>
     </div>
     <textarea id="tr-voice" placeholder="Voice note లేదా manually type చేయి..." rows="2"></textarea>
-    <button class="dtl-toggle" onclick="ge('ts2-dtl').classList.toggle('open')">+ Add details (optional — prices, qty)</button>
+    <button class="dtl-toggle" onclick="ge('ts2-dtl').classList.toggle('open');rerenderSeg2()">+ Add details (optional — prices, qty)</button>
     <div class="dtl-body" id="ts2-dtl">
-      <div class="g3">
-        <div class="fld"><div class="lbl">Entry</div><input type="number" id="ts2-en"/></div>
-        <div class="fld"><div class="lbl">Exit</div><input type="number" id="ts2-ex"/></div>
-        <div class="fld"><div class="lbl">Qty</div><input type="number" id="ts2-q"/></div>
+      <div id="segFields2"></div>
+      <div id="autoPnlRow" style="display:none;margin:4px 0 8px;padding:10px 12px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.35);border-radius:10px;font-size:12.5px;color:#E2C97A">
+        Auto: <b id="autoPnlVal" style="font-size:14px"></b> — adjust చేయాలంటే amount మార్చు.
+        <button type="button" onclick="applyAutoPnl()" style="margin-left:8px;padding:5px 12px;border-radius:8px;border:none;background:#C9A84C;color:#05050A;font-weight:700;font-size:11.5px;cursor:pointer;font-family:inherit">Use Auto</button>
       </div>
     </div>
     <button class="bigbtn" style="margin-top:12px" onclick="closeTradeFinish()">Trade Close చేయి ✦</button>
@@ -1378,7 +1376,23 @@ function rTr(){
   ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
   var list=ge('tllist');list.innerHTML='';
   if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
-  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs"><span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+(t.dir||'').toUpperCase()+'</span><span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+t.date+' · '+(t.setup||'')+' · '+t.en+'→'+t.ex+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirTxt=t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase();var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+}
+// Compact per-segment detail line. Every field is optional — old trades (no
+// details) show just date · setup, exactly like before.
+function tDetail(t){
+  var bits=[t.date];
+  if(t.setup)bits.push(t.setup);
+  if(t.seg==='options'){
+    var o=(t.strike?t.strike+' ':'')+(t.optType||'');
+    if(o.trim())bits.push(o.trim());
+    if(t.expiry)bits.push('exp '+t.expiry);
+  }
+  if(t.seg==='crypto'&&t.pair)bits.push(t.pair+(t.mkt==='perp'?' perp'+(t.lev?' '+t.lev+'×':''):''));
+  if(t.en&&t.ex)bits.push(t.en+'→'+t.ex+(t.qty?' ×'+t.qty+(t.lotSize?'L':''):''));
+  if(t.sl)bits.push('SL '+t.sl);
+  if(t.tgt)bits.push('T '+t.tgt);
+  return bits.join(' · ');
 }
 
 // ────── EOD ──────
@@ -1661,7 +1675,13 @@ function openStep1(){
   }
   if(checkKillSwitch()){toast('🛑 Daily loss limit hit. Trading blocked.',5000);return;}
   TS1={pln:true,emo:'calm'};
-  ge('ts1-inst').value='';ge('trmk').value='';ge('ts1-dir').value='';ge('ts1-s').value='';ge('ts1-en').value='';ge('ts1-ex').value='';ge('ts1-q').value='';
+  ge('ts1-inst').value='';ge('trmk').value='';ge('ts1-s').value='';
+  // Segment detail fields are rendered on demand; reset the selection state and
+  // clear the host so a previous trade's values never leak into the next one.
+  TSEG={seg:'',dir:'',opt:'CE',mkt:'spot'};
+  var sf=ge('segFields');if(sf)sf.innerHTML='';
+  var sr=ge('seg-row');if(sr)sr.innerHTML='';
+  var dr0=ge('dir-row');if(dr0)dr0.innerHTML='';
   ge('ts1-mist').style.display='none';ge('ts1-dtl').classList.remove('open');hideMistFeedback();
   var seen={},chips=[];
   for(var i=DB.tr.length-1;i>=0&&chips.length<6;i--){var n=(DB.tr[i].inst||'').trim();if(n&&!seen[n.toUpperCase()]){seen[n.toUpperCase()]=1;chips.push(n);}}
@@ -1678,11 +1698,143 @@ function openStep1(){
   buildChips('ts1-emo-row',[{v:'calm',label:'😌 Calm'},{v:'anxious',label:'😰 Anxious'},{v:'fearful',label:'😨 Fearful'},{v:'greedy',label:'🤑 Greedy'},{v:'angry',label:'😤 Angry'},{v:'neutral',label:'😐 Neutral'}],'calm',function(v){TS1.emo=v;});
   ge('ts1').classList.add('open');
 }
+// ────── SEGMENT-AWARE TRADE DETAILS ──────
+// All optional — the fast path (instrument → type → emotion → Open) never
+// touches any of this. Old trades without these keys render fine.
+var TSEG={seg:'',dir:'',opt:'CE',mkt:'spot'};
+function segDefault(){
+  // Most-used segment across trades; falls back to the saved choice, then
+  // to 'options' (most students trade index options).
+  var c={},best='',n=0;
+  for(var i=0;i<DB.tr.length;i++){var s=DB.tr[i].seg;if(!s)continue;c[s]=(c[s]||0)+1;if(c[s]>n){n=c[s];best=s;}}
+  return best||localStorage.getItem('mpvSeg')||'options';
+}
+function segLbl(s){return s==='options'?'⚙️ Options':s==='cash'?'📈 Cash':s==='futures'?'🔮 Futures':s==='crypto'?'🪙 Crypto':s;}
+function dirLabels(){return TSEG.seg==='options'?['Bought','Sold']:['Long','Short'];}
+// Numeric input helper (numeric keypad on mobile)
+function nfld(id,lbl,ph,val){return '<div class="fld"><div class="lbl">'+lbl+'</div><input type="number" inputmode="decimal" id="'+id+'" placeholder="'+(ph||'')+'" value="'+(val==null?'':val)+'" oninput="recalcAuto()"/></div>';}
+function segFieldsHtml(t){
+  t=t||{};var s=TSEG.seg;
+  if(s==='options'){
+    return '<div class="g2">'
+      +'<div class="fld"><div class="lbl">CE / PE</div><div class="chiprow" style="margin:0">'
+      +'<button type="button" class="chip'+(TSEG.opt==='CE'?' on':'')+'" onclick="TSEG.opt=\'CE\';rerenderSeg()">CE</button>'
+      +'<button type="button" class="chip'+(TSEG.opt==='PE'?' on':'')+'" onclick="TSEG.opt=\'PE\';rerenderSeg()">PE</button></div></div>'
+      +nfld('sf-strike','Strike','24500',t.strike)+'</div>'
+      +'<div class="fld"><div class="lbl">Expiry</div><div class="chiprow" style="margin:0 0 6px">'
+      +'<button type="button" class="chip" onclick="setExpiry(0)">This week</button>'
+      +'<button type="button" class="chip" onclick="setExpiry(1)">Next week</button>'
+      +'<button type="button" class="chip" onclick="setExpiry(-1)">Monthly</button></div>'
+      +'<input type="date" id="sf-expiry" value="'+(t.expiry||'')+'" style="margin-bottom:10px"/></div>'
+      +'<div class="g3">'+nfld('sf-en','Entry Premium','100',t.en)+nfld('sf-ex','Exit Premium','150',t.ex)
+      +nfld('sf-lots','Lots','1',t.qty)+'</div>'
+      +'<div class="g2">'+nfld('sf-lotsize','Lot Size','75',t.lotSize||localStorage.getItem('mpvLotSize')||'')
+      +nfld('sf-sl','SL (premium)','80',t.sl)+'</div>';
+  }
+  if(s==='cash'){
+    return '<div class="g3">'+nfld('sf-en','Buy Price','100',t.en)+nfld('sf-ex','Sell Price','110',t.ex)+nfld('sf-qty','Qty','50',t.qty)+'</div>'
+      +'<div class="g2">'+nfld('sf-sl','Stoploss','95',t.sl)+nfld('sf-tgt','Target','115',t.tgt)+'</div>';
+  }
+  if(s==='futures'){
+    return '<div class="g3">'+nfld('sf-en','Entry','24500',t.en)+nfld('sf-ex','Exit','24600',t.ex)+nfld('sf-lots','Lots','1',t.qty)+'</div>'
+      +'<div class="g3">'+nfld('sf-lotsize','Lot Size','75',t.lotSize||localStorage.getItem('mpvLotSize')||'')
+      +nfld('sf-sl','Stoploss','24450',t.sl)+nfld('sf-tgt','Target','24700',t.tgt)+'</div>';
+  }
+  if(s==='crypto'){
+    var pairs=[];try{pairs=JSON.parse(localStorage.getItem('mpvPairs')||'[]');}catch(e){}
+    var chips='';for(var i=0;i<Math.min(pairs.length,4);i++){chips+='<button type="button" class="chip" onclick="ge(\'sf-pair\').value=\''+pairs[i]+'\'">'+pairs[i]+'</button>';}
+    return '<div class="fld"><div class="lbl">Coin / Pair</div>'+(chips?'<div class="chiprow" style="margin:0 0 6px">'+chips+'</div>':'')
+      +'<input id="sf-pair" placeholder="BTC/USDT" value="'+(t.pair||'')+'" style="margin-bottom:10px"/></div>'
+      +'<div class="g2"><div class="fld"><div class="lbl">Market</div><div class="chiprow" style="margin:0">'
+      +'<button type="button" class="chip'+(TSEG.mkt==='spot'?' on':'')+'" onclick="TSEG.mkt=\'spot\';rerenderSeg()">Spot</button>'
+      +'<button type="button" class="chip'+(TSEG.mkt==='perp'?' on':'')+'" onclick="TSEG.mkt=\'perp\';rerenderSeg()">Perp</button></div></div>'
+      +(TSEG.mkt==='perp'?nfld('sf-lev','Leverage ×','10',t.lev):'<div></div>')+'</div>'
+      +'<div class="g3">'+nfld('sf-en','Entry','60000',t.en)+nfld('sf-ex','Exit','62000',t.ex)+nfld('sf-qty','Qty','0.5',t.qty)+'</div>';
+  }
+  return '';
+}
+function setExpiry(mode){
+  // 0 = this week's Thursday, 1 = next week's, -1 = last Thursday of month
+  var d=new Date(),iso;
+  if(mode>=0){var add=((4-d.getDay())+7)%7+mode*7;d.setDate(d.getDate()+add);}
+  else{var m=new Date(d.getFullYear(),d.getMonth()+1,0);while(m.getDay()!==4)m.setDate(m.getDate()-1);if(m<d)m=new Date(d.getFullYear(),d.getMonth()+2,0);while(m.getDay()!==4)m.setDate(m.getDate()-1);d=m;}
+  iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  var el=ge('sf-expiry');if(el)el.value=iso;
+}
+var SEG_STEP=1; // which sheet the seg fields are currently rendered in
+function rerenderSeg(t){
+  if(SEG_STEP===2){rerenderSeg2();return;} // step-2 host includes its own chips
+  var host=ge('segFields');
+  if(host)host.innerHTML=segFieldsHtml(t||segReadFields());
+  var segRow=ge('seg-row');
+  if(segRow&&SEG_STEP===1){
+    var out='';['options','cash','futures','crypto'].forEach(function(s){
+      out+='<button type="button" class="chip'+(TSEG.seg===s?' on':'')+'" onclick="TSEG.seg=\''+s+'\';localStorage.setItem(\'mpvSeg\',\''+s+'\');rerenderSeg()">'+segLbl(s)+'</button>';
+    });
+    segRow.innerHTML=out;
+    var dl=ge('dirLbl');if(dl)dl.textContent=TSEG.seg==='options'?'Bought / Sold':'Direction';
+    var dr=ge('dir-row');if(dr){var L=dirLabels();
+      dr.innerHTML='<button type="button" class="chip'+(TSEG.dir==='long'?' on':'')+'" onclick="TSEG.dir=\'long\';rerenderSeg()">'+L[0]+'</button>'
+        +'<button type="button" class="chip'+(TSEG.dir==='short'?' on':'')+'" onclick="TSEG.dir=\'short\';rerenderSeg()">'+L[1]+'</button>';}
+  }
+  recalcAuto();
+}
+function renderSegUI1(){SEG_STEP=1;if(!TSEG.seg)TSEG.seg=segDefault();rerenderSeg({});}
+function gv(id){var el=ge(id);return el?el.value:'';}
+function segReadFields(){
+  return {seg:TSEG.seg,dir:TSEG.dir,optType:TSEG.seg==='options'?TSEG.opt:'',mkt:TSEG.seg==='crypto'?TSEG.mkt:'',
+    strike:gv('sf-strike'),expiry:gv('sf-expiry'),en:gv('sf-en'),ex:gv('sf-ex'),
+    qty:gv('sf-lots')||gv('sf-qty'),lotSize:gv('sf-lotsize'),sl:gv('sf-sl'),tgt:gv('sf-tgt'),
+    pair:gv('sf-pair'),lev:gv('sf-lev')};
+}
+// Same math as src/utils/pnlCalc.js (18 unit tests) — keep both in sync.
+// Options: en/ex are premiums; CE/PE never flips the sign, only Bought/Sold.
+// Cash: (sell−buy)·qty, direction NOT applied. Crypto: leverage NOT multiplied.
+function computePnl(t){
+  if(!t||!t.seg)return null;
+  var en=parseFloat(t.en),ex=parseFloat(t.ex);
+  if(!isFinite(en)||!isFinite(ex))return null;
+  var qty;
+  if(t.seg==='options'||t.seg==='futures'){
+    var lots=parseFloat(t.qty),lotSize=parseFloat(t.lotSize);
+    if(!isFinite(lots)||!isFinite(lotSize))return null;
+    qty=lots*lotSize;
+  }else{qty=parseFloat(t.qty);}
+  if(!isFinite(qty)||qty<=0)return null;
+  var dirSign=t.seg==='cash'?1:(t.dir==='short'?-1:1);
+  return Math.round(dirSign*(ex-en)*qty);
+}
+function recalcAuto(){
+  var row=ge('autoPnlRow');if(!row)return;
+  if(SEG_STEP!==2){row.style.display='none';return;}
+  var p=computePnl(segReadFields());
+  if(p===null){row.style.display='none';return;}
+  row.style.display='';
+  ge('autoPnlVal').textContent=(p>=0?'+₹':'-₹')+Math.abs(p).toLocaleString('en-IN');
+  ge('autoPnlVal').style.color=p>=0?'#4CAF82':'#CF6679';
+  row.dataset.pnl=p;
+  // HYBRID: first computable value pre-fills the sign + amount, but both stay
+  // fully editable (brokerage/slippage adjustments). Never overwrite an amount
+  // the student already typed.
+  if(ge('ts2-pnl').value===''&&TS2_SIGN===0)applyAutoPnl();
+}
+function applyAutoPnl(){
+  var row=ge('autoPnlRow');var p=Number(row&&row.dataset.pnl);
+  if(!isFinite(p))return;
+  setPnlSign(p>=0?1:-1);
+  ge('ts2-pnl').value=String(Math.abs(p));
+}
 function saveOpenTrade(){
   var inst=ge('ts1-inst').value.trim();
   if(!inst){toast('Instrument select లేదా type చేయి!');return;}
   var mist=TS1.pln?'':ge('trmk').value;
-  var t={id:Date.now(),date:td(),inst:inst,setup:ge('ts1-s').value,dir:ge('ts1-dir').value,en:ge('ts1-en').value,ex:ge('ts1-ex').value,qty:ge('ts1-q').value,pnl:0,emo:TS1.emo,pln:TS1.pln,mist:mist,voice:'',status:'open'};
+  var t={id:Date.now(),date:td(),inst:inst,setup:ge('ts1-s')?ge('ts1-s').value:'',pnl:0,emo:TS1.emo,pln:TS1.pln,mist:mist,voice:'',status:'open'};
+  // Merge optional segment details only if the expander was used
+  if(ge('ts1-dtl').classList.contains('open')&&TSEG.seg){
+    var d=segReadFields();for(var k in d){if(d[k])t[k]=d[k];}
+    if(d.lotSize)localStorage.setItem('mpvLotSize',d.lotSize);
+    if(d.pair){try{var ps=JSON.parse(localStorage.getItem('mpvPairs')||'[]');ps=[d.pair].concat(ps.filter(function(x){return x!==d.pair;})).slice(0,6);localStorage.setItem('mpvPairs',JSON.stringify(ps));}catch(e){}}
+  }
   DB.tr.push(t);ls('mpvtr',DB.tr);
   if(t.pln)showFeedback('✦ You executed like a professional.','#4CAF82');
   else if(mist==='revenge')showFeedback('⚠ Revenge trade. Stop. Reset.','#CF6679');
@@ -1698,14 +1850,41 @@ function setPnlSign(s){
   ge('ts2-sign-loss').classList.toggle('on',s===-1);
   ge('ts2-sign-profit').classList.toggle('on',s===1);
 }
+var TS2_TRADE=null;
+function segChipsHtmlInline(){
+  var out='<div class="lbl">Segment</div><div class="chiprow">';
+  ['options','cash','futures','crypto'].forEach(function(s){
+    out+='<button type="button" class="chip'+(TSEG.seg===s?' on':'')+'" onclick="TSEG.seg=\''+s+'\';rerenderSeg2()">'+segLbl(s)+'</button>';
+  });
+  out+='</div>';
+  var L=dirLabels();
+  out+='<div class="lbl">'+(TSEG.seg==='options'?'Bought / Sold':'Direction')+'</div><div class="chiprow">'
+    +'<button type="button" class="chip'+(TSEG.dir==='long'?' on':'')+'" onclick="TSEG.dir=\'long\';rerenderSeg2()">'+L[0]+'</button>'
+    +'<button type="button" class="chip'+(TSEG.dir==='short'?' on':'')+'" onclick="TSEG.dir=\'short\';rerenderSeg2()">'+L[1]+'</button></div>';
+  return out;
+}
+function rerenderSeg2(){
+  SEG_STEP=2;
+  // Preserve anything already typed; fall back to the trade's saved values.
+  var typed=segReadFields(),base=TS2_TRADE||{},merged={},k;
+  for(k in base)merged[k]=base[k];
+  for(k in typed){if(typed[k])merged[k]=typed[k];}
+  ge('segFields2').innerHTML=segChipsHtmlInline()+(TSEG.seg?segFieldsHtml(merged):'');
+  recalcAuto();
+}
 function openStep2(id){
   var t=null;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id===id)t=DB.tr[i];}
-  if(!t)return;TS2_ID=id;
+  if(!t)return;TS2_ID=id;TS2_TRADE=t;
   ge('ts2-tt').textContent='Close: '+t.inst;
   TS2_SIGN=0;ge('ts2-sign-loss').classList.remove('on');ge('ts2-sign-profit').classList.remove('on');
   ge('ts2-pnl').value='';ge('tr-voice').value='';
-  ge('ts2-en').value=t.en||'';ge('ts2-ex').value=t.ex||'';ge('ts2-q').value=t.qty||'';
-  ge('ts2-dtl').classList.remove('open');
+  TSEG.seg=t.seg||'';TSEG.dir=t.dir||'';TSEG.opt=t.optType||'CE';TSEG.mkt=t.mkt||'spot';
+  SEG_STEP=2;
+  ge('segFields2').innerHTML='';var apr=ge('autoPnlRow');if(apr)apr.style.display='none';
+  // A trade opened WITH details reopens them (the exit price is what's missing);
+  // a quick-logged trade keeps the collapsed, manual-P&L flow of today.
+  if(t.seg){ge('ts2-dtl').classList.add('open');rerenderSeg2();}
+  else ge('ts2-dtl').classList.remove('open');
   ge('ts2').classList.add('open');
 }
 function closeTradeFinish(){
@@ -1715,9 +1894,11 @@ function closeTradeFinish(){
   var pv=ge('ts2-pnl').value.replace(/\D/g,'');
   if(pv===''){toast('Amount enter చేయి (₹)');return;}
   t.pnl=TS2_SIGN*(Number(pv)||0);t.voice=ge('tr-voice').value;t.status='closed';t.closedAt=Date.now();
-  if(ge('ts2-en').value)t.en=ge('ts2-en').value;
-  if(ge('ts2-ex').value)t.ex=ge('ts2-ex').value;
-  if(ge('ts2-q').value)t.qty=ge('ts2-q').value;
+  if(ge('ts2-dtl').classList.contains('open')&&TSEG.seg){
+    var d=segReadFields();for(var k in d){if(d[k])t[k]=d[k];}
+    if(d.lotSize)localStorage.setItem('mpvLotSize',d.lotSize);
+    if(d.pair){try{var ps=JSON.parse(localStorage.getItem('mpvPairs')||'[]');ps=[d.pair].concat(ps.filter(function(x){return x!==d.pair;})).slice(0,6);localStorage.setItem('mpvPairs',JSON.stringify(ps));}catch(e){}}
+  }
   ls('mpvtr',DB.tr);
   ge('ts2').classList.remove('open');
   renderTrade();updHdr();rTr();
