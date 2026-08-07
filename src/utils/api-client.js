@@ -1,4 +1,32 @@
+// Admin review writes go through /api/admin-reviews, which runs with the
+// service-role key server-side and verifies the admin JWT. The browser never
+// writes to the reviews table directly, so the table needs no write policy at
+// all — see api/admin-reviews.js.
+async function adminReviews(op, body = {}) {
+  const token = sessionStorage.getItem('mpv_admin_token') || '';
+  const res = await fetch('/api/admin-reviews', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ op, ...body }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
 export const api = {
+  adminReviews,
+
+  // Upload via a one-time signed URL minted by the server, so large voice
+  // notes are not limited by the serverless request body size.
+  async adminUpload(bucket, file) {
+    const { path, token, publicUrl } = await adminReviews('uploadUrl', { bucket, fileName: file.name });
+    const { supabase } = await import('../supabase');
+    const { error } = await supabase.storage.from(bucket).uploadToSignedUrl(path, token, file);
+    if (error) throw new Error(error.message);
+    return { path, publicUrl };
+  },
+
   async validateCode(code, type = 'access') {
     const res = await fetch('/api/validate-code', {
       method: 'POST',
