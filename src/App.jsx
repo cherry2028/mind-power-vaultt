@@ -342,6 +342,9 @@ function App(){
     try {
       const result = await api.validateCode(adminPwdInput, 'admin');
       if (result.valid && result.role === 'admin') {
+        // The admin JWT was previously discarded. It is what /api/admin-reviews
+        // checks before it will write anything, so it has to be kept.
+        if (result.token) sessionStorage.setItem('mpv_admin_token', result.token);
         setAdminAuth(true);
         setAdminPwdErr(false);
       } else {

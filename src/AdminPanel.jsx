@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import { api } from './utils/api-client';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -98,60 +99,48 @@ export default function AdminPanel({ onClose }) {
     let imageUrl = null;
     let reviewType = 'text';
 
-    if (imageFiles && imageFiles.length > 0) {
-      const uploadedUrls = [];
-      for (const file of imageFiles) {
-        const imgName = `${Date.now()}_${window.crypto.getRandomValues(new Uint32Array(1))[0].toString(36).substring(0, 6)}_${file.name}`;
-        const { data: imgData, error: imgErr } = await supabase.storage.from('review_images').upload(imgName, file);
-        if (!imgErr) {
-          const { data: imgPublicData } = supabase.storage.from('review_images').getPublicUrl(imgName);
-          uploadedUrls.push(imgPublicData.publicUrl);
+    try {
+      if (imageFiles && imageFiles.length > 0) {
+        const uploadedUrls = [];
+        for (const file of imageFiles) {
+          const { publicUrl } = await api.adminUpload('review_images', file);
+          uploadedUrls.push(publicUrl);
         }
+        if (uploadedUrls.length > 0) imageUrl = uploadedUrls.join(",");
       }
-      if (uploadedUrls.length > 0) {
-        imageUrl = uploadedUrls.join(",");
+
+      if (audioFile) {
+        const { publicUrl } = await api.adminUpload('audio_reviews', audioFile);
+        audioUrl = publicUrl;
+        reviewType = 'audio';
       }
-    }
 
-    if (audioFile) {
-      const fileName = `${Date.now()}_${audioFile.name}`;
-      const { data, error } = await supabase.storage.from('audio_reviews').upload(fileName, audioFile);
-      
-      if (error) {
-        alert("Audio upload failed: " + error.message);
-        setUploading(false);
-        return;
+      const newIndex = reviews.length > 0 ? Math.max(...reviews.map(r => r.order_index)) + 1 : 0;
+
+      const { review } = await api.adminReviews('create', {
+        review: {
+          name: form.name,
+          city: form.city,
+          stars: form.stars,
+          te: form.te,
+          en: form.en,
+          type: reviewType,
+          audio_url: audioUrl,
+          image_url: imageUrl,
+          order_index: newIndex,
+        },
+      });
+
+      if (review) {
+        setReviews([...reviews, review]);
+        setForm({ name: "", city: "", stars: 5, te: "", en: "" });
+        setAudioFile(null);
+        setImageFiles([]);
+        if (document.getElementById('audioInput')) document.getElementById('audioInput').value = '';
+        if (document.getElementById('imageInput')) document.getElementById('imageInput').value = '';
       }
-      
-      const { data: publicUrlData } = supabase.storage.from('audio_reviews').getPublicUrl(fileName);
-      audioUrl = publicUrlData.publicUrl;
-      reviewType = 'audio';
-    }
-
-    const newIndex = reviews.length > 0 ? Math.max(...reviews.map(r => r.order_index)) + 1 : 0;
-
-    const newReview = {
-      name: form.name,
-      city: form.city,
-      stars: form.stars,
-      te: form.te,
-      en: form.en,
-      type: reviewType,
-      audio_url: audioUrl,
-      image_url: imageUrl,
-      order_index: newIndex
-    };
-
-    const { data, error } = await supabase.from('reviews').insert([newReview]).select();
-    if (error) {
-      alert("Error adding review: " + error.message);
-    } else if (data) {
-      setReviews([...reviews, data[0]]);
-      setForm({ name: "", city: "", stars: 5, te: "", en: "" });
-      setAudioFile(null);
-      setImageFiles([]);
-      document.getElementById('audioInput').value = '';
-      if(document.getElementById('imageInput')) document.getElementById('imageInput').value = '';
+    } catch (err) {
+      alert("Error adding review: " + err.message);
     }
     setUploading(false);
   };
@@ -159,37 +148,40 @@ export default function AdminPanel({ onClose }) {
   const deleteReview = async (id) => {
     if(!window.confirm("Are you sure you want to delete this review?")) return;
     
-    // Find if it has an audio file to delete
+    // Hand the server the media paths so the voice note / scanned letters are
+    // removed along with the row instead of being orphaned in storage.
     const review = reviews.find(r => r.id === id);
-    if (review && review.audio_url) {
-      try {
-        const urlObj = new URL(review.audio_url);
-        const path = urlObj.pathname.split('/').pop();
-        await supabase.storage.from('audio_reviews').remove([path]);
-      } catch (e) {
-        console.error("Could not delete audio file", e);
-      }
+    const storagePaths = [];
+    const pathOf = (url) => { try { return new URL(url).pathname.split('/').pop(); } catch { return null; } };
+    if (review?.audio_url) {
+      const p = pathOf(review.audio_url);
+      if (p) storagePaths.push({ bucket: 'audio_reviews', path: p });
+    }
+    if (typeof review?.image_url === 'string') {
+      review.image_url.split(',').map(u => u.trim()).filter(Boolean).forEach(u => {
+        const p = pathOf(u);
+        if (p) storagePaths.push({ bucket: 'review_images', path: p });
+      });
     }
 
-    const { error } = await supabase.from('reviews').delete().eq('id', id);
-    if (!error) {
+    try {
+      await api.adminReviews('delete', { id, storagePaths });
       setReviews(reviews.filter(r => r.id !== id));
+    } catch (err) {
+      alert("Error deleting review: " + err.message);
     }
   };
 
   const updateOrderInDB = async (newItems) => {
-    const updates = newItems.map((item, idx) => ({
-      id: item.id,
-      order_index: idx
-    }));
-
     // Update locally immediately for snappy feel
     setReviews(newItems);
-
-    // Supabase doesn't have bulk update natively in a single query from JS without RPC,
-    // so we just do a loop since this is an admin panel with few items
-    for (let u of updates) {
-      await supabase.from('reviews').update({ order_index: u.order_index }).eq('id', u.id);
+    try {
+      await api.adminReviews('reorder', {
+        items: newItems.map((item, idx) => ({ id: item.id, order_index: idx })),
+      });
+    } catch (err) {
+      alert("Error saving order: " + err.message);
+      fetchReviews(); // fall back to server truth
     }
   };
 
