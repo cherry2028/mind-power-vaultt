@@ -5,7 +5,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortableItem({ id, r, moveUp, moveDown, index, totalLength, deleteReview, G2 }) {
+function SortableItem({ id, r, moveUp, moveDown, index, totalLength, deleteReview, toggleFeatured, G2 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   
   const style = {
@@ -49,6 +49,18 @@ function SortableItem({ id, r, moveUp, moveDown, index, totalLength, deleteRevie
         {r.te && <p style={{ color: G2.mid, fontSize: 13, lineHeight: 1.6 }}>{r.te}</p>}
         {r.en && <p style={{ color: "rgba(200,196,188,0.5)", fontSize: 12, marginTop: 4, fontStyle: "italic" }}>{r.en}</p>}
       </div>
+      {/* Featured reviews lead the journal page (/get-journal + /portal). */}
+      <button
+        onClick={() => toggleFeatured(r)}
+        title={r.featured ? "Featured on the journal page — tap to unfeature" : "Feature on the journal page"}
+        style={{
+          background: r.featured ? "rgba(201,168,76,0.9)" : "rgba(201,168,76,0.12)",
+          border: `1px solid ${r.featured ? G2.gold : "rgba(201,168,76,0.3)"}`,
+          color: r.featured ? G2.black : G2.gold,
+          cursor: "pointer", borderRadius: 3, padding: "4px 10px", flexShrink: 0,
+          fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, marginRight: 6,
+        }}
+      >{r.featured ? "★ Featured" : "☆ Feature"}</button>
       <button onClick={() => deleteReview(r.id)} style={{ background: "rgba(139,26,26,0.3)", border: "none", color: "#ff8080", cursor: "pointer", borderRadius: 3, padding: "4px 10px", flexShrink: 0, fontFamily: "'DM Sans',sans-serif" }}>Delete</button>
     </div>
   );
@@ -172,6 +184,19 @@ export default function AdminPanel({ onClose }) {
     }
   };
 
+  // Feature / unfeature a review on the journal page. Optimistic, with a
+  // refetch if the server rejects it.
+  const toggleFeatured = async (r) => {
+    const next = !r.featured;
+    setReviews(reviews.map(x => x.id === r.id ? { ...x, featured: next } : x));
+    try {
+      await api.adminReviews('update', { id: r.id, patch: { featured: next } });
+    } catch (err) {
+      alert("Could not update featured: " + err.message);
+      fetchReviews();
+    }
+  };
+
   const updateOrderInDB = async (newItems) => {
     // Update locally immediately for snappy feel
     setReviews(newItems);
@@ -262,7 +287,7 @@ export default function AdminPanel({ onClose }) {
           <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={reviews.map(r => r.id)} strategy={verticalListSortingStrategy}>
               {reviews.map((r, i) => (
-                <SortableItem key={r.id} id={r.id} r={r} moveUp={moveUp} moveDown={moveDown} index={i} totalLength={reviews.length} deleteReview={deleteReview} G2={G2} />
+                <SortableItem key={r.id} id={r.id} r={r} moveUp={moveUp} moveDown={moveDown} index={i} totalLength={reviews.length} deleteReview={deleteReview} toggleFeatured={toggleFeatured} G2={G2} />
               ))}
             </SortableContext>
           </DndContext>

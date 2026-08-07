@@ -23,12 +23,13 @@ const BUCKETS = new Set(['audio_reviews', 'review_images']);
 
 // Only these columns may be written — a caller cannot set `id` or invent
 // columns even with a valid admin token.
-const FIELDS = ['name', 'city', 'stars', 'te', 'en', 'type', 'audio_url', 'image_url', 'order_index'];
+const FIELDS = ['name', 'city', 'stars', 'te', 'en', 'type', 'audio_url', 'image_url', 'order_index', 'featured'];
 
 function pick(src) {
   const out = {};
   for (const k of FIELDS) if (src && src[k] !== undefined) out[k] = src[k];
   if (out.stars !== undefined) out.stars = Math.max(1, Math.min(5, Number(out.stars) || 5));
+  if (out.featured !== undefined) out.featured = !!out.featured;
   for (const k of ['name', 'city', 'te', 'en']) {
     if (typeof out[k] === 'string') out[k] = out[k].slice(0, 2000);
   }
