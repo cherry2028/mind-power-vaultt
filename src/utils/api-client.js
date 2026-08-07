@@ -36,17 +36,6 @@ export const api = {
     return res.json();
   },
 
-  async verifySession(token) {
-    try {
-      const res = await fetch('/api/verify-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
-      });
-      return res.json();
-    } catch { return { valid: false }; }
-  },
-
   async saveLead(payload) {
     const res = await fetch('/api/save-lead', {
       method: 'POST',
