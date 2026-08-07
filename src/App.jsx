@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
+import GetJournal from "./pages/GetJournal";
 import Journal from "./pages/Journal";
 import { api } from "./utils/api-client";
 import Seo from "./Seo";
@@ -370,6 +371,16 @@ function App(){
   
   useEffect(()=>{if(phase===1)setTimeout(()=>setHeroIn(true),150);},[phase]);
 
+  // /get-journal sends a buyer here as /?buy=1 so the WORKING Cashfree
+  // checkout inside Conversion is reused rather than re-implemented. This half
+  // jumps to the Conversion phase; Conversion itself opens the modal (coOpen
+  // is local to it).
+  useEffect(()=>{
+    try{
+      if(new URLSearchParams(window.location.search).get('buy')==='1') setPhase(7);
+    }catch(e){/* never let a URL quirk break the landing page */}
+  },[]);
+
   const top=()=>topRef.current?.scrollIntoView({behavior:"smooth"});
   const goTo=(p)=>{
     if(p===0){ try{sessionStorage.removeItem(SS_KEY);}catch(e){} }
@@ -498,7 +509,17 @@ function App(){
         </div>
         <div style={{opacity:heroIn?1:0,transition:"all 0.8s ease 1.5s"}}>
           <GL/>
-          <div style={{marginTop:48}}><button className="bg" onClick={()=>goTo(2)} style={gBtn}>{L.hro.cta}</button></div>
+          {/* Two doors, not one. The journal is the paid product, so it leads;
+              the quiz stays available but is now OPTIONAL — which also means a
+              purchase-ready visitor never triggers a Gemini call. */}
+          <div style={{marginTop:48,display:"flex",flexDirection:"column",gap:12,alignItems:"center"}}>
+            <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"hero"})} style={{...gBtn,display:"inline-block",textDecoration:"none",textAlign:"center",minWidth:280}}>
+              📓 {lang==="te"?"Trading Journal తీసుకో — ₹3,540":"Get the Trading Journal — ₹3,540"}
+            </a>
+            <button className="bo" onClick={()=>goTo(2)} style={{background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,padding:"13px 24px",borderRadius:2,fontSize:11,letterSpacing:2,textTransform:"uppercase",fontFamily:sans,cursor:"pointer",minWidth:280}}>
+              {lang==="te"?"🧠 ముందు free test చేయి":"🧠 Take the free test first"}
+            </button>
+          </div>
         </div>
       </div>
       <div className="scrl" style={{position:"absolute",bottom:36,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
@@ -810,6 +831,17 @@ function App(){
     const [coSuccess, setCoSuccess] = useState(false);
     const [coCode, setCoCode] = useState('');
 
+    // Arriving from /get-journal as /?buy=1 — open the checkout straight away
+    // and strip the flag so a later refresh doesn't re-open it.
+    useEffect(()=>{
+      try{
+        if(new URLSearchParams(window.location.search).get('buy')==='1'){
+          setCoOpen(true);
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }catch(e){/* checkout stays reachable via the button regardless */}
+    },[]);
+
     const startCheckout = async () => {
       if(!coName || !coEmail || !coPhone) {
         setCoError("All fields are required");
@@ -1081,9 +1113,15 @@ function App(){
 
       {/* FLOATING WhatsApp + Telegram BUTTONS */}
       {phase>0&&<div style={{position:"fixed",bottom:24,right:24,display:"flex",flexDirection:"column",gap:12,zIndex:999}}>
-        <button onClick={() => {setPhase(7); setCoOpen(true);}} style={{width:52,height:52,borderRadius:"50%",background:G.gold,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 20px ${G.gold}60`,transition:"transform 0.2s",border:"none",cursor:"pointer"}} title="Journal Subscription">
+        {/* Was: onClick={() => {setPhase(7); setCoOpen(true);}} — but coOpen is
+            declared INSIDE the Conversion component (line ~805) and this button
+            renders outside it, so every tap threw
+            "ReferenceError: setCoOpen is not defined" and the floating journal
+            button did nothing. It now opens the direct journal path, which is
+            also the flow we want: pitch first, purchase after. */}
+        <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"floating_button"})} style={{width:52,height:52,borderRadius:"50%",background:G.gold,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 20px ${G.gold}60`,transition:"transform 0.2s",border:"none",cursor:"pointer"}} title="Trading Journal">
           <svg width="24" height="24" viewBox="0 0 24 24" fill={G.black}><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-        </button>
+        </a>
         <a href="https://t.me/mindpowervaultt" target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#2AABEE",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(42,171,238,0.4)",transition:"transform 0.2s"}} title="Telegram">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.196 13.4l-2.965-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.957.159z"/></svg>
         </a>
@@ -1183,6 +1221,10 @@ function App(){
                 {lang==="te"?"← వెనక్కి":"← Back"}
               </button>
             )}
+            {/* Direct journal path — a purchase-ready visitor must never be
+                forced through the quiz (which is the only thing that costs a
+                Gemini call). Solid gold so it reads as the primary action. */}
+            <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"header"})} style={{padding:"7px 15px",background:G.gold,border:`1px solid ${G.gold}`,color:G.black,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:800,textDecoration:"none",textTransform:"uppercase",whiteSpace:"nowrap"}}>📓 {lang==="te"?"Journal":"Journal"}</a>
             <a href="/portal" target="_blank" rel="noopener noreferrer" style={{padding:"6px 14px",background:`${G.gold}15`,border:`1px solid ${G.gold}40`,color:G.gold,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:700,textDecoration:"none",textTransform:"uppercase"}}>🎓 {lang==="te"?"Portal":"Portal"}</a>
             <button onClick={()=>setAdminOpen(true)} style={{padding:"6px 14px",background:"transparent",border:`1px solid ${G.goldDim}`,color:`${G.smoke}60`,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer"}}>⚙</button>
           </div>
@@ -1240,6 +1282,8 @@ export default function RoutedApp() {
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />
+        {/* Direct journal path — no quiz, no Gemini call. */}
+        <Route path="/get-journal" element={<GetJournal />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/terms" element={<TermsAndConditions />} />
