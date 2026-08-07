@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { track } from '../analytics';
+import Reviews from '../components/Reviews';
 
 // High-conversion value pitch shown to anyone reaching the journal without an
 // active subscription. Bilingual (Telugu default, remembered for the session),
@@ -35,6 +36,14 @@ const D = {
     signin: 'ఇప్పటికే subscribe అయ్యావా? Sign in →',
     expClose: 'నువ్వు మొదలుపెట్టావు — ఇప్పుడు మళ్ళీ కొనసాగించు.', expB1: '🔄 తిరిగి కొనసాగించు',
     waNew: 'Journal గురించి తెలుసుకోవాలి అనుకుంటున్నాను',
+    buy: '📓 Journal తీసుకో →',
+    incl: [
+      'రోజూ Trading License — mind ready ఐతేనే trade',
+      'నీ Mistakes ఖరీదు — ఒక్క number లో',
+      'రోజువారీ అద్దం + నీ patterns నీ data నుండి',
+      'వారానికొక Report — K Prasad కి పంపించు',
+      'Full year access · phone లో app లా',
+    ],
   },
   en: {
     sub: ['Your broker has every trade you made.', 'You have nothing.'],
@@ -62,6 +71,14 @@ const D = {
     signin: 'Already subscribed? Sign in →',
     expClose: 'You started the journey — now continue it.', expB1: '🔄 Continue Again',
     waNew: 'I want to know about the Journal / mentorship',
+    buy: '📓 Get the Journal →',
+    incl: [
+      'A daily Trading License — trade only when your mind checks out',
+      'The cost of your mistakes — in one number',
+      'A daily mirror + your patterns, from your own data',
+      'A weekly report you can send to K Prasad',
+      'Full year access · works like an app on your phone',
+    ],
   },
 };
 
@@ -71,7 +88,10 @@ const C = {
   ink: '#F5F2EA', dim: '#9A9382', line: 'rgba(201,168,76,0.18)', crimson: '#DB5B54',
 };
 
-export default function JournalPitch({ variant = 'new', onSignIn }) {
+// showPurchase = the direct-from-website path: the same pitch convinces first,
+// then the price + Buy CTA land at the bottom. The /portal path (a student who
+// already tried to sign in) keeps the consultative WhatsApp CTA.
+export default function JournalPitch({ variant = 'new', onSignIn, showPurchase = false, onBuy }) {
   const [lang, setLang] = useState(() => (sessionStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'te'));
   const d = D[lang];
   const expired = variant === 'expired';
@@ -149,17 +169,53 @@ export default function JournalPitch({ variant = 'new', onSignIn }) {
         </div>
         <p style={{ textAlign: 'center', fontSize: 15.5, fontWeight: 800, color: C.crimson, lineHeight: 1.6, margin: '22px 6px 30px' }}>{d.kicker}</p>
 
+        {/* Social proof — real voice notes + handwritten letters when present */}
+        <Reviews lang={lang} compact />
+
         {/* CTA */}
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 15, color: C.goldHi, fontWeight: 700, lineHeight: 1.7, margin: '0 0 8px' }}>{expired ? d.expClose : d.ctaLine}</p>
-          {!expired && <p style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.7, margin: '0 0 18px' }}>{d.bio}</p>}
-          <button onClick={openMentorship} style={{ width: '100%', padding: 17, border: 'none', borderRadius: 11, background: `linear-gradient(135deg,${C.goldHi},${C.goldLo})`, color: '#05050A', fontSize: 15.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, boxShadow: '0 12px 28px rgba(201,168,76,0.3)' }}>
-            {expired ? d.expB1 : d.b1}
-          </button>
-          <button onClick={openReviews} style={{ width: '100%', padding: 14, borderRadius: 11, background: 'transparent', border: `1px solid ${C.line}`, color: C.gold, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            {d.b2}
-          </button>
-          {!expired && <p style={{ fontSize: 11.5, letterSpacing: 1, textTransform: 'uppercase', color: C.dim, margin: '14px 0 0' }}>{d.seats}</p>}
+        <div style={{ textAlign: 'center', marginTop: 26 }}>
+          {showPurchase && !expired ? (
+            <>
+              {/* Price framed by what they get, not a bare number */}
+              <div style={{
+                background: 'rgba(201,168,76,0.07)', border: `1px solid ${C.gold}`,
+                borderRadius: 14, padding: '18px 16px', marginBottom: 16,
+                boxShadow: '0 0 26px rgba(201,168,76,0.10)',
+              }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: C.ink, lineHeight: 1.1 }}>
+                  ₹3,540<span style={{ fontSize: 13, color: C.dim, fontWeight: 600 }}> / సంవత్సరం</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: C.dim, margin: '4px 0 12px' }}>₹3,000 + 18% GST</div>
+                <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {d.incl.map((x, i) => (
+                    <div key={i} style={{ fontSize: 12.5, color: C.ink, lineHeight: 1.6, opacity: 0.92 }}>
+                      <span style={{ color: C.goldHi, marginRight: 7 }}>✓</span>{x}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={onBuy} style={{ width: '100%', padding: 18, border: 'none', borderRadius: 11, background: `linear-gradient(135deg,${C.goldHi},${C.goldLo})`, color: '#05050A', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, boxShadow: '0 12px 30px rgba(201,168,76,0.34)' }}>
+                {d.buy}
+              </button>
+              <button onClick={openMentorship} style={{ width: '100%', padding: 14, borderRadius: 11, background: 'transparent', border: `1px solid ${C.line}`, color: C.gold, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {d.b1}
+              </button>
+              <p style={{ fontSize: 11.5, letterSpacing: 1, textTransform: 'uppercase', color: C.dim, margin: '14px 0 0' }}>{d.seats}</p>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: 15, color: C.goldHi, fontWeight: 700, lineHeight: 1.7, margin: '0 0 8px' }}>{expired ? d.expClose : d.ctaLine}</p>
+              {!expired && <p style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.7, margin: '0 0 18px' }}>{d.bio}</p>}
+              <button onClick={openMentorship} style={{ width: '100%', padding: 17, border: 'none', borderRadius: 11, background: `linear-gradient(135deg,${C.goldHi},${C.goldLo})`, color: '#05050A', fontSize: 15.5, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, boxShadow: '0 12px 28px rgba(201,168,76,0.3)' }}>
+                {expired ? d.expB1 : d.b1}
+              </button>
+              <button onClick={openReviews} style={{ width: '100%', padding: 14, borderRadius: 11, background: 'transparent', border: `1px solid ${C.line}`, color: C.gold, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {d.b2}
+              </button>
+              {!expired && <p style={{ fontSize: 11.5, letterSpacing: 1, textTransform: 'uppercase', color: C.dim, margin: '14px 0 0' }}>{d.seats}</p>}
+            </>
+          )}
         </div>
 
         {onSignIn && (
