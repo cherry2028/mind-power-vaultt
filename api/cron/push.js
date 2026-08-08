@@ -12,6 +12,15 @@
 
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
+import crypto from 'crypto';
+
+function secureCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 const MESSAGES = {
   morning: {
@@ -47,7 +56,7 @@ export function alreadyDone(journal, type, today) {
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
   const auth = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
-  if (!secret || auth !== secret) {
+  if (!secret || !secureCompare(auth, secret)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
