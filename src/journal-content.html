@@ -871,6 +871,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
             <div class="fld"><div class="lbl">02. ఎక్కడ నేను నన్నే deceive చేసుకున్నాను?</div><textarea id="mir-lie" placeholder="Honest గా చెప్పు..." rows="2"></textarea></div>
             <div class="fld"><div class="lbl">03. ఈరోజు professional లా behave చేశానా?</div><select id="mir-pro"><option value="">Select...</option><option value="yes">Yes</option><option value="mostly">Mostly</option><option value="no">No — emotional decisions</option></select></div>
           </div>
+          <!-- Feature 2: rule-break ticking — the day-level input the verdict needs -->
+          <div class="card cg" id="eod-rb-card">
+            <div class="ct">📐 ఈరోజు rules break అయ్యాయా?</div>
+            <div class="ib">Break చేసిన rules ని tick చేయి. ఇదే నీ strategy-vs-psychology verdict ని నిర్ణయిస్తుంది.</div>
+            <div id="eod-rulebreaks"></div>
+          </div>
           <div class="card">
             <div class="lbl" style="margin-bottom:9px">Mood Seal</div>
             <div class="mw">
@@ -938,6 +944,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <!-- STRATEGY CORRECTION -->
         <div class="sec" id="sec-strategy">
           <div class="sh"><div class="st"><span style="font-size:19px">📐</span><h2>Strategy Correction</h2></div><div class="ss">నీ rules define చేయి — ఎన్నిసార్లు break చేశావో track చేయి.</div><div class="dv"><div class="dl"></div><div class="dd"></div><div class="dl"></div></div></div>
+          <div class="card" id="verdict-card" style="border-width:1px"></div>
           <div class="card">
             <div class="ct">My Trading Rules</div>
             <div class="ib">ఒక్కో rule ని enter చేయి. Trade లో break అయినప్పుడు "Break" click చేయి — auto track అవుతుంది.</div>
@@ -1245,7 +1252,7 @@ function gS(id,btn){
   if(id==='weekly')rWk();
   if(id==='monthly')rMn();
   if(id==='habits')rHb();
-  if(id==='eod'){rEC();updateMirrorUI();}
+  if(id==='eod'){rEC();updateMirrorUI();renderEodRules();}
   if(id==='strategy')rStrategy();
   if(id==='history')showHist('premarket',ge('hist-tabs').querySelector('.on'));
   if(id==='performance')rPerf();
@@ -1403,17 +1410,46 @@ function tDetail(t){
 }
 
 // ────── EOD ──────
+var EOD_RB=[]; // rule ids ticked as broken today
+function toggleEodRule(id,el){
+  id=Number(id);var k=EOD_RB.indexOf(id);var chk=el.querySelector('.rb-chk');
+  if(k>=0){EOD_RB.splice(k,1);el.style.borderColor='rgba(201,168,76,0.18)';el.style.background='#12121A';chk.style.background='transparent';chk.style.color='transparent';}
+  else{EOD_RB.push(id);el.style.borderColor='#CF6679';el.style.background='rgba(207,102,121,0.08)';chk.style.background='#CF6679';chk.style.color='#fff';}
+}
+function renderEodRules(){
+  var host=ge('eod-rulebreaks');if(!host)return;EOD_RB=[];
+  if(!DB.rules||!DB.rules.length){
+    host.innerHTML='<div class="ib" style="text-align:center">Strategy rules ఇంకా లేవు — <b>Strategy Correction</b> section లో add చేయి, తర్వాత ఇక్కడ tick చేయొచ్చు.</div>';
+    return;
+  }
+  var h='';
+  for(var i=0;i<DB.rules.length;i++){var r=DB.rules[i];
+    h+='<button type="button" onclick="toggleEodRule('+r.id+',this)" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#12121A;border:1px solid rgba(201,168,76,0.18);border-radius:9px;padding:11px 12px;margin-bottom:7px;color:#D0CCBF;font-family:inherit;font-size:13px;cursor:pointer">'
+      +'<span class="rb-chk" style="width:20px;height:20px;border-radius:5px;border:1.5px solid rgba(201,168,76,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;background:transparent;flex-shrink:0">✓</span>'
+      +'<span>'+r.text+'</span></button>';
+  }
+  h+='<div class="ib" style="margin-top:6px">ఏదీ break అవ్వలేదా? అయితే ఏదీ tick చేయకు — clean day ✦</div>';
+  host.innerHTML=h;
+}
 function saveEOD(){
   var mandatory=mirrorMandatory();
   if(mandatory){if(!ge('mir-proc').value){toast('Mirror Q1 answer select చేయి!');return;}if(!ge('mir-lie').value.trim()){toast('Mirror Q2 రాయి!');return;}if(!ge('mir-pro').value){toast('Mirror Q3 select చేయి!');return;}}
   var d={id:Date.now(),date:ge('eod-dt').value||td(),tot:ge('eod-t').value,proc:Number(ge('sl4').value),out:Number(ge('sl5').value),best:ge('eod-b').value,worst:ge('eod-w').value,imp:ge('eod-im').value,notes:ge('eod-n').value,mood:ge('eod-m').value,mirProc:ge('mir-proc').value,mirLie:ge('mir-lie').value,mirPro:ge('mir-pro').value};
-  DB.eod.push(d);ls('mpveod',DB.eod);
+  // Feature 2: capture which rules broke today. brokenRules on the EOD record is
+  // the verdict's source of truth (eodBrokeMap only needs length>0, so it stays
+  // correct even if a day is re-saved). Also bump each rule's live counter for
+  // the Strategy analysis + weekly ranking.
+  var brokenRules=[];
+  for(var bi=0;bi<EOD_RB.length;bi++){(function(rid){var rr=(DB.rules||[]).find(function(x){return x.id===rid;});if(rr){brokenRules.push({id:rr.id,text:rr.text});rr.breaks=(rr.breaks||0)+1;if(!rr.breakDates)rr.breakDates=[];rr.breakDates.push(d.date);}})(EOD_RB[bi]);}
+  d.brokenRules=brokenRules;
+  DB.eod.push(d);ls('mpveod',DB.eod);if(brokenRules.length)ls('mpvrules',DB.rules);
   // Auto streak check
   autoCheckStreak(d.date);
   var todayImp=0;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===d.date&&!DB.tr[i].pln)todayImp++;}
   if(todayImp>=3)toast('⚠ 3+ impulse trades today. Streak checked.');
   else toast('EOD Review save అయింది ✦');
   rEC();ge('mir-proc').value='';ge('mir-lie').value='';ge('mir-pro').value='';
+  EOD_RB=[];renderEodRules();if(ge('verdict-card'))renderVerdict();
 }
 function autoCheckStreak(date){
   var pmOk=false;for(var i=0;i<DB.pm.length;i++){if(DB.pm[i].date===date){pmOk=true;break;}}
@@ -1442,7 +1478,18 @@ function rPs(){
 function addRule(){var inp=ge('new-rule-input');var txt=inp.value.trim();if(!txt)return;if(!DB.rules)DB.rules=[];DB.rules.push({id:Date.now(),text:txt,breaks:0});ls('mpvrules',DB.rules);inp.value='';rStrategy();}
 function breakRule(id){var r=DB.rules.find(function(x){return x.id===id;});if(r){r.breaks=(r.breaks||0)+1;if(!r.breakDates)r.breakDates=[];r.breakDates.push(td());ls('mpvrules',DB.rules);rStrategy();toast('Rule break logged ⚠');}}
 function delRule(id){DB.rules=DB.rules.filter(function(x){return x.id!==id;});ls('mpvrules',DB.rules);rStrategy();}
+function renderVerdict(){
+  var el=ge('verdict-card');if(!el)return;
+  var v=computeVerdict(),t=verdictText(v);
+  var C={wait:'#8A8270',bad:'#CF6679',key:'#C9A84C',warn:'#E0A84C',good:'#4CAF82'}[t.tone]||'#C9A84C';
+  var badge=v.stage==='confirmed'?'<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+C+';border:1px solid '+C+';border-radius:20px;padding:2px 9px">✓ Confirmed</span>':'';
+  el.style.borderColor=C;el.style.boxShadow=v.stage?'0 0 22px '+C+'22':'none';
+  el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="ct" style="margin:0;color:'+C+'">⚖️ Verdict</div>'+badge+'</div>'
+    +'<div style="font-size:16px;font-weight:800;color:'+C+';line-height:1.4;margin-bottom:8px">'+t.title+'</div>'
+    +'<div style="font-size:13px;color:#C9C3B4;line-height:1.9">'+t.body+'</div>';
+}
 function rStrategy(){
+  renderVerdict();
   var list=ge('rule-list');if(!list)return;list.innerHTML='';
   if(!DB.rules||!DB.rules.length){list.innerHTML='<div class="nd"><div class="ndi">📐</div>Rules add చేయి.</div>';}
   else{for(var i=0;i<DB.rules.length;i++){var r=DB.rules[i];var div=document.createElement('div');div.className='rule-item'+(r.breaks>0?' broken':'');div.innerHTML='<div class="rule-text">'+r.text+'</div><div class="rule-break-cnt">'+r.breaks+'x</div><button class="rule-break-btn" onclick="breakRule('+r.id+')">Break</button><button style="background:none;border:none;color:#333;cursor:pointer;font-size:11px;padding:2px 6px" onclick="delRule('+r.id+')">✕</button>';list.appendChild(div);}}
@@ -1495,6 +1542,73 @@ function rstSt(){DB.h.s=0;ge('ststr').textContent='0d';ls('mpvh',DB.h);toast('St
 function saveH(){ls('mpvh',DB.h);toast('Tracker save అయింది ✦');}
 
 // ────── HISTORY ──────
+// ── Feature 2: Strategy-vs-Psychology verdict engine ──
+// Every CLOSED trade lands in one of two buckets:
+//   DISCIPLINED = planned (t.pln) AND no rule was ticked broken that day
+//   BROKEN      = impulse, OR a rule was ticked broken that day
+// That day-level join is why the EOD asks which rules broke: it upgrades the
+// entry-time self-tag into verified discipline.
+function eodBrokeMap(){
+  // date -> true if any strategy rule was ticked broken in that EOD
+  var m={};for(var i=0;i<DB.eod.length;i++){var e=DB.eod[i];if(e.brokenRules&&e.brokenRules.length)m[e.date]=true;}return m;
+}
+function computeVerdict(){
+  var TR=DB.tr||[],broke=eodBrokeMap();
+  var totN=0,discN=0,discP=0,discW=0,brkN=0,brkP=0;
+  for(var i=0;i<TR.length;i++){var t=TR[i];if(t.status!=='closed')continue;totN++;var v=Number(t.pnl||0);
+    var disciplined=(t.pln===true)&&!broke[t.date];
+    if(disciplined){discN++;discP+=v;if(v>0)discW++;}else{brkN++;brkP+=v;}
+  }
+  // Two-stage gate: an EARLY signal keeps a paying subscriber engaged fast; the
+  // CONFIRMED verdict lands later with authority.
+  var stage=null;
+  if(totN>=20&&discN>=8)stage='confirmed';
+  else if(totN>=12&&discN>=5)stage='early';
+  if(!stage)return {stage:null,totN:totN,discN:discN,needTrades:Math.max(0,12-totN),needDisc:Math.max(0,5-discN)};
+  var discWin=discN?Math.round(discW/discN*100):0;
+  var type;
+  if(discP>0){
+    // Discipline is profitable — is it the breaks bleeding him?
+    if(brkP<0&&brkN>=5)type='psychology';   // needs enough broken trades to blame them
+    else type='ontrack';
+  }else{
+    if(brkP>0)type='luck';                   // rules lose, impulse "wins" — a bill is coming
+    else type='strategy';                    // both the disciplined side and overall are red
+  }
+  return {stage:stage,type:type,totN:totN,discN:discN,discP:discP,discWin:discWin,brkN:brkN,brkP:brkP};
+}
+function rup(v){return (v>=0?'+₹':'-₹')+fi(v);}
+// Trivikram voice — revealing, never lecturing; always with the numbers under it.
+function verdictText(v){
+  if(!v||v.stage===null){
+    var need=v?Math.max(v.needTrades,v.needDisc?1:0):12;
+    return {tone:'wait',title:'Verdict రावడానికి ఇంకా కొంచెం data కావాలి',
+      body:'ఇప్పటివరకు <b>'+(v?v.totN:0)+'</b> closed trades, <b>'+(v?v.discN:0)+'</b> disciplined. '+
+        '12 trades / 5 disciplined దగ్గర నీ మొదటి signal వస్తుంది.'};
+  }
+  var pre=v.stage==='early'?'<span style="color:#E0A84C">⚡ ప్రాథమిక signal</span> — ఇంకా trades తో confirm అవుతుంది.<br><br>':'';
+  if(v.type==='strategy')return {tone:'bad',title:'నీ problem — Strategy',
+    body:pre+'నీ discipline లో తప్పు లేదు — నీ <b>strategy</b> లో ఉంది.<br>'+
+      'Rules follow చేసిన <b>'+v.discN+'</b> trades లో <b style="color:#CF6679">'+rup(v.discP)+'</b> (win '+v.discWin+'%).<br>'+
+      'నువ్వు సరిగ్గా ఆడుతున్నావ్ — కానీ ఆట తప్పు. Setup ని review చేయాలి.'};
+  if(v.type==='psychology')return {tone:'key',title:'నీ problem — Strategy కాదు, Psychology',
+    body:pre+'Rules follow చేసినప్పుడు: <b style="color:#4CAF82">'+rup(v.discP)+'</b><br>'+
+      'Rules break చేసినప్పుడు: <b style="color:#CF6679">'+rup(v.brkP)+'</b> ('+v.brkN+' trades)<br>'+
+      'నీ system పని చేస్తోంది. నువ్వు దాన్ని follow చేయట్లేదు — అంతే.'};
+  if(v.type==='luck')return {tone:'warn',title:'జాగ్రత్త — ఇది Skill కాదు, Luck',
+    body:pre+'నీ rules loss ఇస్తున్నాయి (<b style="color:#CF6679">'+rup(v.discP)+'</b>), '+
+      'నీ impulse trades profit ఇస్తున్నాయి (<b>'+rup(v.brkP)+'</b>).<br>'+
+      'అది skill కాదు — luck. Luck ఎప్పుడూ bill పంపుతుంది.'};
+  return {tone:'good',title:'నువ్వు దారిలో ఉన్నావ్',
+    body:pre+'Rules follow చేసిన trades: <b style="color:#4CAF82">'+rup(v.discP)+'</b> (win '+v.discWin+'%).<br>'+
+      'రెండూ కలిసి పని చేస్తున్నాయి. మార్చాల్సింది ఏమీ లేదు — కొనసాగించు.'};
+}
+// Most-broken rules, ranked — the actionable gold for the mentor report.
+function ruleBreakRanking(){
+  var out=[];for(var i=0;i<(DB.rules||[]).length;i++){var r=DB.rules[i];out.push({text:r.text,breaks:r.breaks||0});}
+  out.sort(function(a,b){return b.breaks-a.breaks;});
+  return out.filter(function(x){return x.breaks>0;});
+}
 // ── Feature 1: P&L in Records ──
 // Records/History showed process/outcome/mood but never the money. These sum
 // CLOSED-trade P&L from DB.tr. Planned vs impulse uses t.pln (the entry-time
@@ -2382,7 +2496,9 @@ function sendWeeklyPdf(){
     stats:{totalTrades:trades.length,pnl:tp,winRate:closedN?Math.round(wins/closedN*100):0,
       plannedCount:plnCnt,disciplinePct:trades.length?Math.round(plnCnt/trades.length*100):0,
       mistakeCost:Math.abs(lostMist),disciplineEarned:gainDisc},
-    trades:trades,eods:eods,mistakes:mistCounts,rules:rules
+    trades:trades,eods:eods,mistakes:mistCounts,rules:rules,
+    verdict:(function(){var v=computeVerdict(),t=verdictText(v);return {stage:v.stage,type:v.type||null,title:t.title,body:t.body,discP:v.discP,brkP:v.brkP,discN:v.discN,brkN:v.brkN,discWin:v.discWin};})(),
+    ruleRanking:ruleBreakRanking()
   };
   toast('📄 Weekly PDF generate అవుతోంది...',4000);
   window.parent.postMessage({type:'MPV_WEEKLY_PDF',payload:payload},'*');
