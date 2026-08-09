@@ -103,6 +103,14 @@ export function buildReportHtml(p) {
       <div style="font-size:11px;color:${G.ink};line-height:1.7">${v.body}</div>
       <div style="font-size:10px;color:${G.dim};margin-top:8px">Disciplined: ${v.discN} trades, ${signedRupee(v.discP)} (win ${v.discWin}%) · Broken: ${v.brkN} trades, ${signedRupee(v.brkP)}</div>
     </div>` : `<div style="margin-top:18px;border:1px dashed ${G.line};border-radius:10px;padding:12px;font-size:11px;color:${G.dim};text-align:center">Auto verdict pending — needs 12 closed trades &amp; 5 disciplined for an early signal${v ? ` (currently ${v.discN || 0} disciplined)` : ''}.</div>`;
+  // Feature 3: strategy-change tell. Changing the rules mid-losing-week is a
+  // psychological signal the mentor wants flagged, not a neutral event.
+  const sc = p.strategyChange || null;
+  const stratChangeBlock = sc && sc.changedThisWeek ? `
+    <div style="margin-top:12px;border:2px solid ${sc.losingWeek ? G.red : G.line};border-radius:10px;padding:11px 14px;background:${sc.losingWeek ? '#FBF0EF' : G.bgSoft}">
+      <div style="font-size:11px;font-weight:700;color:${sc.losingWeek ? G.red : G.ink}">${sc.losingWeek ? '⚠ Strategy changed during a LOSING week' : '✎ Strategy rules changed this week'}</div>
+      <div style="font-size:10px;color:${G.dim};margin-top:3px">Changed on ${esc(sc.date)}${sc.losingWeek ? ' — a change made while losing is often a psychological tell, not a strategy fix. Worth a conversation.' : '.'} (${sc.totalVersions} total revisions)</div>
+    </div>` : '';
   const ranking = Array.isArray(p.ruleRanking) ? p.ruleRanking : [];
   const rankBlock = ranking.length ? `
     <div style="margin-top:12px;border:1px solid ${G.line};border-radius:10px;padding:12px 14px">
@@ -140,6 +148,7 @@ export function buildReportHtml(p) {
     <div style="font-size:9px;color:${G.dim};margin-top:5px">Discipline % = planned trades / total trades (${s.plannedCount ?? 0}/${s.totalTrades ?? 0}) · Overall discipline score: ${Number(p.discipline || 0)}</div>
 
     ${verdictBlock}
+    ${stratChangeBlock}
     ${rankBlock}
 
     ${secTitle('All Trades This Week')}
