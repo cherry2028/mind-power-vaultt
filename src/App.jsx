@@ -526,6 +526,14 @@ function App(){
               price is revealed only later (after the pitch / the free reveal),
               never here on first contact. */}
           <div style={{marginTop:44,display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+            {/* Pain-hook — the REASON to take the free test. A cold visitor must
+                understand the promise before the button means anything. */}
+            <p className={lc} style={{fontSize:"clamp(15px,2.4vw,19px)",fontWeight:700,color:G.smoke,lineHeight:1.5,maxWidth:440,margin:"0 auto 6px",textAlign:"center"}}>
+              {lang==="te"?"నీ trading loss లకి అసలు కారణం — strategy దా? నీ mind దా?":"Your trading losses — is it your strategy, or your mind?"}
+            </p>
+            <p className={lc} style={{fontSize:"clamp(12px,1.6vw,14px)",color:G.mid,lineHeight:1.6,margin:"0 auto 14px",textAlign:"center",fontStyle:"italic"}}>
+              {lang==="te"?"2 నిమిషాల్లో నిజం తెలుసుకో.":"Find out the truth in 2 minutes."}
+            </p>
             <button className="bg" onClick={()=>{track("free_test_start",{source:"hero"});goTo(2);}} style={{...gBtn,display:"inline-block",textAlign:"center",minWidth:300,fontSize:16,padding:"18px 28px"}}>
               🧠 {lang==="te"?"FREE Test — నిన్ను నువ్వు తెలుసుకో":"Take the FREE Test — Know Yourself"}
             </button>
