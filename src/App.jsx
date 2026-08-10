@@ -898,14 +898,16 @@ function App(){
           // Google Ads conversion — real, verified journal purchase only.
           // No-op until the label is set in src/analytics.js. transaction_id
           // lets Ads dedupe if the success screen is reloaded.
-          // Full GA4 ecommerce `purchase` — value/currency/transaction_id +
-          // items, so GA4 Monetization reports populate and the event imports
-          // cleanly into Google Ads as a backup conversion path.
+          // Conversion value = ₹3,000 base price (GST excluded — that is the
+          // business revenue Google Ads optimises toward). Both the direct Ads
+          // conversion and the GA4 `purchase` use the same figure so the two
+          // measurement paths agree. transaction_id dedupes a reloaded success
+          // screen. Fires ONCE here, only on verified payment success.
           track("purchase", {
-            value: 3540, currency: "INR", transaction_id: orderId,
-            items: [{ item_id: "mpv_journal_annual", item_name: "MPV Journal — Annual Access", price: 3540, quantity: 1 }],
+            value: 3000, currency: "INR", transaction_id: orderId,
+            items: [{ item_id: "mpv_journal_annual", item_name: "MPV Journal — Annual Access", price: 3000, quantity: 1 }],
           });
-          adsConversion("journal_purchase", { value: 3540, currency: "INR", transaction_id: orderId });
+          adsConversion("journal_purchase", { value: 3000, currency: "INR", transaction_id: orderId });
         } else {
           setCoError("Payment verification failed. Please contact support.");
         }
