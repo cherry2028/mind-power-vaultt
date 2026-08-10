@@ -2283,6 +2283,31 @@ function buildInsight(){
   var defs=['ఈరోజు '+tT.length+' trades — '+plnN+' planned. రేపు ఒక్క impulse తక్కువ. అంతే గెలుపు.','Journal రాయడం ఆపనంత వరకు — నువ్వు ఓడిపోలేదు.','Market రోజూ మారుతుంది. నీ process మారకపోవడమే నీ strength.'];
   add('default-mirror',10,defs[(new Date().getDate())%defs.length]);
 
+  // ── Verdict-driven insight (Feature 2 data surfaced as an Evening card) ──
+  var vv=computeVerdict();
+  if(vv.stage==='confirmed'||vv.stage==='early'){
+    var vpri=vv.stage==='confirmed'?88:78,vsub=vv.stage==='early'?'ప్రాథమిక signal — ఇంకా trades తో confirm అవుతుంది':'';
+    if(vv.type==='psychology')add('verdict-psychology',vpri,'నీ problem strategy కాదు — <b>psychology</b>. Rules follow చేసినప్పుడు +₹'+fi(vv.discP)+', break చేసినప్పుడు −₹'+fi(vv.brkP)+'. System పని చేస్తోంది — నువ్వు దాన్ని follow చెయ్.',vsub);
+    else if(vv.type==='strategy')add('verdict-strategy',vpri,'నీ discipline లో తప్పు లేదు — నీ <b>strategy</b> లో ఉంది. Rules follow చేసిన '+vv.discN+' trades లో −₹'+fi(vv.discP)+' (win '+vv.discWin+'%). Setup ని review చెయ్.',vsub);
+    else if(vv.type==='luck')add('verdict-luck',vpri,'జాగ్రత్త — నీ rules loss ఇస్తున్నాయి, నీ impulse trades profit ఇస్తున్నాయి. అది skill కాదు — luck. Luck ఎప్పుడూ bill పంపుతుంది.',vsub);
+    else add('verdict-ontrack',vv.stage==='confirmed'?68:62,'Rules follow చేసిన trades: +₹'+fi(vv.discP)+' (win '+vv.discWin+'%). రెండూ కలిసి పని చేస్తున్నాయి — మార్చాల్సింది ఏమీ లేదు.',vsub);
+  }
+
+  // ── Segment-based loss clustering (uses the trade-details data; dormant
+  //    until trades carry seg/expiry, so early users simply don't see it) ──
+  var segLoss={},segTot=0,optWk=0,optMo=0,optWkN=0;
+  for(var i=0;i<T.length;i++){var t=T[i],pn=Number(t.pnl||0);if(pn>=0||!t.seg)continue;var L=-pn;
+    segLoss[t.seg]=(segLoss[t.seg]||0)+L;segTot+=L;
+    if(t.seg==='options'&&t.expiry&&t.date){var dd=(new Date(t.expiry)-new Date(t.date))/86400000;
+      if(isFinite(dd)){if(dd<=8){optWk+=L;optWkN++;}else optMo+=L;}}
+  }
+  if(optWkN>=3&&optWk>optMo*1.5&&optWk>0)
+    add('options-weekly-expiry',81,'నీ losing trades ఎక్కువగా <b>weekly-expiry options</b> లో — ₹'+fi(optWk)+' పోయింది. Weekly expiry లో theta నీకు వ్యతిరేకం. అది trade కాదు — gamble.');
+  if(segTot>0){var mxSeg='',mxV=0;for(var sN in segLoss){if(segLoss[sN]>mxV){mxV=segLoss[sN];mxSeg=sN;}}
+    var segName={options:'Options',cash:'Cash/Equity',futures:'Futures',crypto:'Crypto'}[mxSeg]||mxSeg;
+    if(mxSeg&&mxV/segTot>=0.6&&mxV>0)
+      add('seg-loss-cluster',79,'నీ losses లో '+Math.round(mxV/segTot*100)+'% <b>'+segName+'</b> నుండి వస్తున్నాయి — ₹'+fi(mxV)+'. ఆ segment నీ style కి match అవ్వట్లేదేమో — Cherry తో మాట్లాడు.');}
+
   var last=(DB.insight&&DB.insight.last)||{};
   cands.sort(function(a,b){return b.pri-a.pri;});
   for(var i=0;i<cands.length;i++){if(cands[i].id!==last.tpl)return cands[i];}
