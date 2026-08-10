@@ -10,7 +10,7 @@ import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
 import PwaUpdateToast from "./PwaUpdateToast";
 import PwaInstallPrompt from "./PwaInstallPrompt";
-import { track } from "./analytics";
+import { track, adsConversion } from "./analytics";
 
 // 640px WebP (19 KB) instead of the 1600px JPEG (297 KB) — the logo is never
 // rendered larger than 88px, so this is a pure win on mobile data. logo.jpeg is
@@ -895,6 +895,11 @@ function App(){
         if(data.success) {
           setCoSuccess(true);
           setCoCode(data.access_code);
+          // Google Ads conversion — real, verified journal purchase only.
+          // No-op until the label is set in src/analytics.js. transaction_id
+          // lets Ads dedupe if the success screen is reloaded.
+          track("purchase", { value: 3540, currency: "INR", transaction_id: orderId });
+          adsConversion("journal_purchase", { value: 3540, currency: "INR", transaction_id: orderId });
         } else {
           setCoError("Payment verification failed. Please contact support.");
         }
