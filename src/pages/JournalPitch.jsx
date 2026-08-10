@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { track } from '../analytics';
+import { track, adsConversion } from '../analytics';
 import Reviews from '../components/Reviews';
 
 // High-conversion value pitch shown to anyone reaching the journal without an
@@ -100,6 +100,7 @@ export default function JournalPitch({ variant = 'new', onSignIn, showPurchase =
 
   const openMentorship = () => {
     track('journal_pitch_mentorship_click', { variant, lang });
+    adsConversion('mentorship_enquiry', { variant, lang }); // no-op until label set
     const msg = encodeURIComponent(expired ? 'Journal renew చేయాలి అనుకుంటున్నాను' : d.waNew);
     window.open(`https://wa.me/${MENTOR_WA}?text=${msg}`, '_blank', 'noopener,noreferrer');
   };
