@@ -380,7 +380,15 @@ function App(){
   // is local to it).
   useEffect(()=>{
     try{
-      if(new URLSearchParams(window.location.search).get('buy')==='1') setPhase(7);
+      var q=new URLSearchParams(window.location.search);
+      if(q.get('buy')==='1'){setPhase(7);return;}
+      // Cold ad traffic (Google click id / utm / gad_source) skips the ritual
+      // gate and lands straight on the hero, so the first thing a stranger sees
+      // is the FREE test hook — not a philosophy wall, not a price. Organic and
+      // direct visitors still get the full ritual. Only from a fresh phase-0.
+      if(q.get('gclid')||q.get('gad_source')||q.get('utm_source')){
+        setPhase(p=>p===0?1:p);
+      }
     }catch(e){/* never let a URL quirk break the landing page */}
   },[]);
 
@@ -512,16 +520,21 @@ function App(){
         </div>
         <div style={{opacity:heroIn?1:0,transition:"all 0.8s ease 1.5s"}}>
           <GL/>
-          {/* Two doors, not one. The journal is the paid product, so it leads;
-              the quiz stays available but is now OPTIONAL — which also means a
-              purchase-ready visitor never triggers a Gemini call. */}
-          <div style={{marginTop:48,display:"flex",flexDirection:"column",gap:12,alignItems:"center"}}>
-            <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"hero"})} style={{...gBtn,display:"inline-block",textDecoration:"none",textAlign:"center",minWidth:280}}>
-              📓 {lang==="te"?"Trading Journal తీసుకో — ₹3,540":"Get the Trading Journal — ₹3,540"}
-            </a>
-            <button className="bo" onClick={()=>goTo(2)} style={{background:"transparent",border:`1px solid ${G.goldDim}`,color:G.mid,padding:"13px 24px",borderRadius:2,fontSize:11,letterSpacing:2,textTransform:"uppercase",fontFamily:sans,cursor:"pointer",minWidth:280}}>
-              {lang==="te"?"🧠 ముందు free test చేయి":"🧠 Take the free test first"}
+          {/* Trust before price. A cold visitor must never be asked for ₹3,540
+              first — the PRIMARY action is the free, no-risk self-discovery test
+              (the hook). The paid journal is a subtle secondary link, and its
+              price is revealed only later (after the pitch / the free reveal),
+              never here on first contact. */}
+          <div style={{marginTop:44,display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+            <button className="bg" onClick={()=>{track("free_test_start",{source:"hero"});goTo(2);}} style={{...gBtn,display:"inline-block",textAlign:"center",minWidth:300,fontSize:16,padding:"18px 28px"}}>
+              🧠 {lang==="te"?"FREE Test — నిన్ను నువ్వు తెలుసుకో":"Take the FREE Test — Know Yourself"}
             </button>
+            <div style={{fontSize:11.5,color:G.mid,letterSpacing:0.5,fontFamily:sans}}>
+              {lang==="te"?"100% Free · Payment అవసరం లేదు · 2 నిమిషాలు":"100% Free · No payment · 2 minutes"}
+            </div>
+            <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"hero_secondary"})} style={{marginTop:12,color:G.mid,fontSize:12.5,fontFamily:sans,textDecoration:"none",borderBottom:`1px solid ${G.goldDim}`,paddingBottom:3,cursor:"pointer"}}>
+              {lang==="te"?"ఇప్పటికే తెలుసా? → Journal చూడు":"Already know it? → See the Journal"}
+            </a>
           </div>
         </div>
       </div>
