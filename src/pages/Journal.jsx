@@ -11,6 +11,7 @@ import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
 import Seo from '../Seo';
 import PushOptIn from '../PushOptIn';
+import ReviewRequest from '../ReviewRequest';
 import { track } from '../analytics';
 
 const CARD_BUILDERS = {
@@ -29,6 +30,8 @@ export default function Journal() {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
   const [dataReady, setDataReady] = useState(false); // cloud pull finished (or not applicable)
+  const [showReview, setShowReview] = useState(false); // Feature 4: review request
+  const reviewCheckedRef = useRef(false);              // decide once per page load
   const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
   const [syncConflict, setSyncConflict] = useState(null); // {cloudTrades, cloudEods} — empty local vs real cloud
   const [cardShare, setCardShare] = useState(null); // {status:'generating'|'ready'|'error', kind, file, url, fileName, hint}
@@ -74,6 +77,19 @@ export default function Journal() {
   useEffect(() => {
     if (!authorized || !dataReady) return;
     track('journal_opened', { login_mode: syncUserRef.current ? 'account' : 'emergency' });
+  }, [authorized, dataReady]);
+
+  // Feature 4: after every 10 opens, ask an account-mode student for a review.
+  // Counts once per page load; only account logins (real Supabase session) can
+  // submit, so only they are counted. Stops permanently once a review is given.
+  useEffect(() => {
+    if (!authorized || !dataReady || reviewCheckedRef.current) return;
+    reviewCheckedRef.current = true;
+    if (!syncUserRef.current) return;                          // emergency/local mode — can't submit
+    if (localStorage.getItem('mpvReviewed') === '1') return;   // already reviewed — never nag
+    const opens = (parseInt(localStorage.getItem('mpvJournalOpens') || '0', 10) || 0) + 1;
+    localStorage.setItem('mpvJournalOpens', String(opens));
+    if (opens % 10 === 0) setShowReview(true);
   }, [authorized, dataReady]);
 
   // ═══ CLOUD SYNC ENGINE (local-first, guarded push, merge on conflict) ═══
@@ -486,6 +502,10 @@ export default function Journal() {
           The install prompt now mounts globally in RoutedApp so it shows on
           every screen, not just deep inside the journal. */}
       <PushOptIn />
+
+      {showReview && (
+        <ReviewRequest userId={syncUserRef.current?.id} onClose={() => setShowReview(false)} />
+      )}
 
       {/* ═══ SYNC CONFLICT OVERLAY — empty device vs real cloud journal ═══ */}
       {syncConflict && (
