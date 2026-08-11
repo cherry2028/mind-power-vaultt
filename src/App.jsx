@@ -859,7 +859,6 @@ function App(){
     const [coName, setCoName] = useState(formName || '');
     const [coEmail, setCoEmail] = useState(formEmail || '');
     const [coPhone, setCoPhone] = useState(formWa || '');
-    const [coCoupon, setCoCoupon] = useState(''); // TEMP — remove after conversion test
     const [coLoading, setCoLoading] = useState(false);
     const [coError, setCoError] = useState('');
     const [coSuccess, setCoSuccess] = useState(false);
@@ -887,7 +886,7 @@ function App(){
         const res = await fetch('/api/create-order', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ name: coName, email: coEmail, phone: coPhone, coupon: coCoupon })
+          body: JSON.stringify({ name: coName, email: coEmail, phone: coPhone })
         });
         const data = await res.json();
         if(res.ok && data.payment_session_id) {
@@ -1111,11 +1110,6 @@ function App(){
                     <div>
                       <label style={{fontSize:10,color:G.mid,letterSpacing:1}}>WHATSAPP NUMBER</label>
                       <input type="tel" value={coPhone} onChange={e=>setCoPhone(e.target.value)} style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.05)",border:`1px solid ${G.goldDim}`,borderRadius:6,color:G.smoke,marginTop:4}} placeholder="10 Digit Number" />
-                    </div>
-                    {/* TEMP coupon field — remove after conversion test */}
-                    <div>
-                      <label style={{fontSize:10,color:G.mid,letterSpacing:1}}>COUPON (OPTIONAL)</label>
-                      <input type="text" value={coCoupon} onChange={e=>setCoCoupon(e.target.value.trim())} style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.05)",border:`1px solid ${G.goldDim}`,borderRadius:6,color:G.smoke,marginTop:4}} placeholder="Coupon code" />
                     </div>
                   </div>
                   {coError && <p style={{color:"#CF6679",fontSize:12,marginBottom:16}}>{coError}</p>}
