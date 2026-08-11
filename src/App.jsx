@@ -11,6 +11,7 @@ import RouteTracker from "./RouteTracker";
 import PwaUpdateToast from "./PwaUpdateToast";
 import PwaInstallPrompt from "./PwaInstallPrompt";
 import { track, adsConversion } from "./analytics";
+import { withAttr } from "./utils/attribution";
 
 // 640px WebP (19 KB) instead of the 1600px JPEG (297 KB) — the logo is never
 // rendered larger than 88px, so this is a pure win on mobile data. logo.jpeg is
@@ -540,7 +541,7 @@ function App(){
             <div style={{fontSize:11.5,color:G.mid,letterSpacing:0.5,fontFamily:sans}}>
               {lang==="te"?"100% Free · Payment అవసరం లేదు · 2 నిమిషాలు":"100% Free · No payment · 2 minutes"}
             </div>
-            <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"hero_secondary"})} style={{marginTop:12,color:G.mid,fontSize:12.5,fontFamily:sans,textDecoration:"none",borderBottom:`1px solid ${G.goldDim}`,paddingBottom:3,cursor:"pointer"}}>
+            <a href={withAttr("/get-journal")} onClick={()=>track("journal_cta_click",{source:"hero_secondary"})} style={{marginTop:12,color:G.mid,fontSize:12.5,fontFamily:sans,textDecoration:"none",borderBottom:`1px solid ${G.goldDim}`,paddingBottom:3,cursor:"pointer"}}>
               {lang==="te"?"ఇప్పటికే తెలుసా? → Journal చూడు":"Already know it? → See the Journal"}
             </a>
           </div>
@@ -1161,7 +1162,7 @@ function App(){
             "ReferenceError: setCoOpen is not defined" and the floating journal
             button did nothing. It now opens the direct journal path, which is
             also the flow we want: pitch first, purchase after. */}
-        <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"floating_button"})} style={{width:52,height:52,borderRadius:"50%",background:G.gold,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 20px ${G.gold}60`,transition:"transform 0.2s",border:"none",cursor:"pointer"}} title="Trading Journal">
+        <a href={withAttr("/get-journal")} onClick={()=>track("journal_cta_click",{source:"floating_button"})} style={{width:52,height:52,borderRadius:"50%",background:G.gold,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 20px ${G.gold}60`,transition:"transform 0.2s",border:"none",cursor:"pointer"}} title="Trading Journal">
           <svg width="24" height="24" viewBox="0 0 24 24" fill={G.black}><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
         </a>
         <a href="https://t.me/mindpowervaultt" target="_blank" rel="noopener noreferrer" style={{width:52,height:52,borderRadius:"50%",background:"#2AABEE",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(42,171,238,0.4)",transition:"transform 0.2s"}} title="Telegram">
@@ -1266,7 +1267,7 @@ function App(){
             {/* Direct journal path — a purchase-ready visitor must never be
                 forced through the quiz (which is the only thing that costs a
                 Gemini call). Solid gold so it reads as the primary action. */}
-            <a href="/get-journal" onClick={()=>track("journal_cta_click",{source:"header"})} style={{padding:"7px 15px",background:G.gold,border:`1px solid ${G.gold}`,color:G.black,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:800,textDecoration:"none",textTransform:"uppercase",whiteSpace:"nowrap"}}>📓 {lang==="te"?"Journal":"Journal"}</a>
+            <a href={withAttr("/get-journal")} onClick={()=>track("journal_cta_click",{source:"header"})} style={{padding:"7px 15px",background:G.gold,border:`1px solid ${G.gold}`,color:G.black,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:800,textDecoration:"none",textTransform:"uppercase",whiteSpace:"nowrap"}}>📓 {lang==="te"?"Journal":"Journal"}</a>
             <a href="/portal" target="_blank" rel="noopener noreferrer" style={{padding:"6px 14px",background:`${G.gold}15`,border:`1px solid ${G.gold}40`,color:G.gold,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer",fontWeight:700,textDecoration:"none",textTransform:"uppercase"}}>🎓 {lang==="te"?"Portal":"Portal"}</a>
             <button onClick={()=>setAdminOpen(true)} style={{padding:"6px 14px",background:"transparent",border:`1px solid ${G.goldDim}`,color:`${G.smoke}60`,borderRadius:2,fontSize:10,letterSpacing:1,fontFamily:sans,cursor:"pointer"}}>⚙</button>
           </div>
