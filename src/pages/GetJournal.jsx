@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Seo from '../Seo';
 import JournalPitch from './JournalPitch';
 import { track } from '../analytics';
+import { withAttr } from '../utils/attribution';
 
 // The direct journal path — reachable from the header without touching the
 // quiz, so a purchase-ready visitor is never forced through 4 questions (and
@@ -19,7 +20,7 @@ export default function GetJournal() {
 
   const onBuy = () => {
     track('journal_cta_click', { source: 'get_journal_page', price: 3540 });
-    navigate('/?buy=1');
+    navigate(withAttr('/?buy=1')); // carry gclid/utm to the payment page
   };
 
   return (
