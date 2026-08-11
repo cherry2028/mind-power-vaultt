@@ -765,6 +765,11 @@ function App(){
         });
         setSending(false);
         setLeadSent(true);
+        // LEAD conversion — fires ONCE here, only on a successful submit (not on
+        // render, not on the catch/failure path below). GA4 generate_lead is the
+        // backup path; the Ads conversion is a no-op until its label is set.
+        track("generate_lead", { form: "quiz_lead_capture", level: form.level });
+        adsConversion("masterclass_lead");
         setTimeout(()=>goTo(7), 2000);
       } catch(err) {
         console.error("Submission Error:", err);
