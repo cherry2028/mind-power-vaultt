@@ -21,25 +21,11 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
-  const { name, email, phone, coupon } = req.body;
+  const { name, email, phone } = req.body;
 
   if (!name || !email || !phone) {
     return res.status(400).json({ error: 'Name, email, and phone are required' });
   }
-
-  // ─── TEMPORARY TEST COUPON — DELETE AFTER CONVERSION IS VERIFIED ───
-  // Makes a ₹1 order that still routes through the REAL Cashfree success flow,
-  // so the journal_purchase conversion fires on a genuine payment-success. Amount
-  // is decided SERVER-SIDE only (never trust a client amount). Auto-expires as a
-  // backstop; remove this block + the coupon field once the test is done.
-  let orderAmount = 3540; // ₹3,000 + 18% GST
-  const TEST_COUPON = 'MPVTEST100';
-  const TEST_COUPON_EXPIRES = Date.parse('2026-08-14T23:59:59+05:30'); // ~3 days
-  if (coupon && coupon === TEST_COUPON && Date.now() < TEST_COUPON_EXPIRES) {
-    orderAmount = 1; // gateways reject ₹0 — ₹1 is the minimum real payment
-    console.log('[MPV-TEST-COUPON] ₹1 test order created:', name);
-  }
-  // ──────────────────────────────────────────────────────────────────
 
   const appId = process.env.CASHFREE_APP_ID;
   const secretKey = process.env.CASHFREE_SECRET_KEY;
@@ -57,7 +43,7 @@ export default async function handler(req, res) {
 
   const orderPayload = {
     order_id: orderId,
-    order_amount: orderAmount, // 3540 normally; 1 with the test coupon
+    order_amount: 3540, // 3000 + 18% GST (540)
     order_currency: "INR",
     customer_details: {
       customer_id: `cust_${phone.replace(/\D/g, '').slice(-10)}`,
