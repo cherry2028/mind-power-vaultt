@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
 import StudentPortal from "./pages/StudentPortal";
 import GetJournal from "./pages/GetJournal";
-import Journal from "./pages/Journal";
+// Journal is code-split: its 130 KB raw-HTML blob + jsPDF/html2canvas deps are
+// heavy and only needed once a logged-in student opens /journal — so they no
+// longer ship in the marketing landing bundle (/ and /get-journal load faster).
+const Journal = lazy(() => import("./pages/Journal"));
 import { api } from "./utils/api-client";
 import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
@@ -1327,7 +1330,11 @@ export default function RoutedApp() {
         <Route path="/portal" element={<StudentPortal />} />
         {/* Direct journal path — no quiz, no Gemini call. */}
         <Route path="/get-journal" element={<GetJournal />} />
-        <Route path="/journal" element={<Journal />} />
+        <Route path="/journal" element={
+          <Suspense fallback={<div style={{minHeight:"100vh",background:"#05050A",display:"flex",alignItems:"center",justifyContent:"center",color:"#C9A84C",fontFamily:"'DM Sans',sans-serif",fontSize:14,letterSpacing:1}}>Journal load అవుతోంది…</div>}>
+            <Journal />
+          </Suspense>
+        } />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
