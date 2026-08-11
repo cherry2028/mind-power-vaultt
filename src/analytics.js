@@ -10,8 +10,9 @@ export function track(event, params) {
 // matching adsConversion() call is a safe no-op — so this ships inert and goes
 // live the moment you paste the labels.
 const ADS_CONVERSIONS = {
-  journal_purchase: 'AW-18381298138/S9twCMSM_t4cENqz8bxE', // journal purchase (page-load)
-  mentorship_enquiry: null,   // e.g. 'AW-18381298138/yyyyyyyyyyyyyyyy' — pending the 2nd action
+  journal_purchase: 'AW-18381298138/S9twCMSM_t4cENqz8bxE', // journal purchase (page-load) — LIVE
+  masterclass_lead: null,     // LEAD (post-quiz lead-capture form submit) — paste 'AW-18381298138/…' to activate
+  mentorship_enquiry: null,   // bonus: WhatsApp mentorship CTA — paste label to activate
 };
 
 // Fire a Google Ads conversion by logical name. No-op until its label is set
