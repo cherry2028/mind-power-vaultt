@@ -163,6 +163,24 @@ for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) for (let c = 0; c < 3; c
 }
 check('no undefined/blank fields in any fallback combination (the old bug)', undef.length === 0, undef.slice(0,5).join(', '));
 
+// ── D. GROUNDING — reveal must not invent physical reactions the trader never
+//      chose (the "hands shake at SL" hallucination). Choices are decisions,
+//      never body states, so any physical-tic claim is fabricated.
+const groundedBase = {
+  primaryPattern: 'నువ్వు trade చేయడంలేదు — మార్కెట్ తో గొడవ పడుతున్నావ్.',
+  hiddenTruth: 'ఒక్క red candle నీ ego ని కొడుతోంది.',
+  emotionalState: 'ప్రతి trade ఒక revenge trade.',
+  behaviorLines: ['loss వచ్చాక వెంటనే enter అవుతావు', 'price వెంట పరిగెడతావు', 'profit దగ్గర ఆగవు', 'SL ని ఆశ గా పెడతావు'],
+  hiddenStrength: 'N/A', actionStep: 'loss వచ్చాక 10 నిమిషాలు screen కి దూరంగా ఉండు.',
+};
+const ctxTe = { lang: 'te', choiceLabels: ['', '', '', ''], situationLabels: ['', '', '', ''] };
+const hasPhys = (p, ctx) => validateProfile(p, ctx).violations.some((x) => x.includes('physical reaction'));
+check('grounded reveal is NOT flagged as invented physical reaction', hasPhys(groundedBase, ctxTe) === false);
+check('fabricated TE "చేతులు వణుకుతాయి" IS caught',
+  hasPhys({ ...groundedBase, emotionalState: 'SL దగ్గర నీ చేతులు వణుకుతాయి, గుండె వేగంగా కొట్టుకుంటుంది.' }, ctxTe) === true);
+check('fabricated EN "hands shake / sweat" IS caught',
+  hasPhys({ ...groundedBase, hiddenTruth: 'your hands shake at SL and you sweat watching the screen' }, { ...ctxTe, lang: 'en' }) === true);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (failures.length) { console.log('\nFailures:'); failures.forEach(f => console.log('  - ' + f)); }
 process.exitCode = fail ? 1 : 0;
