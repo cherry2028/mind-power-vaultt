@@ -68,6 +68,14 @@ const BANNED_CTA = [
   [/లింక్/, 'CTA: link'],
 ];
 
+// GROUNDING: the 4 quiz answers are DECISIONS ("I enter", "I wait", "I book"),
+// never physical states. So any physical reaction the reveal describes (shaking
+// hands, sweat, racing heart, tears) is fabricated — the exact hallucination
+// reported ("hands shake at SL" when never chosen). Cherry's own examples never
+// use physical-tic language (they name motives: ego, ఆశ, feeling), so this can
+// never flag his real voice — only invented specifics.
+const INVENTED_PHYSICAL = /చేతు[లు]?\s*వణుక|వణుకుత|చెమట|గుండె\s*(వేగం|దడ|కొట్టు)|కళ్ళు?\s*చెమ|hands?\s+(shak|tremb)|trembl|sweat|heart\s+(rac|pound|beat)|palms?\s+sweat/i;
+
 // hiddenStrength must never re-label a destructive behaviour as a virtue.
 const DESTRUCTIVE = /greed|గ్రీడ్|అత్యాశ|revenge|రెవెంజ్|పగ|overtrad|ఇంకా కావాలి|chase|ఛేజ్/i;
 const PRAISE = /ధైర్యం|courage|సామర్థ్యం|గొప్ప|మంచి లక్షణం|strength|బలం/i;
@@ -307,6 +315,13 @@ export function validateProfile(profile, ctx = {}) {
   const hs = String(profile.hiddenStrength || '');
   if (hs && hs.trim().toUpperCase() !== 'N/A' && DESTRUCTIVE.test(hs) && PRAISE.test(hs)) {
     v.push('hiddenStrength praises a destructive behaviour (greed/revenge framed as a virtue)');
+  }
+
+  // 10. GROUNDING — no invented physical reaction (the choices are decisions,
+  //     not physical states, so a shaking-hands/sweat/racing-heart claim is a
+  //     hallucination, not something the trader actually told us).
+  if (INVENTED_PHYSICAL.test(all)) {
+    v.push('invented physical reaction not grounded in any choice (e.g. "hands shake at SL") — describe the motive, not a body state they never chose');
   }
 
   return { ok: v.length === 0, violations: v };
