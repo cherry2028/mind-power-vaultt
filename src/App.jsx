@@ -94,6 +94,48 @@ const SCENARIOS = [
         {l:"Target hit — I stop here", r:"This looks like discipline. But on a day when you miss your target — can you stop just as cleanly? Real discipline is easy on good days. Bad days are where it's actually tested."},
         {l:"I check the setup quality and then decide", r:"Evaluating setup quality is right. But with profit in hand, is that evaluation truly neutral? Does the setup look a little better because of the profit sitting there?"},
       ]}},
+  // ── Technical-flavoured questions (Q5-7). Same format; the fixed reactions
+  //    are hardcoded exactly like the psychology ones. The FINAL Gemini reveal
+  //    reads these too and exposes the EMOTION behind each technical choice. ──
+  { id:4, escalation:false, showCommunity:false,
+    te:{ sit:"Entry అయ్యింది. ఇప్పుడు SL పెట్టాలి. కానీ SL పెడితే — అది hit అవుతుందేమో అనే భయం. పెట్టకపోతే — account మొత్తం పోతుందేమో అనే భయం.", q:"ఆ క్షణంలో నువ్వు ఏం చేస్తావు?",
+      ch:[
+        {l:"SL పెట్టను — mind లోనే ఒక level అనుకుంటాను", r:"SL mind లో ఉంటే — అది market కి కనిపించదు. నీకు మాత్రమే. మార్కెట్ నీ mind ని respect చెయ్యదు."},
+        {l:"SL పెడతాను, కానీ price దగ్గరకొస్తే వెనక్కి జరుపుతాను", r:"SL జరపడం అంటే — నిజాన్ని కొంచెం వాయిదా వేయడం. Loss పోదు, పెరుగుతుంది."},
+        {l:"Entry ముందే SL నిర్ణయించుకుంటాను — పెట్టాక కదపను", r:"ఇదే discipline. SL నీ శత్రువు కాదు — నీ కవచం. కానీ చాలామంది దాన్ని క్షణంలో వదిలేస్తారు."},
+      ]},
+    en:{ sit:"You've entered. Now you need to place your SL. But if you place it — the fear it'll get hit. If you don't — the fear of losing the whole account.", q:"In that moment, what do you do?",
+      ch:[
+        {l:"I don't place an SL — I keep a level in my mind", r:"An SL in your mind — the market can't see it. Only you can. And the market won't respect your mind."},
+        {l:"I place an SL, but move it back when price comes close", r:"Moving your SL is just postponing the truth. The loss doesn't leave — it grows."},
+        {l:"I decide my SL before entry — and never move it after", r:"This is discipline. Your SL isn't your enemy — it's your armor. But most people abandon it in a single moment."},
+      ]}},
+  { id:5, escalation:false, showCommunity:false,
+    te:{ sit:"Trade profit లో ఉంది. నీ target దగ్గరకొచ్చింది. కానీ ఇప్పుడు అనిపిస్తోంది — \"ఇంకా వెళ్తుందేమో…\"", q:"నీ చెయ్యి ఏం చేస్తుంది?",
+      ch:[
+        {l:"Target దాటి hold చేస్తాను — ఇంకా వస్తుంది కదా", r:"'ఇంకా వస్తుంది' — ఈ ఒక్క ఆలోచన నీ profit ని loss గా మార్చిన రోజులు ఎన్ని? నీకు తెలుసు."},
+        {l:"Target hit — exit అవుతాను, ముందే అనుకున్నదే", r:"అనుకున్నది చేశావు. ఇది చిన్న విషయం కాదు — చాలామంది ఇక్కడే ఓడిపోతారు."},
+        {l:"సగం book చేసి, మిగతా hold చేస్తాను", r:"నీలో ఒక భాగం discipline, ఒక భాగం ఆశ. ఆ రెండింటి మధ్య పోరాటం రోజూ జరుగుతోంది."},
+      ]},
+    en:{ sit:"The trade is in profit. It's reached your target. But now it feels like — \"maybe it'll go further…\"", q:"What does your hand do?",
+      ch:[
+        {l:"I hold past the target — it'll go further, right?", r:"'It'll go further' — how many days has that one thought turned your profit into a loss? You know."},
+        {l:"Target hit — I exit, exactly as planned", r:"You did what you planned. This is not a small thing — most people lose right here."},
+        {l:"I book half, and hold the rest", r:"One part of you is discipline, one part is greed. That fight happens every single day."},
+      ]}},
+  { id:6, escalation:false, showCommunity:false,
+    te:{ sit:"ఒక setup కనిపించింది. బాగుంది అనిపిస్తోంది. కానీ — ఎంత risk, ఎంత reward అని లెక్క వేసుకోలేదు.", q:"నువ్వు ఏం చేస్తావు?",
+      ch:[
+        {l:"Enter అవుతాను — feeling బాగుంది కదా", r:"'బాగుంది అనిపించింది' — ఇది strategy కాదు. ఇది emotion. మార్కెట్ feelings కి డబ్బు ఇవ్వదు."},
+        {l:"ముందు R:R లెక్క వేసి, worth ఉంటేనే enter", r:"ఇదే professional. ఎంత రిస్క్, ఎంత reward — తెలియకుండా enter అవ్వడం జూదం, trade కాదు."},
+        {l:"చిన్న size తో enter అవుతాను — safe గా", r:"size తగ్గించావు — కానీ అసలు ప్రశ్న తప్పించావు. R:R తెలియకపోతే, చిన్నదైనా పెద్దదైనా అది గుడ్డి trade."},
+      ]},
+    en:{ sit:"A setup appears. It looks good. But — you haven't worked out how much risk, how much reward.", q:"What do you do?",
+      ch:[
+        {l:"I enter — the feeling is good, right?", r:"'It felt good' — that's not a strategy. That's emotion. The market doesn't pay for feelings."},
+        {l:"I calculate R:R first, and enter only if it's worth it", r:"This is professional. Entering without knowing your risk and reward is gambling, not trading."},
+        {l:"I enter with a small size — to be safe", r:"You reduced the size — but dodged the real question. Without knowing R:R, small or big, it's a blind trade."},
+      ]}},
 ];
 
 const TM = {
@@ -171,7 +213,14 @@ function buildProfile(answers, L) {
     c=L==="te"?`ఈ రెండు patterns connected గా ఉన్నాయి. ఒకటి trigger అయినపుడు రెండోది automatically follow అవుతుంది. ఒకటి address చేస్తే రెండోది కూడా improve అవుతుంది.`:`These two patterns are connected. When one is triggered, the other follows automatically. Fix one and the other begins to improve.`;
     w=L==="te"?"Combined patterns single pattern కంటే ఎక్కువ impact చేస్తాయి.":"Combined patterns have more impact than a single one — they reinforce each other.";
   }
-  return {primaryLine:p,coreInsight:c,warningLine:w,strengthLine:s,behaviorLines:bLines};
+  // Static technical + closing for the local fallback (used only when Gemini is
+  // unreachable). Generic but on-voice, so even the fallback covers technicals.
+  const tech = L==="te"
+    ? {tm:"నీ technicals తప్పు కాదు. SL, target, R:R — వీటిని తెలిసినా, ఆ క్షణంలో భయం, ఆశ, తొందర వాటిని execute చెయ్యనివ్వవు. నిన్ను ఓడిస్తోంది strategy కాదు — దాన్ని అమలు చెయ్యకపోవడం.",
+       cl:"నువ్వు ఇప్పుడు నీ గురించి చదివావ్. కానీ చదవడం వేరు — మారడం వేరు. ఈ patterns నీకు రోజూ కనిపించాలి. అది ఒక్క చోట మాత్రమే జరుగుతుంది — నిన్ను నువ్వు చూసుకునే చోట."}
+    : {tm:"Your technicals aren't the problem. SL, target, R:R — you know them. But in the moment, fear, greed and impulse stop you executing them. What defeats you isn't the strategy — it's not carrying it out.",
+       cl:"You've just read about yourself. But reading is one thing — changing is another. These patterns need to appear before you every day. And that happens in one place — where you look at yourself."};
+  return {primaryLine:p,coreInsight:c,warningLine:w,strengthLine:s,behaviorLines:bLines,technicalMirror:tech.tm,closing:tech.cl};
 }
 
 const css=`
@@ -695,7 +744,7 @@ function App(){
     // hiddenTruth/emotionalState are the current fields; coreInsight/warningLine
     // are only still read so a profile cached in sessionStorage from before this
     // release keeps rendering instead of going blank mid-session.
-    const {primaryPattern,hiddenTruth,emotionalState,coreInsight,behaviorLines=[],hiddenStrength,warningLine,actionStep}=aiProfile;
+    const {primaryPattern,hiddenTruth,emotionalState,coreInsight,behaviorLines=[],hiddenStrength,warningLine,actionStep,technicalMirror,closing}=aiProfile;
     const truthLine = hiddenTruth || coreInsight;
     return(
       <div style={{...sec,textAlign:"center"}}>
@@ -733,9 +782,17 @@ function App(){
         )}
         {hiddenStrength&&<div style={{maxWidth:620,margin:"0 auto 16px",padding:"18px 22px",background:"rgba(107,142,107,0.07)",border:"1px solid rgba(107,142,107,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(107,142,107,0.85)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.strength}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{hiddenStrength}</p></div>}
         {warningLine&&<div style={{maxWidth:620,margin:"0 auto 16px",padding:"18px 22px",background:"rgba(139,26,26,0.07)",border:"1px solid rgba(139,26,26,0.22)",borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:"rgba(200,80,80,0.8)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{L.res.notice}</p><p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.8}}>{warningLine}</p></div>}
+        {technicalMirror&&(
+          <div style={{maxWidth:620,margin:"0 auto 20px",padding:"18px 22px",background:"rgba(91,143,212,0.06)",border:"1px solid rgba(91,143,212,0.28)",borderRadius:6,textAlign:"left"}}>
+            <p style={{fontSize:10,letterSpacing:3,color:"rgba(91,143,212,0.9)",textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{lang==="te"?"నీ Technicals వెనుక":"Behind Your Technicals"}</p>
+            <p className={lc} style={{fontSize:14,color:G.mid,lineHeight:1.9,whiteSpace:"pre-line"}}>{technicalMirror}</p>
+          </div>
+        )}
         {actionStep&&<div style={{maxWidth:620,margin:"0 auto 32px",padding:"18px 22px",background:"rgba(201,168,76,0.06)",border:`1px solid ${G.gold}30`,borderRadius:6,textAlign:"left"}}><p style={{fontSize:10,letterSpacing:3,color:`${G.gold}90`,textTransform:"uppercase",marginBottom:10,fontFamily:sans}}>{lang==="te"?"ఈ వారం నుండి చేయి":"Start This Week"}</p><p className={lc} style={{fontSize:14,color:G.smoke,lineHeight:1.8,fontWeight:600}}>{actionStep}</p></div>}
         <div style={{maxWidth:580,margin:"0 auto 40px",padding:"26px 28px",border:`1px solid ${G.gold}35`,borderRadius:7,background:`${G.gold}06`}}>
-          <p className={lc} style={{fontSize:"clamp(16px,2vw,21px)",color:G.smoke,lineHeight:2}}>"{L.res.close}<br/><span style={{color:G.gold}}>{L.res.closeg}"</span></p>
+          {closing
+            ? <p className={lc} style={{fontSize:"clamp(15px,1.9vw,20px)",color:G.smoke,lineHeight:2,whiteSpace:"pre-line"}}>{closing}</p>
+            : <p className={lc} style={{fontSize:"clamp(16px,2vw,21px)",color:G.smoke,lineHeight:2}}>"{L.res.close}<br/><span style={{color:G.gold}}>{L.res.closeg}"</span></p>}
         </div>
         <button className="bg" onClick={()=>goTo(6)} style={gBtn}>{L.res.cta}</button>
       </div>

@@ -33,6 +33,8 @@ const EX1 = {
   ],
   hiddenStrength: 'నువ్వు ఇంకా trading చేస్తున్నావ్ అంటే — నువ్వు వదిలేయలేదు. అది weakness కాదు. నీ fight లో తపన ఉంది, కానీ clarity లేదు.',
   actionStep: 'ఇకనుండి ఒక rule: loss వచ్చాక 10 నిమిషాలు screen కి దూరంగా ఉండు. ఆగాల్సింది trade కాదు — నీ ego.',
+  technicalMirror: 'నీ technicals తప్పు కాదు. SL పెట్టావ్ — కానీ price వచ్చేసరికి భయంతో జరిపావ్. Target వచ్చింది — "ఇంకా" అనే ఆశతో దాటావ్. R:R చూడకుండా feeling తో enter అయ్యావ్. నిన్ను ఓడిస్తోంది strategy కాదు — దాన్ని execute చెయ్యకపోవడం.',
+  closing: 'నువ్వు ఇప్పుడు నీ psychology చూశావ్. నీ technicals వెనుక నిజం చూశావ్. కానీ చదవడం వేరు — మారడం వేరు. ఈ patterns రోజూ నీ కళ్ళ ముందు ఉండాలి. అది ఒక్క చోట మాత్రమే జరుగుతుంది — నిన్ను నువ్వు చూసుకునే చోట.',
 };
 
 const CHOICES_2 = [
@@ -53,6 +55,8 @@ const EX2 = {
   ],
   hiddenStrength: 'నీ ప్రశాంతత నీ edge. నిన్ను professional trader గా చేసేది నీ strategy కాదు — నీ controlling strength.',
   actionStep: 'ఇకనుండి P&L కాదు — process score రాయి. Measure చేయాల్సింది result కాదు, నీ decision quality.',
+  technicalMirror: 'నీ technicals discipline నిజం. SL entry ముందే fix చేస్తావ్ — తర్వాత కదపవ్. Target hit అయితే exit అవుతావ్. R:R worth ఉంటేనే enter అవుతావ్. చాలామంది తెలిసినా execute చెయ్యలేరు — నువ్వు చేస్తున్నావ్.',
+  closing: 'నువ్వు నీ psychology చూశావ్, నీ technicals వెనుక నిజం చూశావ్. కానీ ఒక్క రోజు discipline వేరు — రోజూ discipline వేరు. ఈ clarity ప్రతి రోజు నీకు కనిపించాలి. అది ఒక్క చోట మాత్రమే జరుగుతుంది — నిన్ను నువ్వు చూసుకునే చోట.',
 };
 
 console.log('\n══ A. Cherry\'s examples must PASS ══');

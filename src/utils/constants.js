@@ -267,6 +267,12 @@ export function buildProfile(answers, L) {
   const strengths = FB_STRENGTH[lang];
   const strengthKey = pIds.find(id => strengths[id]) || "none";
 
+  // Static technical + closing for the local fallback (Gemini unreachable).
+  const tech = lang === "te"
+    ? { tm: "నీ technicals తప్పు కాదు. SL, target, R:R — వీటిని తెలిసినా, ఆ క్షణంలో భయం, ఆశ, తొందర వాటిని execute చెయ్యనివ్వవు. నిన్ను ఓడిస్తోంది strategy కాదు — దాన్ని అమలు చెయ్యకపోవడం.",
+        cl: "నువ్వు ఇప్పుడు నీ గురించి చదివావ్. కానీ చదవడం వేరు — మారడం వేరు. ఈ patterns నీకు రోజూ కనిపించాలి. అది ఒక్క చోట మాత్రమే జరుగుతుంది — నిన్ను నువ్వు చూసుకునే చోట." }
+    : { tm: "Your technicals aren't the problem. SL, target, R:R — you know them. But in the moment, fear, greed and impulse stop you executing them. What defeats you isn't the strategy — it's not carrying it out.",
+        cl: "You've just read about yourself. But reading is one thing — changing is another. These patterns need to appear before you every day. And that happens in one place — where you look at yourself." };
   return {
     primaryPattern: P.p,
     hiddenTruth: P.h,
@@ -274,6 +280,8 @@ export function buildProfile(answers, L) {
     behaviorLines: answers.map((ci, i) => (FB_LINES[i] && FB_LINES[i][ci] ? FB_LINES[i][ci][lang] : "")).filter(Boolean),
     hiddenStrength: strengths[strengthKey],
     actionStep: P.a,
+    technicalMirror: tech.tm,
+    closing: tech.cl,
   };
 }
 

@@ -23,6 +23,8 @@ export const LIMITS = {
     behaviorLine: 220,
     hiddenStrength: 270,
     actionStep: 240,
+    technicalMirror: 560, // the technical section (SL/target/R:R emotion + bridge)
+    closing: 440,         // the quiet mentorship-pull closing
   },
 };
 
@@ -66,6 +68,20 @@ const BANNED_CTA = [
   [/పుస్తక/, 'off-brand advice: పుస్తకం'],
   [/వెబ్‌సైట్|వెబ్ సైట్/, 'CTA: website (te)'],
   [/లింక్/, 'CTA: link'],
+];
+
+// NO TRADING ADVICE. The technical section exposes the EMOTION behind SL/target/
+// R:R choices — it must never coach entries/exits/setups. These catch the
+// imperative advice patterns (a level to place, a setup called good, an entry
+// told to take). The reaction/exposure voice ("you moved your SL") is fine; only
+// prescriptive advice is banned.
+const BANNED_ADVICE = [
+  [/\bSL\s+(ఇక్కడ|అక్కడ|ఇలా)\s*పెట్టు/i, 'advice: told where to place SL (te)'],
+  [/\bplace\s+(your\s+)?(sl|stop)\s+(at|here|below|above)/i, 'advice: place SL at level'],
+  [/\b(ఈ|this)\s+setup\s+(మంచిది|good|valid|tradeable)/i, 'advice: called a setup good'],
+  [/\b(enter|buy|sell)\s+(this|here|now)\b/i, 'advice: told to enter/buy/sell'],
+  [/\bఇలా\s+enter\s+అవ్వు|ఈ\s+trade\s+తీసుకో/i, 'advice: told to take a trade (te)'],
+  [/\btarget\s+(ఇక్కడ|at)\s|\bset\s+(your\s+)?target\s+at/i, 'advice: told where to set target'],
 ];
 
 // GROUNDING: the 4 quiz answers are DECISIONS ("I enter", "I wait", "I book"),
@@ -153,7 +169,7 @@ export function latinizeText(s) {
 export function latinizeProfile(p) {
   if (!p || typeof p !== 'object') return p;
   const out = { ...p };
-  for (const k of ['primaryPattern', 'hiddenTruth', 'emotionalState', 'coreInsight', 'hiddenStrength', 'warningLine', 'actionStep']) {
+  for (const k of ['primaryPattern', 'hiddenTruth', 'emotionalState', 'coreInsight', 'hiddenStrength', 'warningLine', 'actionStep', 'technicalMirror', 'closing']) {
     if (typeof out[k] === 'string') out[k] = latinizeText(out[k]);
   }
   if (Array.isArray(out.behaviorLines)) out.behaviorLines = out.behaviorLines.map(latinizeText);
@@ -222,11 +238,13 @@ export function validateProfile(profile, ctx = {}) {
     emotionalState: profile.emotionalState,
     hiddenStrength: profile.hiddenStrength,
     actionStep: profile.actionStep,
+    technicalMirror: profile.technicalMirror,
+    closing: profile.closing,
   };
   lines.forEach((l, i) => { sections[`behaviorLine${i + 1}`] = l; });
 
   // 1. required fields present and non-empty
-  for (const k of ['primaryPattern', 'hiddenTruth', 'emotionalState', 'hiddenStrength', 'actionStep']) {
+  for (const k of ['primaryPattern', 'hiddenTruth', 'emotionalState', 'hiddenStrength', 'actionStep', 'technicalMirror', 'closing']) {
     if (!sections[k] || !String(sections[k]).trim()) v.push(`missing/empty: ${k}`);
   }
   if (lines.length !== 4) v.push(`behaviorLines must be exactly 4 (got ${lines.length})`);
@@ -322,6 +340,18 @@ export function validateProfile(profile, ctx = {}) {
   //     hallucination, not something the trader actually told us).
   if (INVENTED_PHYSICAL.test(all)) {
     v.push('invented physical reaction not grounded in any choice (e.g. "hands shake at SL") — describe the motive, not a body state they never chose');
+  }
+
+  // 11. NO TRADING ADVICE — the technical section exposes emotion, never coaches.
+  for (const [re, why] of BANNED_ADVICE) {
+    if (re.test(all)) v.push(`banned — ${why}`);
+  }
+
+  // 12. technicalMirror must engage the technical answers (SL/target/R:R), not
+  //     drift into generic filler — light grounding for the technical section.
+  const tm = String(profile.technicalMirror || '');
+  if (tm.trim() && !/\bSL\b|stop\s*loss|స్టాప్|target|R:?R|risk|reward|రిస్క్|రివార్డ్/i.test(tm)) {
+    v.push('technicalMirror never touches SL / target / R:R — not grounded in the technical answers (S5-S7)');
   }
 
   return { ok: v.length === 0, violations: v };
