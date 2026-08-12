@@ -755,6 +755,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
               <div class="ib" id="qe-mirrorNote">ఈ questions కి honest గా జవాబు చెప్పు.</div>
               <div class="lbl">01. ఈరోజు process follow చేశానా?</div>
               <div class="chiprow" id="qe-m1-row"></div>
+              <div id="qe-mir-oxygen" style="display:none;font-size:12.5px;color:#C9A84C;line-height:1.75;margin:2px 0 12px;font-style:italic;border-left:2px solid rgba(201,168,76,0.45);padding-left:11px">ఈరోజు కష్టంగా ఉంది. కానీ నువ్వు పారిపోలేదు — అదే మొదటి గెలుపు. ఇప్పుడు నిజం చూడు:</div>
               <div class="lbl">02. ఎక్కడ నేను నన్నే deceive చేసుకున్నాను?</div>
               <textarea id="qe-m2" placeholder="Honest గా చెప్పు..." rows="2" style="margin-bottom:12px"></textarea>
               <div class="lbl">03. ఈరోజు professional లా behave చేశానా?</div>
@@ -883,6 +884,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
             <div class="ct">🪞 Daily Mirror</div>
             <div class="ib" id="mirrorNote">ఈ questions కి honest గా జవాబు చెప్పు.</div>
             <div class="fld"><div class="lbl">01. ఈరోజు process follow చేశానా?</div><select id="mir-proc"><option value="">Select...</option><option value="yes_fully">Yes, fully followed</option><option value="mostly">Mostly</option><option value="partially">Partially</option><option value="no">No, broke rules</option></select></div>
+            <div id="mir-oxygen" style="display:none;font-size:12.5px;color:#C9A84C;line-height:1.75;margin:2px 0 12px;font-style:italic;border-left:2px solid rgba(201,168,76,0.45);padding-left:11px">ఈరోజు కష్టంగా ఉంది. కానీ నువ్వు పారిపోలేదు — అదే మొదటి గెలుపు. ఇప్పుడు నిజం చూడు:</div>
             <div class="fld"><div class="lbl">02. ఎక్కడ నేను నన్నే deceive చేసుకున్నాను?</div><textarea id="mir-lie" placeholder="Honest గా చెప్పు..." rows="2"></textarea></div>
             <div class="fld"><div class="lbl">03. ఈరోజు professional లా behave చేశానా?</div><select id="mir-pro"><option value="">Select...</option><option value="yes">Yes</option><option value="mostly">Mostly</option><option value="no">No — emotional decisions</option></select></div>
           </div>
@@ -1273,10 +1275,28 @@ function gS(id,btn){
   if(id==='performance')rPerf();
 }
 
+// A "significant loss" day = today's net closed P&L is negative and deep enough
+// to sting: at least half the daily loss limit if one is set, else a ₹1,000
+// floor. Used ONLY to prepend one oxygen line before the (unchanged) strict
+// mirror question — keeps the trader present so the strict truth lands.
+function significantLossToday(){
+  var t=td(),pnl=0,any=false;
+  for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].date===t&&DB.tr[i].status!=='open'){pnl+=Number(DB.tr[i].pnl||0);any=true;}}
+  if(!any||pnl>=0)return false;
+  var loss=-pnl,maxDay=todayMaxLoss();
+  return maxDay>0?loss>=maxDay*0.5:loss>=1000;
+}
+function toggleMirrorOxygen(){
+  var loss=significantLossToday();
+  var a=ge('mir-oxygen'),b=ge('qe-mir-oxygen');
+  if(a)a.style.display=loss?'':'none';
+  if(b)b.style.display=loss?'':'none';
+}
 function updateMirrorUI(){
   var mandatory=mirrorMandatory();
   var note=ge('mirrorNote');
   if(note)note.textContent=mandatory?'ఈ questions skip చేయడం EOD save కి allow కాదు. Honest గా చెప్పు.':'First 7 days: Mirror questions optional. తర్వాత mandatory అవుతాయి.';
+  toggleMirrorOxygen();
 }
 
 function uSl(el,vi,ni,col){var v=el.value;var pct=(v-1)/9*100;el.style.background='linear-gradient(to right,'+col+' '+pct+'%,#222 '+pct+'%)';var a=ge(vi);if(a)a.textContent=v;var b=ge(ni);if(b)b.textContent=v;}
@@ -2099,6 +2119,7 @@ function closeTradeFinish(){
 var QE={proc:5,out:5,mood:'green',m1:'',m3:''};
 function todayEOD(){var t=td();for(var i=0;i<DB.eod.length;i++){if(DB.eod[i].date===t)return DB.eod[i];}return null;}
 function renderEvening(){
+  toggleMirrorOxygen();
   var e=todayEOD();
   if(e){
     ge('qe-done').style.display='';ge('qe-form').style.display='none';
