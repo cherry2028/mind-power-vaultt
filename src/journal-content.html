@@ -1425,7 +1425,7 @@ function rTr(){
   ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
   var list=ge('tllist');list.innerHTML='';
   if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
-  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirTxt=t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase();var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirTxt=t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase();var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
 }
 // Compact per-segment detail line. Every field is optional — old trades (no
 // details) show just date · setup, exactly like before.
@@ -1442,6 +1442,18 @@ function tDetail(t){
   if(t.sl)bits.push('SL '+t.sl);
   if(t.tgt)bits.push('T '+t.tgt);
   return bits.join(' · ');
+}
+// R:R from the entry/SL/target already captured. risk = distance entry→SL,
+// reward = distance entry→target (direction-agnostic via abs). Returns the
+// reward-per-1-risk ratio, or null when the data isn't there (Options has no
+// target, Crypto has neither) — so it stays silent rather than guessing.
+function computeRR(t){
+  if(!t)return null;
+  var en=parseFloat(t.en),sl=parseFloat(t.sl),tg=parseFloat(t.tgt);
+  if(!isFinite(en)||!isFinite(sl)||!isFinite(tg))return null;
+  var risk=Math.abs(en-sl),reward=Math.abs(tg-en);
+  if(risk<=0)return null;
+  return reward/risk;
 }
 
 // ────── EOD ──────
