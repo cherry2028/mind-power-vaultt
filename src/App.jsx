@@ -1361,6 +1361,7 @@ function App(){
 }
 
 import { AboutUs, TermsAndConditions, PrivacyPolicy, RefundPolicy, ContactUs } from './pages/Policies';
+import Disclaimer from './components/Disclaimer';
 
 // Catch-all so unknown URLs render a real noindex "not found" page instead of a
 // soft-404 (the SPA rewrite serves index.html with 200 for every path; noindex +
@@ -1399,6 +1400,7 @@ export default function RoutedApp() {
         <Route path="/contact" element={<ContactUs />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Disclaimer />
     </BrowserRouter>
   );
 }
