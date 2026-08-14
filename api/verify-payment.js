@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { checkSimpleLimit } from './_lib/ratelimit.js';
 
 // /api/verify-payment.js — Verify Cashfree Payment Order Status & Create Subscription
 export default async function handler(req, res) {
@@ -9,6 +10,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Rate limit check to prevent DoW attacks via repeated Cashfree API calls
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (!checkSimpleLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
 
   const { order_id } = req.body;
 
@@ -56,7 +63,7 @@ export default async function handler(req, res) {
       
       // Save Subscription to Supabase
       const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       
       if (supabaseUrl && supabaseKey) {
         const supabase = createClient(supabaseUrl, supabaseKey);
