@@ -1387,7 +1387,10 @@ export default function RoutedApp() {
         <Route path="/" element={<App />} />
         <Route path="/portal" element={<StudentPortal />} />
         {/* Direct journal path — no quiz, no Gemini call. */}
+        {/* /trading-journal is an alias for the same sales page — ad campaigns
+            and shared links point here, so it must load GetJournal, not 404. */}
         <Route path="/get-journal" element={<GetJournal />} />
+        <Route path="/trading-journal" element={<GetJournal />} />
         <Route path="/journal" element={
           <Suspense fallback={<div style={{minHeight:"100vh",background:"#05050A",display:"flex",alignItems:"center",justifyContent:"center",color:"#C9A84C",fontFamily:"'DM Sans',sans-serif",fontSize:14,letterSpacing:1}}>Journal load అవుతోంది…</div>}>
             <Journal />
