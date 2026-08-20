@@ -31,8 +31,8 @@ export default async function handler(req, res) {
 
   // Journal Student Portal Access
   if (!type || type === 'journal') {
-    const validCodes = (STUDENT_CODES || '').split(',').map(c => c.trim());
-    if (validCodes.includes(code) || code === MASTER_ACCESS_CODE) {
+    const validCodes = (STUDENT_CODES || '').split(',').map(c => c.trim()).filter(Boolean);
+    if (validCodes.includes(code) || (MASTER_ACCESS_CODE && code === MASTER_ACCESS_CODE)) {
        const token = signJWT({ role: 'student', type: 'journal' }, JWT_SECRET, 24);
        recordSuccess(ip);
        logAttempt({ ip, code, type: 'journal', success: true });
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   }
 
   // Legacy Student access
-  if (type === 'access' && code === MASTER_ACCESS_CODE) {
+  if (type === 'access' && MASTER_ACCESS_CODE && code === MASTER_ACCESS_CODE) {
     const token = signJWT({ role: 'student', type: 'access' }, JWT_SECRET, 24);
     recordSuccess(ip);
     logAttempt({ ip, code, type, success: true });
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   }
 
   // Admin access
-  if (type === 'admin' && code === ADMIN_PASSWORD) {
+  if (type === 'admin' && ADMIN_PASSWORD && code === ADMIN_PASSWORD) {
     const token = signJWT({ role: 'admin', type: 'admin' }, JWT_SECRET, 8);
     recordSuccess(ip);
     logAttempt({ ip, code, type, success: true });
