@@ -1,6 +1,7 @@
 import { signJWT } from './_lib/jwt.js';
 import { checkRateLimit, recordSuccess } from './_lib/ratelimit.js';
 import { logAttempt } from './_lib/logger.js';
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
   const { code, type } = req.body || {};
   const { MASTER_ACCESS_CODE, ADMIN_PASSWORD, JWT_SECRET, STUDENT_CODES } = process.env;
 
-  if (!code) {
+  if (!code || typeof code !== 'string') {
     return res.status(400).json({ valid: false, error: 'Invalid request' });
   }
 
@@ -29,10 +30,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ valid: false, error: 'Server configuration error' });
   }
 
+  const isTimingSafeEqual = (a, b) => {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    const aBuf = Buffer.from(a);
+    const bBuf = Buffer.from(b);
+    return aBuf.length === bBuf.length && crypto.timingSafeEqual(aBuf, bBuf);
+  };
+
   // Journal Student Portal Access
   if (!type || type === 'journal') {
     const validCodes = (STUDENT_CODES || '').split(',').map(c => c.trim());
-    if (validCodes.includes(code) || code === MASTER_ACCESS_CODE) {
+    if (validCodes.includes(code) || (MASTER_ACCESS_CODE && isTimingSafeEqual(code, MASTER_ACCESS_CODE))) {
        const token = signJWT({ role: 'student', type: 'journal' }, JWT_SECRET, 24);
        recordSuccess(ip);
        logAttempt({ ip, code, type: 'journal', success: true });
@@ -41,7 +49,7 @@ export default async function handler(req, res) {
   }
 
   // Legacy Student access
-  if (type === 'access' && code === MASTER_ACCESS_CODE) {
+  if (type === 'access' && MASTER_ACCESS_CODE && isTimingSafeEqual(code, MASTER_ACCESS_CODE)) {
     const token = signJWT({ role: 'student', type: 'access' }, JWT_SECRET, 24);
     recordSuccess(ip);
     logAttempt({ ip, code, type, success: true });
@@ -49,7 +57,7 @@ export default async function handler(req, res) {
   }
 
   // Admin access
-  if (type === 'admin' && code === ADMIN_PASSWORD) {
+  if (type === 'admin' && ADMIN_PASSWORD && isTimingSafeEqual(code, ADMIN_PASSWORD)) {
     const token = signJWT({ role: 'admin', type: 'admin' }, JWT_SECRET, 8);
     recordSuccess(ip);
     logAttempt({ ip, code, type, success: true });

@@ -44,10 +44,24 @@ export function alreadyDone(journal, type, today) {
   return Array.isArray(list) && list.some((entry) => entry && entry.date === today);
 }
 
+import crypto from 'crypto';
+
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
   const auth = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
-  if (!secret || auth !== secret) {
+
+  if (!secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const isTimingSafeEqual = (a, b) => {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    const aBuf = Buffer.from(a);
+    const bBuf = Buffer.from(b);
+    return aBuf.length === bBuf.length && crypto.timingSafeEqual(aBuf, bBuf);
+  };
+
+  if (!isTimingSafeEqual(auth, secret)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
