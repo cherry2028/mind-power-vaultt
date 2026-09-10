@@ -32,6 +32,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Payment gateway not configured' });
   }
 
+  // Fail LOUD, before we charge anyone. This used to fall back to the anon key
+  // and then silently skip the insert if either value was missing — so a paid
+  // customer could get {success:true} and no subscription row, with nothing but
+  // a console.warn to show for it. The anon key can never write this table
+  // (RLS has no insert policy for it), so that fallback could only ever fail.
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[MPV-PAY] SUPABASE_SERVICE_ROLE_KEY or SUPABASE_URL missing — refusing to verify a payment we cannot record.');
+    return res.status(500).json({ error: 'Subscription store not configured' });
+  }
+
   // SECURITY: Use encodeURIComponent to safely embed order_id in URL
   const baseUrl = env === 'PROD'
     ? 'https://api.cashfree.com/pg/orders/'
@@ -54,33 +66,34 @@ export default async function handler(req, res) {
       const customerEmail = data.customer_details.customer_email;
       const newAccessCode = `MPV-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
       
-      // Save Subscription to Supabase
-      const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        // 1 Year Expiry
-        const expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      // Save Subscription to Supabase (keys validated at the top of the handler)
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-        const { error: dbError } = await supabase.from('subscriptions').upsert({
-          email: customerEmail,
-          name: data.customer_details.customer_name || 'Trader',
-          phone: data.customer_details.customer_phone || '',
-          access_code: newAccessCode,
-          expires_at: expiresAt.toISOString(),
-          status: 'active'
-        }, { onConflict: 'email' });
+      // 1 Year Expiry
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-        if (dbError) {
-          console.error('[SUPABASE] Failed to save subscription:', dbError);
-        }
-      } else {
-        console.warn('[SUPABASE] Environment variables missing. Skipping DB insert.');
+      const { error: dbError } = await supabase.from('subscriptions').upsert({
+        email: customerEmail,
+        name: data.customer_details.customer_name || 'Trader',
+        phone: data.customer_details.customer_phone || '',
+        access_code: newAccessCode,
+        expires_at: expiresAt.toISOString(),
+        status: 'active'
+      }, { onConflict: 'email' });
+
+      // A paid order whose subscription row did not land is a support incident,
+      // not a log line. Surface it so the customer is told to contact us rather
+      // than being handed an access code that grants nothing.
+      if (dbError) {
+        console.error('[MPV-PAY] PAID BUT NOT RECORDED for', customerEmail, '-', dbError.message);
+        return res.status(500).json({
+          error: 'Payment received but the subscription could not be saved. Please contact support with your order id.',
+          order_id,
+          paid: true,
+        });
       }
-      
+
       return res.status(200).json({
         success: true,
         status: data.order_status,
