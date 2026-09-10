@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   const { code, type } = req.body || {};
-  const { MASTER_ACCESS_CODE, ADMIN_PASSWORD, JWT_SECRET, STUDENT_CODES } = process.env;
+  const { ADMIN_PASSWORD, JWT_SECRET } = process.env;
 
   if (!code) {
     return res.status(400).json({ valid: false, error: 'Invalid request' });
@@ -29,24 +29,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ valid: false, error: 'Server configuration error' });
   }
 
-  // Journal Student Portal Access
-  if (!type || type === 'journal') {
-    const validCodes = (STUDENT_CODES || '').split(',').map(c => c.trim());
-    if (validCodes.includes(code) || code === MASTER_ACCESS_CODE) {
-       const token = signJWT({ role: 'student', type: 'journal' }, JWT_SECRET, 24);
-       recordSuccess(ip);
-       logAttempt({ ip, code, type: 'journal', success: true });
-       return res.status(200).json({ valid: true, role: 'student', token });
-    }
-  }
-
-  // Legacy Student access
-  if (type === 'access' && code === MASTER_ACCESS_CODE) {
-    const token = signJWT({ role: 'student', type: 'access' }, JWT_SECRET, 24);
-    recordSuccess(ip);
-    logAttempt({ ip, code, type, success: true });
-    return res.status(200).json({ valid: true, role: 'student', token });
-  }
+  // NOTE (2026-09-10): the two student branches that lived here — 'journal'
+  // (STUDENT_CODES / MASTER_ACCESS_CODE) and the legacy 'access' branch — have
+  // been removed.
+  //
+  // They minted a role:'student' JWT that NOTHING in src/ consumes. Students
+  // authenticate via Supabase email OTP (StudentPortal.jsx); no call site ever
+  // passed type 'journal' or 'access'. The EMERGENCY_ token checks left in
+  // pages/Journal.jsx, PushOptIn.jsx and journal-content.html are orphaned
+  // guards for that removed path.
+  //
+  // Keeping them meant an unauthenticated, guessable code endpoint that handed
+  // out student tokens — and MASTER_ACCESS_CODE shipped in .env.example as the
+  // real-looking default 'MPV2025MAY', so it must be treated as public.
+  // Rotating a secret that guards a door into an empty room is cost without
+  // benefit; deleting the door removes the attack surface entirely.
+  //
+  // Admin login below is LIVE — App.jsx:396 calls api.validateCode(pwd,'admin').
 
   // Admin access
   if (type === 'admin' && code === ADMIN_PASSWORD) {

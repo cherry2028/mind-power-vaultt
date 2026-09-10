@@ -25,6 +25,33 @@ const CARD_BUILDERS = {
 const MENTOR_WHATSAPP = (import.meta.env.VITE_MENTOR_WHATSAPP || '919059181616').replace(/\D/g, '');
 const WA_TEXT = 'Weekly report పంపుతున్నాను 📊 — Mind Power Vaultt Journal';
 
+// ═══ SERVER-SIDE ENTITLEMENT GATE ═══
+// The portal's expires_at read (StudentPortal.jsx) is UX — fast feedback, and
+// trivially skipped by anyone who sets a session token by hand. THIS is the
+// control: check_entitlement() runs inside Postgres under the caller's own JWT,
+// takes no parameters, and cannot be edited from devtools.
+const ENTITLEMENT_MSG = {
+  no_subscription: 'ఈ email కి active subscription కనిపించలేదు. Journal వాడాలంటే Portal లో subscription తీసుకోండి.',
+  expired: 'మీ subscription expire అయింది. Renew చేసి మళ్ళీ login అవ్వండి.',
+  cancelled: 'మీ subscription ఇప్పుడు active గా లేదు. Cherry ని contact చేయండి.',
+  no_email: 'ఈ account కి email లేదు. Email OTP తో login అవ్వండి.',
+};
+
+// Fails OPEN on any transport/server error. A Supabase outage must never lock
+// out a paying student mid-session — the DB-side grants are what actually stop
+// privilege escalation, so a degraded read here costs nothing.
+async function checkEntitlement(client) {
+  try {
+    const { data, error } = await client.rpc('check_entitlement');
+    if (error) throw error;
+    if (!data || typeof data.allowed !== 'boolean') throw new Error('malformed entitlement response');
+    return data;
+  } catch (err) {
+    console.error('[MPV-ENTITLEMENT] check failed — failing open:', err?.message || err);
+    return { allowed: true, reason: 'ok', degraded: true };
+  }
+}
+
 export default function Journal() {
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -336,6 +363,19 @@ export default function Journal() {
               setChecking(false);
               return;
             }
+          }
+
+          // Entitlement — runs on mount AND on every 60s re-validation, right
+          // beside the device check, so a subscription that lapses (or is
+          // revoked) closes the journal within a minute rather than at next login.
+          const ent = await checkEntitlement(supabase);
+          if (!ent.allowed) {
+            await supabase.auth.signOut();
+            sessionStorage.removeItem('mpv_journal_token');
+            setError(ENTITLEMENT_MSG[ent.reason] || ENTITLEMENT_MSG.no_subscription);
+            setAuthorized(false);
+            setChecking(false);
+            return;
           }
 
           // Cloud pull — once per page load, BEFORE the journal iframe boots,
