@@ -54,6 +54,10 @@ function isEmptyJournal(data) {
 // keys prefer local; streak counters take the max so nobody loses a streak.
 const ID_ARRAY_KEYS = ['mpvtr', 'mpveod', 'mpvpm', 'mpvpsyd', 'mpvmir', 'mpvwk', 'mpvmn', 'mpvrules'];
 export function mergeJournals(cloud, local) {
+  // The spread is also what keeps unknown top-level keys alive on the merge
+  // path: a key present only in `cloud` survives, because `local` has no
+  // property to shadow it with. Covered by tests — do not "simplify" this into
+  // a whitelist loop.
   const merged = { ...cloud, ...local };
   for (const k of ID_ARRAY_KEYS) {
     const c = Array.isArray(cloud?.[k]) ? cloud[k] : [];
@@ -178,6 +182,26 @@ export async function pushJournal(supabase, user, opts = {}) {
         didMerge = true;
       }
     }
+
+    // ── ADDITIVE SAFETY ──────────────────────────────────────────────────────
+    // collectLocal() only knows JOURNAL_KEYS, and this is a whole-document
+    // write, so ANY other top-level key in the cloud row would be erased here —
+    // silently, seconds after the student's next save. Re-base the payload on
+    // what we just read so unknown keys survive the round trip.
+    //
+    // Deliberately AFTER the guards: Guard 2 must still see the raw local
+    // collection, or an empty device would inherit the cloud's trades, look
+    // non-empty, and skip the overwrite protection entirely.
+    //
+    // Deliberately skipped for opts.force: force means the student explicitly
+    // chose "replace the cloud with what is on this device". Re-basing would
+    // quietly undo that choice.
+    //
+    // Unknown keys are passed through server-side only — restoreToLocal() still
+    // writes just the whitelist, so nothing unrecognised ever enters
+    // localStorage. Keys the client owns still overwrite the cloud exactly as
+    // before; only genuinely foreign keys are preserved.
+    if (remote?.data && !opts.force) payload = { ...remote.data, ...payload };
 
     const updatedAt = new Date().toISOString();
     const { error } = await supabase
