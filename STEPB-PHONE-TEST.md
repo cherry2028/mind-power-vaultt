@@ -9,7 +9,7 @@
 
 | | |
 |---|---|
-| **Preview URL** | `__PREVIEW_URL__/portal` |
+| **Preview URL** | `https://mind-power-vaultt-git-stepb-ac-871eed-mpviwm2025-9339s-projects.vercel.app/portal` |
 | **Test email** | `ssjservices2023+stepb1@gmail.com` |
 | **Test password** | `Stepb-58a63aadec` (preview DB లో మాత్రమే ఉంది — real site లో పని చేయదు) |
 
@@ -27,10 +27,10 @@
 
 | # | చేయండి | కనిపించాలి |
 |---|---|---|
-| A1 | `__PREVIEW_URL__/` open చేయండి | పైన full width **ఎర్ర banner: ⚠ PREVIEW — TEST DATA ⚠**, కింద `ఇది students వాడే site కాదు · … · DB: staging` |
+| A1 | `https://mind-power-vaultt-git-stepb-ac-871eed-mpviwm2025-9339s-projects.vercel.app/` open చేయండి | పైన full width **ఎర్ర banner: ⚠ PREVIEW — TEST DATA ⚠**, కింద `ఇది students వాడే site కాదు · … · DB: staging` |
 | A2 | Banner మీద ✕ / close కోసం వెతకండి, banner మీద tap చేయండి | Close option **లేదు**. Tap చేస్తే ఏమీ జరగదు |
 | A3 | Page కిందకి scroll చేయండి | Banner పైనే fixed గా ఉంటుంది |
-| A4 | `__PREVIEW_URL__/portal` open చేయండి | Portal లో కూడా అదే banner. Chrome tab title `[PREVIEW] …` తో మొదలవుతుంది |
+| A4 | `https://mind-power-vaultt-git-stepb-ac-871eed-mpviwm2025-9339s-projects.vercel.app/portal` open చేయండి | Portal లో కూడా అదే banner. Chrome tab title `[PREVIEW] …` తో మొదలవుతుంది |
 | A5 | వేరే tab లో `mindpowervaultt.com/portal` open చేయండి (login **చేయకండి**) | ఎర్ర banner **లేదు**, 🧪 TEST button **లేదు**, test login box **లేదు**. చూసి tab close చేయండి |
 
 ---
