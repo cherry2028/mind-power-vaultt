@@ -19,8 +19,8 @@ export const JOURNAL_KEYS = [
   'mpvinsight', // insight-card + milestone tracking (Phase 2 hook layer)
 ];
 
-const STAMP_KEY = 'mpvCloudUpdatedAt'; // updated_at of the last row we pushed/pulled
-const DIRTY_KEY = 'mpvSyncDirty';      // '1' when local has unpushed changes
+export const STAMP_KEY = 'mpvCloudUpdatedAt'; // updated_at of the last row we pushed/pulled
+export const DIRTY_KEY = 'mpvSyncDirty';      // '1' when local has unpushed changes
 
 export function markDirty() { localStorage.setItem(DIRTY_KEY, '1'); }
 export function isDirty() { return localStorage.getItem(DIRTY_KEY) === '1'; }
@@ -30,7 +30,7 @@ export function resetSyncMarkers() { localStorage.removeItem(STAMP_KEY); localSt
 // 'offline' when the request never reached Supabase, 'error' when it did and
 // was rejected. PostgREST network failures surface as fetch TypeErrors
 // stringified into the error message.
-function classifyFailure(e) {
+export function classifyFailure(e) {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
   const msg = String(e?.message || e || '');
   if (/failed to fetch|network|load failed|fetch failed|timed?\s*out/i.test(msg)) return 'offline';
@@ -52,7 +52,7 @@ function isEmptyJournal(data) {
 // (stale stamp / same email on two devices). Arrays with unique ids are
 // unioned (local wins for the same id — it is the active device); scalar
 // keys prefer local; streak counters take the max so nobody loses a streak.
-const ID_ARRAY_KEYS = ['mpvtr', 'mpveod', 'mpvpm', 'mpvpsyd', 'mpvmir', 'mpvwk', 'mpvmn', 'mpvrules'];
+export const ID_ARRAY_KEYS = ['mpvtr', 'mpveod', 'mpvpm', 'mpvpsyd', 'mpvmir', 'mpvwk', 'mpvmn', 'mpvrules'];
 export function mergeJournals(cloud, local) {
   // The spread is also what keeps unknown top-level keys alive on the merge
   // path: a key present only in `cloud` survives, because `local` has no

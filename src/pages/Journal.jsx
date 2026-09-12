@@ -8,10 +8,14 @@ import { BUILD_ID, hardReset } from '../pwa';
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
+import { OWNER_KEY, REFUSAL_CODES, readOwner, maskEmail, verifyUnboundDevice, clearAccountData } from '../utils/accountBinding';
+import { TARGET, SHOW_PREVIEW_BANNER, PREVIEW_BANNER_HEIGHT } from '../utils/deployTarget';
+import { MENTOR_WHATSAPP, mentorWaUrl } from '../utils/mentorContact';
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
 import Seo from '../Seo';
 import PushOptIn from '../PushOptIn';
 import ReviewRequest from '../ReviewRequest';
+import BackupButton from '../BackupButton';
 import { track } from '../analytics';
 
 const CARD_BUILDERS = {
@@ -20,9 +24,6 @@ const CARD_BUILDERS = {
   milestone: { build: buildMilestoneCardHtml, file: (p) => `MPV_Streak_${p.days}days.png` },
 };
 
-// Public mentor WhatsApp number for the wa.me fallback (same number as the
-// site's contact button — not a secret, unlike MENTOR_EMAIL which stays server-side).
-const MENTOR_WHATSAPP = (import.meta.env.VITE_MENTOR_WHATSAPP || '919059181616').replace(/\D/g, '');
 const WA_TEXT = 'Weekly report పంపుతున్నాను 📊 — Mind Power Vaultt Journal';
 
 // ═══ SERVER-SIDE ENTITLEMENT GATE ═══
@@ -52,6 +53,8 @@ async function checkEntitlement(client) {
   }
 }
 
+const FONT = "'DM Sans','Noto Sans Telugu',sans-serif";
+
 export default function Journal() {
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -62,10 +65,17 @@ export default function Journal() {
   const [pdfShare, setPdfShare] = useState(null); // {status:'generating'|'ready'|'error', ...}
   const [syncConflict, setSyncConflict] = useState(null); // {cloudTrades, cloudEods} — empty local vs real cloud
   const [cardShare, setCardShare] = useState(null); // {status:'generating'|'ready'|'error', kind, file, url, fileName, hint}
+  const [refusal, setRefusal] = useState(null);          // {reason, account} — unbound phone, ownership not proven
+  const [refusalOpen, setRefusalOpen] = useState(false);
+  const [mismatch, setMismatch] = useState(null);        // {owner, current} — storage belongs to another account
+  const [logout, setLogout] = useState(null);            // {stage:'confirm'|'working'|'failed'|'unsafe', backupTaken?}
+  const [loggingOut, setLoggingOut] = useState(false);   // unmounts the iframe before storage is cleared
   const iframeRef = useRef(null);
-  const pulledRef = useRef(false);      // cloud pull runs once per page load
-  const syncUserRef = useRef(null);     // {id, email?} — null = emergency/local-only mode
-  const syncStatusRef = useRef('off');  // 'synced' | 'syncing' | 'offline' | 'error' | 'off'
+  const bootRef = useRef('no');         // 'no' | 'running' | 'done' — binding + cloud pull, once per page load
+  const bindingRef = useRef('pending'); // 'pending' | 'bound' | 'refused' | 'unverified' | 'local' | 'mismatch' | 'logged-out'
+  const ownerRawRef = useRef(null);     // mpvOwner as it stood when this page finished booting
+  const syncUserRef = useRef(null);     // {id, email?} — null = no sync this session
+  const syncStatusRef = useRef('off');  // 'synced' | 'syncing' | 'offline' | 'error' | 'paused' | 'unverified' | 'off'
   const navigate = useNavigate();
 
   const postSyncStatus = (status) => {
@@ -86,6 +96,7 @@ export default function Journal() {
 
   // Shared handling for a push outcome (statuses come from journalSync).
   const handlePushResult = (result) => {
+    if (result.status === 'refused') return; // binding guard stopped it — its own screen is already showing
     if (result.status === 'blocked-empty') {
       setSyncConflict({ cloudTrades: result.cloudTrades, cloudEods: result.cloudEods });
       postSyncStatus('error');
@@ -99,11 +110,164 @@ export default function Journal() {
     postSyncStatus(result.status); // 'synced' | 'offline' | 'error'
   };
 
+  // ═══ ACCOUNT BINDING (see utils/accountBinding.js) ═══
+  // Sync may run only when ALL hold: this host/database pairing is allowed,
+  // the phone is bound, and it is bound to the account we are syncing as.
+  const canSync = () =>
+    TARGET.syncAllowed &&
+    bindingRef.current === 'bound' &&
+    !!syncUserRef.current &&
+    readOwner()?.id === syncUserRef.current.id;
+
+  // Local storage now belongs to a different account than this page started
+  // with (another tab signed in or out, or the session itself changed). Stop
+  // every push, take the journal down, and say so. Deletes nothing.
+  const lockMismatch = (currentEmail) => {
+    if (bindingRef.current === 'mismatch' || bindingRef.current === 'logged-out') return;
+    const was = syncUserRef.current;
+    bindingRef.current = 'mismatch';
+    syncUserRef.current = null;
+    const owner = readOwner();
+    setMismatch({ owner: owner ? maskEmail(owner.email) : null, current: maskEmail(currentEmail || was?.email) });
+    track('journal_binding', { result: 'mismatch_locked' });
+  };
+
+  // Every push from this page goes through here: the binding must still match,
+  // and the live session must still be the account we bound to.
+  const guardedPush = async (opts) => {
+    if (!canSync()) {
+      if (bindingRef.current === 'bound') lockMismatch();
+      return { status: 'refused' };
+    }
+    const { data, error: sessionError } = await supabase.auth.getSession();
+    const session = data?.session;
+    if (sessionError || !session) {
+      // Token refresh failed (usually offline) — not evidence of another account.
+      return { status: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error' };
+    }
+    if (session.user.id !== syncUserRef.current.id) {
+      lockMismatch(session.user.email);
+      return { status: 'refused' };
+    }
+    return pushJournal(supabase, syncUserRef.current, opts);
+  };
+
+  // First validation of this page load: decide the binding, then the normal
+  // cloud pull — BEFORE the journal iframe boots, so a student on a new phone
+  // sees their restored journal immediately.
+  const bootAccount = async (user) => {
+    const owner = readOwner();
+    if (owner && owner.id !== user.id) {
+      lockMismatch(user.email);
+      return;
+    }
+
+    if (!TARGET.syncAllowed) {
+      bindingRef.current = 'local';
+      syncUserRef.current = null;
+      syncStatusRef.current = 'off';
+      console.error('[MPV-SYNC] sync refused — host/database pairing not allowed:', TARGET.hostname, TARGET.db);
+      track('journal_binding', { result: 'sync_blocked_host' });
+      return;
+    }
+
+    if (!owner) {
+      // First open of this phone since binding shipped (or a phone whose
+      // binding was never written). Bind only on proof; never delete.
+      const v = await verifyUnboundDevice(supabase, user);
+      track('journal_binding', { result: v.result });
+      if (v.status === 'refused') {
+        bindingRef.current = 'refused';
+        syncUserRef.current = null;
+        syncStatusRef.current = 'paused';
+        setRefusal({ reason: v.reason, account: maskEmail(user.email) });
+        setRefusalOpen(true);
+        return;
+      }
+      if (v.status !== 'bound') {
+        // Could not read the cloud. No sync this session; the next open retries.
+        bindingRef.current = 'unverified';
+        syncUserRef.current = null;
+        syncStatusRef.current = 'unverified';
+        return;
+      }
+    }
+
+    // Keyed on user.id: present for every auth method incl. phone OTP.
+    bindingRef.current = 'bound';
+    syncUserRef.current = { id: user.id, email: user.email || null };
+    const result = await pullJournal(supabase, syncUserRef.current);
+    if (result.status === 'restored') {
+      sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+    }
+    if (result.status === 'blocked-empty') {
+      // Stale dirty flag on a near-empty device vs a real cloud journal —
+      // never auto-resolve; the student decides via the conflict overlay.
+      setSyncConflict({ cloudTrades: result.cloudTrades, cloudEods: result.cloudEods });
+      syncStatusRef.current = 'error';
+    } else {
+      syncStatusRef.current =
+        (result.status === 'offline' || result.status === 'error') ? result.status : 'synced';
+    }
+  };
+
+  // ═══ LOGOUT ═══
+  const startLogout = () => {
+    if (bindingRef.current === 'mismatch' || bindingRef.current === 'logged-out') return;
+    // A phone whose journal is not proven to be in this account's cloud must
+    // not be cleared on a single tap.
+    setLogout(bindingRef.current === 'bound' ? { stage: 'confirm' } : { stage: 'unsafe', backupTaken: false });
+  };
+
+  const finishLogout = async (result) => {
+    track('journal_binding', { result });
+    bindingRef.current = 'logged-out';
+    syncUserRef.current = null;
+    setLogout({ stage: 'working' });
+    setLoggingOut(true); // unmount the iframe first, so nothing can write the keys back
+    await new Promise((r) => setTimeout(r, 150));
+    clearAccountData(); // local only — the cloud journal is never touched
+    ['mpv_journal_token', 'mpv_journal_access', 'mpv_restore_note'].forEach((k) => sessionStorage.removeItem(k));
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the app token is already gone */ }
+    window.location.replace('/portal');
+  };
+
+  const confirmLogout = async () => {
+    setLogout({ stage: 'working' });
+    if (isDirty()) {
+      postSyncStatus('syncing');
+      const result = await guardedPush();
+      if (result.status === 'refused') { setLogout(null); return; } // the mismatch lock took over
+      if (result.status !== 'synced' && result.status !== 'merged') {
+        track('journal_binding', { result: 'logout_refused_unsynced' });
+        handlePushResult(result); // blocked-empty opens the existing conflict screen
+        setLogout(result.status === 'blocked-empty' ? null : { stage: 'failed' });
+        return;
+      }
+    }
+    await finishLogout('logout_done');
+  };
+
+  const unsafeLogout = () => {
+    if (!window.confirm('చివరి confirmation: ఈ phone నుండి journal, PIN తీసేస్తాం. Backup file లేకపోతే ఈ data తిరిగి రాదు. Logout చేయాలా?')) return;
+    finishLogout('logout_after_backup');
+  };
+
+  // Mismatch screen: sign this page out and go back through the portal, where
+  // the sign-in rules decide what happens to this phone's storage.
+  const relogin = async () => {
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* best effort */ }
+    sessionStorage.removeItem('mpv_journal_token');
+    sessionStorage.removeItem('mpv_journal_access');
+    window.location.replace('/portal');
+  };
+
   // Analytics: journal session opened (fires once per page load, after auth +
   // data-ready). Standalone effect — reads nothing the sync engine writes.
   useEffect(() => {
     if (!authorized || !dataReady) return;
-    track('journal_opened', { login_mode: syncUserRef.current ? 'account' : 'emergency' });
+    const token = sessionStorage.getItem('mpv_journal_token') || '';
+    track('journal_opened', { login_mode: token.startsWith('EMERGENCY_') ? 'emergency' : 'account' });
   }, [authorized, dataReady]);
 
   // Feature 4: after every 10 opens, ask an account-mode student for a review.
@@ -112,7 +276,7 @@ export default function Journal() {
   useEffect(() => {
     if (!authorized || !dataReady || reviewCheckedRef.current) return;
     reviewCheckedRef.current = true;
-    if (!syncUserRef.current) return;                          // emergency/local mode — can't submit
+    if (!syncUserRef.current) return;                          // no synced account this session — can't submit
     if (localStorage.getItem('mpvReviewed') === '1') return;   // already reviewed — never nag
     const opens = (parseInt(localStorage.getItem('mpvJournalOpens') || '0', 10) || 0) + 1;
     localStorage.setItem('mpvJournalOpens', String(opens));
@@ -125,49 +289,64 @@ export default function Journal() {
     let pushTimer = null;
 
     const doPush = async () => {
-      if (!syncUserRef.current) return;
+      if (!canSync()) return;
       postSyncStatus('syncing');
-      const result = await pushJournal(supabase, syncUserRef.current);
-      handlePushResult(result);
+      handlePushResult(await guardedPush());
     };
 
     const onMessage = (e) => {
       if (e.source !== iframeRef.current?.contentWindow || !e.data) return;
-      if (e.data.type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
+      const type = e.data.type;
+      if (type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
       // "App Update చేయి" in the More menu: drop every worker + cache and
       // reload from the network. Journal data (localStorage + Supabase) is not
       // touched — this only clears the stale app shell.
-      if (e.data.type === 'MPV_FORCE_UPDATE') hardReset();
-      if (e.data.type === 'MPV_DB_DIRTY') {
-        if (!syncUserRef.current) return; // emergency login: local-only
+      if (type === 'MPV_FORCE_UPDATE') hardReset();
+      if (type === 'MPV_LOGOUT') startLogout();
+      // The iframe stops writing the moment mpvOwner changes under it.
+      if (type === 'MPV_OWNER_CHANGED') lockMismatch();
+      if (type === 'MPV_SHOW_SYNC_HELP' && bindingRef.current === 'refused') setRefusalOpen(true);
+      if (type === 'MPV_DB_DIRTY') {
+        // Always record that this phone has changes the cloud does not — the
+        // sign-in and logout safety checks read this even while sync is off.
         markDirty();
+        if (!canSync()) return;
         clearTimeout(pushTimer);
         pushTimer = setTimeout(doPush, 5000);
       }
     };
     const onPageHide = () => {
-      // Best-effort flush — don't lose the debounce window on tab close
-      if (syncUserRef.current && isDirty()) pushJournal(supabase, syncUserRef.current);
+      // Best-effort flush — don't lose the debounce window on tab close.
+      // Synchronous binding check only (nothing can be awaited here); RLS
+      // rejects a write for any other account regardless.
+      if (canSync() && isDirty()) pushJournal(supabase, syncUserRef.current);
     };
     const onOnline = () => {
-      if (!syncUserRef.current) return;
+      if (!canSync()) return;
       if (isDirty()) doPush();
       else postSyncStatus('synced');
     };
     const onOffline = () => {
-      if (syncUserRef.current) postSyncStatus('offline');
+      if (canSync()) postSyncStatus('offline');
+    };
+    // Another tab signed a different account in, or logged out.
+    const onStorage = (e) => {
+      if (e.key !== null && e.key !== OWNER_KEY) return;
+      if (localStorage.getItem(OWNER_KEY) !== ownerRawRef.current) lockMismatch();
     };
 
     window.addEventListener('message', onMessage);
     window.addEventListener('pagehide', onPageHide);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+    window.addEventListener('storage', onStorage);
     return () => {
       clearTimeout(pushTimer);
       window.removeEventListener('message', onMessage);
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+      window.removeEventListener('storage', onStorage);
     };
   }, [authorized, dataReady]);
 
@@ -307,7 +486,7 @@ export default function Journal() {
   const resolveConflictForce = async () => {
     setSyncConflict(null);
     postSyncStatus('syncing');
-    const result = await pushJournal(supabase, syncUserRef.current, { force: true });
+    const result = await guardedPush({ force: true });
     handlePushResult(result);
   };
   const resolveConflictLater = () => {
@@ -323,7 +502,7 @@ export default function Journal() {
         setChecking(false);
         return;
       }
-      
+
       // Emergency bypass validation — local-only, no cloud sync
       if (token.startsWith('EMERGENCY_')) {
         syncUserRef.current = null;
@@ -378,25 +557,24 @@ export default function Journal() {
             return;
           }
 
-          // Cloud pull — once per page load, BEFORE the journal iframe boots,
-          // so a student on a new phone sees their restored journal immediately.
-          // Keyed on user.id: present for every auth method incl. phone OTP.
-          syncUserRef.current = { id: user.id, email: user.email || null };
-          if (!pulledRef.current) {
-            pulledRef.current = true;
-            const result = await pullJournal(supabase, syncUserRef.current);
-            if (result.status === 'restored') {
-              sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+          if (bootRef.current === 'no') {
+            // Account binding + cloud pull — once per page load.
+            bootRef.current = 'running';
+            try {
+              await bootAccount(user);
+            } finally {
+              // Even if boot threw, later validations must not wait forever.
+              // An unfinished boot leaves bindingRef 'pending', so canSync()
+              // stays false and nothing is pushed.
+              ownerRawRef.current = localStorage.getItem(OWNER_KEY);
+              bootRef.current = 'done';
             }
-            if (result.status === 'blocked-empty') {
-              // Stale dirty flag on a near-empty device vs a real cloud journal —
-              // never auto-resolve; the student decides via the conflict overlay.
-              setSyncConflict({ cloudTrades: result.cloudTrades, cloudEods: result.cloudEods });
-              syncStatusRef.current = 'error';
-            } else {
-              syncStatusRef.current =
-                (result.status === 'offline' || result.status === 'error') ? result.status : 'synced';
-            }
+          } else if (bootRef.current === 'running') {
+            return; // the first pass is still binding/pulling — it opens the journal itself
+          } else if (bindingRef.current === 'bound' &&
+                     (user.id !== syncUserRef.current?.id || readOwner()?.id !== user.id)) {
+            // Re-validation: the session or the binding changed under this page.
+            lockMismatch(user.email);
           }
 
           setAuthorized(true);
@@ -410,9 +588,9 @@ export default function Journal() {
       }
       setChecking(false);
     };
-    
+
     validateSession();
-    
+
     // Auto-sync: Check every 60 seconds if another device logged in
     const interval = setInterval(validateSession, 60000);
     return () => clearInterval(interval);
@@ -480,6 +658,10 @@ export default function Journal() {
     gold: "#C9A84C", smoke: "#F5F2EA", black: "#05050A", dark1: "#0A0A10",
     goldDim: "rgba(201,168,76,0.18)", mid: "#D0CCBF"
   };
+  const overlay = (z) => ({ position:'fixed', inset:0, zIndex:z, background:'rgba(5,5,10,0.94)', display:'flex', alignItems:'center', justifyContent:'center', padding:16, overflowY:'auto', fontFamily:FONT });
+  const card = (border) => ({ maxWidth:430, width:'100%', background:G.dark1, border:`1px solid ${border}`, borderRadius:12, padding:'26px 22px', textAlign:'center', color:G.smoke });
+  const primaryBtn = { width:'100%', padding:15, marginBottom:10, background:`linear-gradient(135deg, ${G.gold}, #9A7020)`, color:G.black, border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' };
+  const linkBtn = { background:'transparent', border:'none', color:G.mid, fontSize:12, cursor:'pointer', textDecoration:'underline' };
 
   // ═══ CHECKING STATE ═══
   if (checking) {
@@ -513,11 +695,34 @@ export default function Journal() {
     );
   }
 
+  // ═══ ACCOUNT MISMATCH — this phone's journal belongs to another account ═══
+  if (mismatch) {
+    return (
+      <div style={{ minHeight:'100vh', background:G.black, display:'flex', alignItems:'center', justifyContent:'center', padding:16, fontFamily:FONT, color:G.smoke }}>
+        <Seo title="Journal — Mind Power Vaultt" path="/journal" noindex />
+        <div style={card('rgba(207,102,121,0.45)')}>
+          <div style={{ fontSize:40, marginBottom:10 }}>🔒</div>
+          <h3 style={{ color:'#CF6679', fontSize:17, marginBottom:12, lineHeight:1.5 }}>ఈ phone లో account మారింది</h3>
+          <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:10 }}>
+            {mismatch.owner
+              ? <>ఈ phone లో ఉన్న journal <b style={{ color:G.smoke }}>{mismatch.owner}</b> account ది. మీరు ఇప్పుడు <b style={{ color:G.smoke }}>{mismatch.current}</b> తో login అయ్యారు.</>
+              : <>వేరే tab లో logout లేదా వేరే account login జరిగింది.</>}
+          </p>
+          <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>
+            తప్పు account లో data కలవకుండా journal ఆపాం. ఏమీ delete చేయలేదు.
+          </p>
+          <BackupButton />
+          <button onClick={relogin} style={primaryBtn}>Portal లో మళ్ళీ login అవ్వండి →</button>
+        </div>
+      </div>
+    );
+  }
+
   // ═══ AUTHORIZED — RENDER JOURNAL ═══
   const accessCode = sessionStorage.getItem('mpv_journal_access') || 'STUDENT';
-  
+
   return (
-    <div style={{ width:'100vw', height:'100vh', overflow:'hidden', background:G.black, userSelect:'none', WebkitUserSelect:'none', position:'relative' }}>
+    <div style={{ width:'100vw', height: SHOW_PREVIEW_BANNER ? `calc(100vh - ${PREVIEW_BANNER_HEIGHT}px)` : '100vh', overflow:'hidden', background:G.black, userSelect:'none', WebkitUserSelect:'none', position:'relative' }}>
       {/* 🛡️ DYNAMIC WATERMARK TO DETER SCREENSHOTS */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9999,
@@ -530,13 +735,15 @@ export default function Journal() {
           </div>
         ))}
       </div>
-      
-      <iframe
-        ref={iframeRef}
-        title="Mind Power Vaultt Journal"
-        style={{ width:'100%', height:'100%', border:'none' }}
-        sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
-      />
+
+      {!loggingOut && (
+        <iframe
+          ref={iframeRef}
+          title="Mind Power Vaultt Journal"
+          style={{ width:'100%', height:'100%', border:'none' }}
+          sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
+        />
+      )}
 
       {/* Push opt-in stays here (journal is where reminders make sense).
           The install prompt now mounts globally in RoutedApp so it shows on
@@ -545,6 +752,89 @@ export default function Journal() {
 
       {showReview && (
         <ReviewRequest userId={syncUserRef.current?.id} onClose={() => setShowReview(false)} />
+      )}
+
+      {/* ═══ SYNC REFUSED — phone's journal not proven to be this account's ═══ */}
+      {refusal && refusalOpen && (
+        <div style={overlay(10002)}>
+          <div style={card('rgba(224,168,76,0.45)')}>
+            <div style={{ fontSize:36, marginBottom:8 }}>⏸</div>
+            <h3 style={{ color:'#E0A84C', fontSize:16, marginBottom:10, lineHeight:1.5 }}>Cloud sync ఆపాం — మీ data ఈ phone లో safe</h3>
+            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:14 }}>
+              ఈ phone లో ఉన్న journal, <b style={{ color:G.smoke }}>{refusal.account}</b> account దే అని మేము confirm చేయలేకపోయాం.
+              ఏమీ delete చేయలేదు — తప్పు account లో కలవకుండా cloud sync మాత్రమే ఆపాం.
+            </p>
+            <div style={{ textAlign:'left', fontSize:13, color:G.smoke, lineHeight:1.8, marginBottom:14 }}>
+              <b style={{ color:G.gold }}>ఇప్పుడు చేయాల్సింది:</b><br/>
+              1. కింద button తో Backup download చేయండి — మీ journal file మీ phone లో ఉంటుంది.<br/>
+              2. Mentor కి WhatsApp చేయండి. Code: <b style={{ color:'#E0A84C' }}>{REFUSAL_CODES[refusal.reason]}</b>
+            </div>
+            <BackupButton />
+            <a href={mentorWaUrl(`Journal cloud sync ఆగింది. Code: ${REFUSAL_CODES[refusal.reason]}. సహాయం కావాలి.`)} target="_blank" rel="noopener noreferrer"
+              style={{ display:'block', boxSizing:'border-box', width:'100%', padding:13, marginBottom:12, border:'1px solid rgba(37,211,102,0.5)', color:'#25D366', borderRadius:8, fontSize:13, fontWeight:600, textDecoration:'none' }}>
+              💬 Mentor కి WhatsApp చేయి
+            </a>
+            <button onClick={() => setRefusalOpen(false)} style={linkBtn}>Journal ఈ phone లో వాడు (sync లేకుండా) →</button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ LOGOUT ═══ */}
+      {logout && (
+        <div style={overlay(10003)}>
+          <div style={card(logout.stage === 'unsafe' ? 'rgba(207,102,121,0.45)' : G.goldDim)}>
+            {logout.stage === 'confirm' && (
+              <>
+                <div style={{ fontSize:34, marginBottom:8 }}>🚪</div>
+                <h3 style={{ color:G.gold, fontSize:17, marginBottom:14 }}>Logout చేయాలా?</h3>
+                <div style={{ textAlign:'left', fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>
+                  <p style={{ marginBottom:10 }}>☁️ <b style={{ color:G.smoke }}>ముందు sync:</b> cloud కి ఇంకా వెళ్ళని మార్పులు ఉంటే, ముందు వాటిని cloud కి పంపుతాం. పంపడం కుదరకపోతే logout ఆపుతాం — మీ data పోదు.</p>
+                  <p style={{ marginBottom:10 }}>📱 <b style={{ color:G.smoke }}>తర్వాత:</b> ఈ phone నుండి journal తీసేస్తాం. మీ journal cloud లో safe — మళ్ళీ login అయితే తిరిగి వస్తుంది.</p>
+                  <p>🔐 <b style={{ color:G.smoke }}>PIN:</b> PIN Lock కూడా తీసేస్తాం. మళ్ళీ login అయ్యాక More → PIN Lock లో PIN మళ్ళీ set చేయాలి.</p>
+                </div>
+                <button onClick={confirmLogout} style={primaryBtn}>అవును, Logout చేయి</button>
+                <button onClick={() => setLogout(null)} style={linkBtn}>వద్దు</button>
+              </>
+            )}
+            {logout.stage === 'working' && (
+              <>
+                <div style={{ width:36, height:36, margin:'8px auto 14px', border:`2px solid ${G.goldDim}`, borderTopColor:G.gold, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                <p style={{ color:G.gold, fontSize:13 }}>Cloud కి sync చేసి logout చేస్తున్నాం…</p>
+              </>
+            )}
+            {logout.stage === 'failed' && (
+              <>
+                <div style={{ fontSize:34, marginBottom:8 }}>⚠️</div>
+                <h3 style={{ color:'#E0A84C', fontSize:16, marginBottom:10 }}>Sync కాలేదు — logout ఆపాం</h3>
+                <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>
+                  Cloud కి వెళ్ళని మార్పులు ఈ phone లో ఉన్నాయి. అవి పోకుండా logout ఆపాం — మీ data ఈ phone లో safe. Internet చూసి మళ్ళీ try చేయండి.
+                </p>
+                <button onClick={confirmLogout} style={primaryBtn}>మళ్ళీ try చేయి</button>
+                <button onClick={() => setLogout(null)} style={linkBtn}>Cancel</button>
+              </>
+            )}
+            {logout.stage === 'unsafe' && (
+              <>
+                <div style={{ fontSize:34, marginBottom:8 }}>⚠️</div>
+                <h3 style={{ color:'#CF6679', fontSize:16, marginBottom:10, lineHeight:1.5 }}>Logout చేస్తే ఈ phone లో ఉన్న journal పోతుంది</h3>
+                <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:12 }}>
+                  ఈ phone లో ఉన్న journal cloud లో safe గా ఉందని confirm కాలేదు (cloud sync ఆగి ఉంది). Logout చేస్తే ఈ phone నుండి journal, PIN రెండూ తీసేస్తాం — cloud లో copy లేకపోతే తిరిగి రావు.
+                </p>
+                <div style={{ textAlign:'left', fontSize:13, color:G.smoke, lineHeight:1.8, marginBottom:14 }}>
+                  1. ముందు Backup download చేయండి. (ఆ file తో More → Export → Data Restore చేసి తిరిగి తెచ్చుకోవచ్చు.)<br/>
+                  2. తర్వాతే logout.
+                </div>
+                <BackupButton onDone={() => setLogout({ stage: 'unsafe', backupTaken: true })} />
+                <button onClick={unsafeLogout} disabled={!logout.backupTaken}
+                  style={{ width:'100%', padding:13, marginBottom:10, background:'transparent', border:'1px solid rgba(207,102,121,0.5)', color:'#CF6679', borderRadius:8, fontSize:13, fontWeight:600, cursor: logout.backupTaken ? 'pointer' : 'not-allowed', opacity: logout.backupTaken ? 1 : 0.4 }}>
+                  Backup తీసుకున్నాను — Logout చేయి
+                </button>
+                <button onClick={() => setLogout(null)} style={linkBtn}>వద్దు</button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ═══ SYNC CONFLICT OVERLAY — empty device vs real cloud journal ═══ */}
