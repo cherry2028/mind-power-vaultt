@@ -13,6 +13,9 @@ import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
 import PwaUpdateToast from "./PwaUpdateToast";
 import PwaInstallPrompt from "./PwaInstallPrompt";
+import PreviewBanner from "./PreviewBanner";
+import TestTools from "./TestTools";
+import { TARGET } from "./utils/deployTarget";
 import { track, adsConversion } from "./analytics";
 import { withAttr } from "./utils/attribution";
 
@@ -1380,6 +1383,10 @@ function NotFound() {
 export default function RoutedApp() {
   return (
     <BrowserRouter>
+      {/* Every page off mindpowervaultt.com — portal included. Not dismissible. */}
+      <PreviewBanner />
+      {/* eslint-disable-next-line no-undef -- build-time flag (vite.config.js); false in production builds */}
+      {__MPV_TEST_TOOLS__ && TARGET.testTools && <TestTools />}
       <RouteTracker />
       <PwaUpdateToast />
       <PwaInstallPrompt />

@@ -1,9 +1,14 @@
+/* global __MPV_TEST_TOOLS__ */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import Seo from '../Seo';
 import { track } from '../analytics';
 import JournalPitch from './JournalPitch';
+import BackupButton from '../BackupButton';
+import { decideSignIn, applySignIn, maskEmail, SIGNIN_RESULTS } from '../utils/accountBinding';
+import { TARGET } from '../utils/deployTarget';
+import { mentorWaUrl } from '../utils/mentorContact';
 
 // Common email domain typos. A typo here creates a brand-new (stray) auth
 // account and the student's journal silently syncs to the wrong identity —
@@ -38,6 +43,8 @@ export default function StudentPortal() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [typoSuggestion, setTypoSuggestion] = useState(null); // {typed, suggested}
+  const [switchRefusal, setSwitchRefusal] = useState(null);   // {previous} — sign-in refused, previous account unsynced
+  const [testPassword, setTestPassword] = useState('');       // preview-only test login
   const navigate = useNavigate();
 
   const actuallySendOtp = async (addr) => {
@@ -92,6 +99,69 @@ export default function StudentPortal() {
     await actuallySendOtp(typed);
   };
 
+  // Everything after a successful authentication. Shared by the OTP flow and
+  // the preview-only test login, so both run exactly the same checks.
+  const finishLogin = async (session, addr) => {
+    // 2. Check Subscription Table
+    const { data: sub, error: subError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('email', addr)
+      .single();
+
+    // Authenticated, but no MPV subscription → show the value pitch (not a
+    // cold error). They stay locked out of the journal; they can pitch-browse.
+    if (subError || !sub) {
+      setPitchVariant('new');
+      setMode('pitch');
+      return;
+    }
+
+    const expiryDate = new Date(sub.expires_at);
+    if (expiryDate < new Date()) {
+      setPitchVariant('expired');
+      setMode('pitch');
+      return;
+    }
+
+    // 3. ACCOUNT BINDING (utils/accountBinding.js). Decided BEFORE this device
+    // claims the account, so a refused sign-in never kicks the student's
+    // other device.
+    const decision = decideSignIn(session.user);
+    if (decision.action === 'refuse') {
+      track('journal_binding', { result: 'signin_switch_refused_unsynced' });
+      try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* best effort */ }
+      setSwitchRefusal({ previous: maskEmail(decision.previousEmail) });
+      return;
+    }
+
+    // 4. AUTO-SYNC CURRENT DEVICE LOGIC
+    let localDeviceId = localStorage.getItem('mpv_device_id');
+    if (!localDeviceId) {
+      localDeviceId = 'DEV-' + window.crypto.randomUUID().replace(/-/g, '').substring(0, 13) + Date.now().toString(36);
+      localStorage.setItem('mpv_device_id', localDeviceId);
+    }
+
+    // Always update the DB to make THIS device the active one
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({ device_id: localDeviceId })
+      .eq('email', addr);
+
+    if (updateError) throw new Error("Failed to sync device securely. Please try again.");
+
+    // 5. Only now touch this phone's storage: clear the previous account's
+    // keys (a switch) or bind a blank phone. A phone with no binding that
+    // already holds a journal is left for the journal's first-open proof.
+    applySignIn(decision, session.user);
+    if (SIGNIN_RESULTS[decision.action]) track('journal_binding', { result: SIGNIN_RESULTS[decision.action] });
+
+    // 6. Grant Access
+    sessionStorage.setItem('mpv_journal_token', session.access_token);
+    sessionStorage.setItem('mpv_journal_access', sub.access_code || addr);
+    navigate('/journal');
+  };
+
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!otp.trim()) {
@@ -113,52 +183,31 @@ export default function StudentPortal() {
         throw new Error(verifyError?.message || "Invalid OTP.");
       }
 
-      // 2. Check Subscription Table
-      const { data: sub, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('email', email.trim())
-        .single();
-
-      // Authenticated, but no MPV subscription → show the value pitch (not a
-      // cold error). They stay locked out of the journal; they can pitch-browse.
-      if (subError || !sub) {
-        setPitchVariant('new');
-        setMode('pitch');
-        setLoading(false);
-        return;
-      }
-
-      const expiryDate = new Date(sub.expires_at);
-      if (expiryDate < new Date()) {
-        setPitchVariant('expired');
-        setMode('pitch');
-        setLoading(false);
-        return;
-      }
-
-      // 3. AUTO-SYNC CURRENT DEVICE LOGIC
-      let localDeviceId = localStorage.getItem('mpv_device_id');
-      if (!localDeviceId) {
-        localDeviceId = 'DEV-' + window.crypto.randomUUID().replace(/-/g, '').substring(0, 13) + Date.now().toString(36);
-        localStorage.setItem('mpv_device_id', localDeviceId);
-      }
-
-      // Always update the DB to make THIS device the active one
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update({ device_id: localDeviceId })
-        .eq('email', email.trim());
-          
-      if (updateError) throw new Error("Failed to sync device securely. Please try again.");
-
-      // 4. Grant Access
-      sessionStorage.setItem('mpv_journal_token', authData.session.access_token);
-      sessionStorage.setItem('mpv_journal_access', sub.access_code || email.trim());
-      navigate('/journal');
-      
+      await finishLogin(authData.session, email.trim());
     } catch (err) {
       setError(err.message || "Authentication failed.");
+    }
+    setLoading(false);
+  };
+
+  // PREVIEW ONLY (compiled out of production builds; runtime-gated to a
+  // non-production host on the staging database). The staging project's
+  // default mailer sends links, not codes, and is capped at a few emails an
+  // hour — so test accounts sign in with a password, then run finishLogin
+  // exactly like a real OTP login.
+  const handleTestLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: testPassword,
+      });
+      if (loginError || !data.session) throw new Error(loginError?.message || 'Test login failed.');
+      await finishLogin(data.session, email.trim());
+    } catch (err) {
+      setError(err.message || 'Test login failed.');
     }
     setLoading(false);
   };
@@ -182,6 +231,42 @@ export default function StudentPortal() {
           onSignIn={() => { setMode('login'); setPitchVariant('new'); setStep(1); setOtp(''); setError(''); }}
         />
       </>
+    );
+  }
+
+  // Sign-in refused: the previous account on this phone has unsynced changes.
+  if (switchRefusal) {
+    const prev = switchRefusal.previous;
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: G.black, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: "'DM Sans','Noto Sans Telugu',sans-serif", color: G.smoke }}>
+        <Seo title="Student Portal — Mind Power Vaultt" path="/portal" noindex />
+        <div style={{ maxWidth: 430, width: '100%', padding: '28px 22px', background: G.dark1, border: '1px solid rgba(207,102,121,0.45)', borderRadius: 12, textAlign: 'center' }}>
+          <div style={{ fontSize: 38, marginBottom: 8 }}>⛔</div>
+          <h2 style={{ color: '#CF6679', fontSize: 18, marginBottom: 12 }}>ఈ login ఆపాం</h2>
+          <p style={{ color: G.mid, fontSize: 13, lineHeight: 1.8, marginBottom: 14 }}>
+            ఈ phone లో <b style={{ color: G.smoke }}>{prev}</b> account కి cloud కి ఇంకా వెళ్ళని మార్పులు ఉన్నాయి.
+            ఇంకో account తో login అయితే అవి పోతాయి — అందుకే ఆపాం. ఏమీ delete చేయలేదు.
+          </p>
+          <div style={{ textAlign: 'left', fontSize: 13, color: G.smoke, lineHeight: 1.8, marginBottom: 14 }}>
+            <b style={{ color: G.gold }}>ఏం చేయాలి:</b><br />
+            1. <b>{prev}</b> తో login అయ్యి Journal open చేయండి. Sync dot <b>✓ synced</b> అయ్యే వరకు ఆగండి.<br />
+            2. More → 🚪 Logout చేయండి.<br />
+            3. తర్వాత ఈ account తో మళ్ళీ login అవ్వండి.
+          </div>
+          <p style={{ color: G.mid, fontSize: 12, lineHeight: 1.7, marginBottom: 14 }}>
+            {prev} మీది కాకపోతే, లేదా ఆ account తో login కాకపోతే: ముందు Backup download చేసి, mentor కి WhatsApp చేయండి.
+          </p>
+          <BackupButton />
+          <a href={mentorWaUrl('Journal login ఆగింది. Code: SWITCH_UNSYNCED. సహాయం కావాలి.')} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'block', boxSizing: 'border-box', width: '100%', padding: 13, marginBottom: 12, border: '1px solid rgba(37,211,102,0.5)', color: '#25D366', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            💬 Mentor కి WhatsApp చేయి
+          </a>
+          <button type="button" onClick={() => { setSwitchRefusal(null); setStep(1); setOtp(''); setTestPassword(''); setError(''); }}
+            style={{ background: 'transparent', border: 'none', color: G.mid, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
+            ← వెనక్కి
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -218,10 +303,10 @@ export default function StudentPortal() {
             <p style={{ color: 'rgba(240,237,228,0.4)', fontSize: 11 }}>Email లో typo ఉంటే "Use a different email" నొక్కి సరిచేయండి.</p>
           </div>
         )}
-        
+
         {step === 1 ? (
           <form onSubmit={handleSendOtp}>
-            <input 
+            <input
               type="email"
               value={email}
               onChange={e => {setEmail(e.target.value); setError(''); setTypoSuggestion(null);}}
@@ -281,7 +366,7 @@ export default function StudentPortal() {
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp}>
-            <input 
+            <input
               type="text"
               value={otp}
               onChange={e => {setOtp(e.target.value); setError('');}}
@@ -330,6 +415,23 @@ export default function StudentPortal() {
               }}
             >
               Use a different email
+            </button>
+          </form>
+        )}
+
+        {__MPV_TEST_TOOLS__ && TARGET.testTools && step === 1 && (
+          <form onSubmit={handleTestLogin} style={{ marginTop: 22, padding: 12, border: '2px dashed #D10000', borderRadius: 8 }}>
+            <p style={{ color: '#FF6B6B', fontSize: 12, fontWeight: 800, marginBottom: 8 }}>🧪 PREVIEW TEST LOGIN — test accounts only</p>
+            <input
+              type="password"
+              value={testPassword}
+              onChange={e => { setTestPassword(e.target.value); setError(''); }}
+              placeholder="Test password"
+              style={{ width: '100%', padding: '12px 14px', backgroundColor: 'rgba(209,0,0,0.06)', border: '1px solid #D10000', borderRadius: 6, color: G.smoke, fontSize: 15, outline: 'none', marginBottom: 10, textAlign: 'center' }}
+            />
+            <button type="submit" disabled={loading || !testPassword}
+              style={{ width: '100%', padding: 12, background: '#D10000', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading || !testPassword ? 0.6 : 1 }}>
+              {loading ? 'Logging in...' : 'Test login (పైన email + ఈ password)'}
             </button>
           </form>
         )}

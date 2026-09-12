@@ -628,6 +628,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
          escape hatch for a client wedged on a stale service worker: most
          students can't open a console, so it must be tappable. -->
     <button class="more-item" onclick="forceAppUpdate()"><span class="mi">🔄</span>App Update చేయి</button>
+    <!-- Logout: the parent app shows the Telugu confirm, syncs first, then clears this phone. -->
+    <button class="more-item" onclick="requestLogout()"><span class="mi">🚪</span>Logout</button>
     <div style="font-size:10px;color:#6A5A40;text-align:center;padding:10px 0 4px;letter-spacing:0.5px">Version __MPV_BUILD__</div>
   </div>
 </div>
@@ -1162,7 +1164,14 @@ var MEM={};
 // Stays literal in the raw source, which is why the stamp below guards on it.
 var MPV_BUILD='__MPV_BUILD__';
 function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return MEM[k]||null;}}
-function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;try{window.parent.postMessage({type:'MPV_DB_DIRTY'},'*');}catch(e2){}}
+// Account binding guard: this journal belongs to the account that owned the
+// device when it booted (mpvOwner, set by the parent app). If another tab signs
+// a different account in — or logs out — every write stops, so this page can
+// never write one account's journal into another account's storage.
+var MPV_OWNER_BOOT=null;try{MPV_OWNER_BOOT=localStorage.getItem('mpvOwner');}catch(e){}
+var MPV_OWNER_LOST=false;
+function ownerOk(){try{return localStorage.getItem('mpvOwner')===MPV_OWNER_BOOT;}catch(e){return true;}}
+function ls(k,v){if(!ownerOk()){if(!MPV_OWNER_LOST){MPV_OWNER_LOST=true;try{window.parent.postMessage({type:'MPV_OWNER_CHANGED'},'*');}catch(e3){}}return;}try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;try{window.parent.postMessage({type:'MPV_DB_DIRTY'},'*');}catch(e2){}}
 function ge(id){return document.getElementById(id);}
 
 var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{},insight:{}};
@@ -2524,6 +2533,12 @@ function forceAppUpdate(){
   try{window.parent.postMessage({type:'MPV_FORCE_UPDATE'},'*');}catch(e){}
   toast('Update అవుతోంది…');
 }
+// Logout lives in the parent: it must sync first and clear storage only after
+// this iframe is gone.
+function requestLogout(){
+  ge('moreSheet').classList.remove('open');
+  try{window.parent.postMessage({type:'MPV_LOGOUT'},'*');}catch(e){}
+}
 function shareLicense(){var lp=licensePayload();if(!lp)return;window.parent.postMessage({type:'MPV_SHARE_IMAGE',kind:'license',payload:lp},'*');}
 
 // ── MISTAKE COST HERO (the headline is indiscipline, not P&L) ──
@@ -2698,7 +2713,12 @@ var SYNC_UI={
   synced:{txt:'✓ synced',cls:'syncdot',msg:'Journal cloud లో safe గా ఉంది ✓'},
   syncing:{txt:'↻ syncing',cls:'syncdot sy',msg:'Cloud కి sync అవుతోంది...'},
   offline:{txt:'⌁ offline',cls:'syncdot sof',msg:'Internet లేదు — data phone లో safe. Connection రాగానే auto-sync అవుతుంది.'},
-  error:{txt:'⚠ sync error',cls:'syncdot serr',msg:'Internet ఉంది కానీ sync fail అవుతోంది (server/login problem). Logout చేసి మళ్ళీ login చేయి — ఇంకా రాకపోతే mentor కి చెప్పు. Data phone లో safe.'}
+  error:{txt:'⚠ sync error',cls:'syncdot serr',msg:'Internet ఉంది కానీ sync fail అవుతోంది (server/login problem). Logout చేసి మళ్ళీ login చేయి — ఇంకా రాకపోతే mentor కి చెప్పు. Data phone లో safe.'},
+  // Account binding: this phone's journal could not be proven to belong to the
+  // logged-in account, so sync is refused. Tapping reopens the refusal screen.
+  paused:{txt:'⏸ sync ఆగింది',cls:'syncdot serr',msg:'Cloud sync ఆగింది — మీ data ఈ phone లో safe.'},
+  // The ownership check could not reach the cloud on this open.
+  unverified:{txt:'⚠ sync error',cls:'syncdot serr',msg:'Cloud check కాలేదు — internet చూసి app close చేసి మళ్ళీ open చేయండి. అప్పుడు sync మొదలవుతుంది. Data phone లో safe.'}
 };
 window.addEventListener('message',function(e){
   var d=e.data||{};
@@ -2719,7 +2739,7 @@ window.addEventListener('message',function(e){
     if(d.note)toast(d.note,5000);
   }
 });
-function explainSync(){var ui=SYNC_UI[syncState];if(ui)toast(ui.msg,5000);}
+function explainSync(){var ui=SYNC_UI[syncState];if(ui)toast(ui.msg,5000);if(syncState==='paused'){try{window.parent.postMessage({type:'MPV_SHOW_SYNC_HELP'},'*');}catch(e){}}}
 
 // ────── START APP ──────
 function startApp(){

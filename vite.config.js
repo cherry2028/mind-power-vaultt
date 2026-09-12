@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'node:child_process'
+import process from 'node:process'
 
 // A human-readable build id, shown in the journal's More menu and exposed as
 // window.MPV_BUILD. It is how we can tell whether a student's installed app has
@@ -20,7 +21,14 @@ function buildId() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  define: { __BUILD_ID__: JSON.stringify(buildId()) },
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId()),
+    // Preview-only test tools (src/TestTools.jsx, the portal's test login).
+    // false in every Vercel production build, so they are compiled out of what
+    // students download; elsewhere they are still gated at runtime to a
+    // non-production host talking to the staging database (deployTarget.js).
+    __MPV_TEST_TOOLS__: JSON.stringify(process.env.VERCEL_ENV !== 'production'),
+  },
   plugins: [
     react(),
     VitePWA({
