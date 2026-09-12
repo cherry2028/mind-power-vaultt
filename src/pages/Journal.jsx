@@ -128,7 +128,10 @@ export default function Journal() {
     bindingRef.current = 'mismatch';
     syncUserRef.current = null;
     const owner = readOwner();
-    setMismatch({ owner: owner ? maskEmail(owner.email) : null, current: maskEmail(currentEmail || was?.email) });
+    // "current" = the account THIS page was using. When another tab signed a
+    // different account in, the live session already belongs to that other
+    // account, so the page's own account is the one to name.
+    setMismatch({ owner: owner ? maskEmail(owner.email) : null, current: maskEmail(was?.email || currentEmail) });
     track('journal_binding', { result: 'mismatch_locked' });
   };
 

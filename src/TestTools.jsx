@@ -22,13 +22,20 @@ function readArr(key) {
   }
 }
 
+// Both test accounts mask to s***@gmail.com — show the +tag so a tester can
+// tell which account the phone is bound to.
+function ownerLabel(email) {
+  const tag = /\+([^@]+)@/.exec(email || '');
+  return tag ? `${maskEmail(email)} (+${tag[1]})` : maskEmail(email);
+}
+
 function snapshot() {
   const owner = readOwner();
   const trades = readArr('mpvtr');
   return [
     ['host', TARGET.hostname],
     ['database', TARGET.db],
-    ['binding (mpvOwner)', owner ? maskEmail(owner.email) : '— లేదు'],
+    ['binding (mpvOwner)', owner ? ownerLabel(owner.email) : '— లేదు'],
     ['unsynced (mpvSyncDirty)', localStorage.getItem('mpvSyncDirty') === '1' ? 'YES' : 'no'],
     ['last sync stamp', localStorage.getItem('mpvCloudUpdatedAt') || '—'],
     ['trades', String(trades.length)],
