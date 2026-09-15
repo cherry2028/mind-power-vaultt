@@ -26,7 +26,7 @@
 
 | | |
 |---|---|
-| **Preview URL** | `https://mind-power-vaultt-git-stepb-ac-871eed-mpviwm2025-9339s-projects.vercel.app/portal` |
+| **Preview URL** | `https://mind-power-vaultt-git-fix-no-r-706761-mpviwm2025-9339s-projects.vercel.app/portal` |
 | **Account A** · cloud row ✅ ఉంది | `ssjservices2023+stepb1@gmail.com` · password `Stepb-58a63aadec` |
 | **Account B** · cloud row ✅ ఉంది · Section H | `ssjservices2023+stepb2@gmail.com` · password `Stepb-fd8eae2728` |
 | **Account C** · cloud row ❌ **లేదు** · Section I మాత్రమే | `ssjservices2023+stepb3@gmail.com` · password `Stepb-32b8aef5ad` |
