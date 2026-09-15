@@ -337,9 +337,15 @@ console.log('\n══ static guards ══');
   const J = read('src/pages/Journal.jsx');
   eq('Journal.jsx calls pushJournal directly in exactly 2 places (guardedPush + pagehide)', [...J.matchAll(/pushJournal\(supabase/g)].length, 2);
   eq('pagehide flush is behind canSync()', /canSync\(\) && isDirty\(\)\) pushJournal/.test(J), true);
-  eq('claim success is confirmed by a centred card after reload, not the corner toast',
-    [/sessionStorage\.setItem\('mpv_claim_result'/.test(J), /setClaimResult\(JSON\.parse\(raw\)\)/.test(J), /mpv_restore_note', saved/.test(J)],
-    [true, true, false]);
+  eq('claim success and cloud restore are confirmed by the centred card, not the corner toast',
+    [
+      /sessionStorage\.setItem\('mpv_claim_result'/.test(J),
+      /sessionStorage\.setItem\('mpv_restore_result'/.test(J),
+      /setDoneCard\(\{ kind: 'claim'/.test(J),
+      /setDoneCard\(\{ kind: 'restore'/.test(J),
+      /sessionStorage\.setItem\('mpv_restore_note'/.test(J),
+    ],
+    [true, true, true, true, false]);
 
   const src = ['src/pages/Journal.jsx', 'src/pages/StudentPortal.jsx', 'src/utils/accountBinding.js'].map(read).join('\n');
   eq('every analytics result literal is a documented value',

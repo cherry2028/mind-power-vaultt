@@ -114,14 +114,19 @@ const ACTIONS = [
     run: () => localStorage.setItem('mpvSyncDirty', '1'),
   },
   {
+    label: '⑤ Decision trail clear చేయి',
+    run: () => sessionStorage.removeItem(TRAIL_KEY),
+    noReload: true,
+  },
+  {
     label: '⑥ (/journal లో మాత్రమే) "cloud లో save అయింది" card చూపించు',
     confirm: '"అవును, నాది" తర్వాత కనిపించే success card ని test కోసం చూపిస్తాం. Data ఏమీ మారదు. Reload.',
     run: () => sessionStorage.setItem('mpv_claim_result', JSON.stringify({ saved: true, trades: readArr('mpvtr').length, eods: readArr('mpveod').length })),
   },
   {
-    label: '⑤ Decision trail clear చేయి',
-    run: () => sessionStorage.removeItem(TRAIL_KEY),
-    noReload: true,
+    label: '⑦ (/journal లో మాత్రమే) "cloud నుండి తిరిగి వచ్చింది" card చూపించు',
+    confirm: 'Logout / కొత్త phone తర్వాత restore అయినప్పుడు కనిపించే card ని test కోసం చూపిస్తాం. Data ఏమీ మారదు. Reload.',
+    run: () => sessionStorage.setItem('mpv_restore_result', JSON.stringify({ trades: readArr('mpvtr').length, eods: readArr('mpveod').length })),
   },
 ];
 

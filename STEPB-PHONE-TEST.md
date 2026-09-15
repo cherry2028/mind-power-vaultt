@@ -131,7 +131,10 @@ Section I లో "అవును, నాది" తర్వాత C కి clo
 | G3 | 🧪 | **unsynced YES**, trades 4. *(no అయితే: trade network off చేయకముందే sync అయింది — G2 మళ్ళీ చేయండి)* |
 | G4 | More → Logout → **అవును, Logout చేయి** | **⚠️ Sync కాలేదు — logout ఆపాం**. **Cancel**. 🧪: binding ఉంది, trades 4, unsynced YES. Trail: `logout_refused_unsynced` |
 | G5 | **Network ON** → ✓ synced వరకు ఆగండి → More → Logout → **అవును** | Portal. 🧪: binding — లేదు, trades 0, PIN set no. Trail: `logout_done` |
-| G6 | Test login **A** | Toast **మీ journal cloud నుండి restore అయింది ✦**, **4 trades**, PIN screen రాదు |
+| G6 | Test login **A** | మధ్యలో card **✅ మీ journal cloud నుండి తిరిగి వచ్చింది** · "📊 N trades · M EOD reviews" (సరే తో మాత్రమే close), **4 trades**, PIN screen రాదు |
+
+**G6b. Restore card మాత్రమే మళ్ళీ చూడాలంటే:** ఏ bound journal లోనైనా **`/journal` లో** 🧪 → **⑦** → OK → reload → (PIN) →
+card **✅ మీ journal cloud నుండి తిరిగి వచ్చింది** bottom prompts పైన, "సరే" తో మాత్రమే close.
 
 👉 **"G done"** — cloud లో 4 trades check చేస్తా.
 
@@ -155,7 +158,7 @@ Section I లో "అవును, నాది" తర్వాత C కి clo
 
 | # | చేయండి | కనిపించాలి |
 |---|---|---|
-| H2.1 | `/portal` → email **+stepb1** చూసి → Test login | Restore toast, **4 trades**, B trade లేదు. Trail: `signin_switch_cleared` |
+| H2.1 | `/portal` → email **+stepb1** చూసి → Test login | Restore card (సరే తో close), **4 trades**, B trade లేదు. Trail: `signin_switch_cleared` |
 | H2.2 | More → PIN Lock → PIN **1357** | PIN updated ✦ |
 
 ### H3. A కి sync కాని మార్పు ఉండగా B → **REFUSE**
@@ -169,7 +172,7 @@ Section I లో "అవును, నాది" తర్వాత C కి clo
 | H3.5 | 📥 Backup → PIN **1111**, తర్వాత **1357** | మొదటిది ❌, రెండోది ✅ download |
 | H3.6 | 🧪 | binding `(+stepb1)`, trades 4, unsynced YES — **ఏదీ clear కాలేదు** |
 | H3.7 | ← వెనక్కి → email **+stepb1** → Test login → PIN 1357 | A journal, ✓ synced |
-| H3.8 | More → 🚪 Logout → అవును → email **+stepb2** → Test login | B journal, restore toast, **1 trade** మాత్రమే |
+| H3.8 | More → 🚪 Logout → అవును → email **+stepb2** → Test login | B journal, restore card (సరే తో close), **1 trade** మాత్రమే |
 
 👉 **"H3 done"**
 
@@ -238,11 +241,14 @@ reload → (PIN) → పై I2.2 card కనిపించాలి, reminder /
 
 👉 **"I2 done"** — C కి cloud row వచ్చిందని (phone లో ఉన్న trades అన్నీ, I1.7 trade తో సహా), A, B rows మారలేదని check చేస్తా.
 
+*Record: C కి A యొక్క trades రావడం **expected, leak కాదు** — phone లో A journal ఉంది, దాన్నే C గా "అవును, నాది" చెప్పాం, అప్లోడ్ అయ్యేది ఏమిటో summary ముందే చూపించింది.
+2026-09-15 run: C = A trades 6 + zzz = 7; A, B మారలేదు; B తో shared 0.*
+
 ### I3. Cleanup → A
 
 | # | చేయండి | కనిపించాలి |
 |---|---|---|
-| I3.1 | `/portal` → email **+stepb1** → Test login | A journal, restore toast. Trail: `signin_switch_cleared` |
+| I3.1 | `/portal` → email **+stepb1** → Test login | A journal, restore card (సరే తో close). Trail: `signin_switch_cleared` |
 
 *I2 తర్వాత C కి row ఉంటుంది — తర్వాతి run కి నేను కొత్త no-row account create చేస్తా (మీ OK తో).*
 

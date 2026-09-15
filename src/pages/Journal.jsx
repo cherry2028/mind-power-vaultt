@@ -78,7 +78,7 @@ export default function Journal() {
   const [logout, setLogout] = useState(null);            // {stage:'confirm'|'working'|'failed'|'unsafe', backupTaken?}
   const [loggingOut, setLoggingOut] = useState(false);   // unmounts the iframe before storage is cleared
   const [claim, setClaim] = useState(null);              // {stage:'working'|'failed'} — "అవును, నాది" upload
-  const [claimResult, setClaimResult] = useState(null);  // {saved, trades, eods} — success card after that reload
+  const [doneCard, setDoneCard] = useState(null);        // {kind:'claim'|'restore', saved?, trades, eods} — confirmation card
   const iframeRef = useRef(null);
   const bootRef = useRef('no');         // 'no' | 'running' | 'done' — binding + cloud pull, once per page load
   const bindingRef = useRef('pending'); // 'pending' | 'bound' | 'refused' | 'unverified' | 'local' | 'mismatch' | 'logged-out'
@@ -213,7 +213,10 @@ export default function Journal() {
     syncUserRef.current = { id: user.id, email: user.email || null };
     const result = await pullJournal(supabase, syncUserRef.current);
     if (result.status === 'restored') {
-      sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+      // Confirmed by the centred card once the journal is unlocked (MPV_HELLO):
+      // after a logout or on a new phone, this is the moment a student fears the journal is gone.
+      const s = localSummary();
+      sessionStorage.setItem('mpv_restore_result', JSON.stringify({ trades: s.trades, eods: s.eods }));
     }
     if (result.status === 'blocked-empty') {
       // Stale dirty flag on a near-empty device vs a real cloud journal —
@@ -242,7 +245,7 @@ export default function Journal() {
     setLoggingOut(true); // unmount the iframe first, so nothing can write the keys back
     await new Promise((r) => setTimeout(r, 150));
     clearAccountData(); // local only — the cloud journal is never touched
-    ['mpv_journal_token', 'mpv_journal_access', 'mpv_restore_note'].forEach((k) => sessionStorage.removeItem(k));
+    ['mpv_journal_token', 'mpv_journal_access', 'mpv_restore_note', 'mpv_restore_result', 'mpv_claim_result'].forEach((k) => sessionStorage.removeItem(k));
     try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the app token is already gone */ }
     window.location.replace('/portal');
   };
@@ -358,13 +361,14 @@ export default function Journal() {
       const type = e.data.type;
       if (type === 'MPV_HELLO') {
         postSyncStatus(); // iframe booted — tell it the current status
-        // Journal unlocked after an "అవును, నాది" reload: say it worked, big and centred.
+        // Journal unlocked after a claim or a cloud restore: confirm it, big and centred.
         try {
-          const raw = sessionStorage.getItem('mpv_claim_result');
-          if (raw) {
-            sessionStorage.removeItem('mpv_claim_result');
-            setClaimResult(JSON.parse(raw));
-          }
+          const claimed = sessionStorage.getItem('mpv_claim_result');
+          const restored = sessionStorage.getItem('mpv_restore_result');
+          sessionStorage.removeItem('mpv_claim_result');
+          sessionStorage.removeItem('mpv_restore_result');
+          if (claimed) setDoneCard({ kind: 'claim', ...JSON.parse(claimed) });
+          else if (restored) setDoneCard({ kind: 'restore', ...JSON.parse(restored) });
         } catch { /* a missing card must never break the journal */ }
       }
       // "App Update చేయి" in the More menu: drop every worker + cache and
@@ -553,7 +557,7 @@ export default function Journal() {
   const resolveConflictRestore = () => {
     // Forget local sync markers so the boot pull restores the cloud journal.
     resetSyncMarkers();
-    sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+    // The boot pull after this reload restores and queues the confirmation card.
     window.location.reload();
   };
   const resolveConflictForce = async () => {
@@ -738,6 +742,21 @@ export default function Journal() {
   const greenBtn = { width:'100%', padding:15, marginBottom:10, background:'linear-gradient(135deg,#2E7D52,#4CAF82)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' };
   const secondaryBtn = { width:'100%', padding:13, marginBottom:10, background:'transparent', border:`1px solid ${G.goldDim}`, color:G.smoke, borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' };
 
+  // Confirmation card copy. The one message a worried student gets must be unmissable —
+  // not the journal's 6-second corner toast, which the bottom prompts can cover.
+  const doneView = !doneCard ? null
+    : doneCard.kind === 'restore'
+      ? { ok: true, icon: '✅', title: 'మీ journal cloud నుండి తిరిగి వచ్చింది',
+          line: <>📊 <b>{doneCard.trades}</b> trades · <b>{doneCard.eods}</b> EOD reviews — ఈ phone లో ఉన్నాయి.</>,
+          note: 'మీ journal ఏమీ పోలేదు. Header లో sync dot ✓ synced చూపిస్తుంది.' }
+      : doneCard.saved
+        ? { ok: true, icon: '✅', title: 'మీ journal cloud లో save అయింది',
+            line: <>📊 <b>{doneCard.trades}</b> trades · <b>{doneCard.eods}</b> EOD reviews — అన్నీ cloud లో safe.</>,
+            note: 'ఇక phone మారినా, మళ్ళీ login అయితే మీ journal తిరిగి వస్తుంది. Header లో sync dot ✓ synced చూపిస్తుంది.' }
+        : { ok: false, icon: '☁️', title: 'Journal మీ account కి జత అయింది',
+            line: <>Internet రాగానే cloud కి save అవుతుంది. మీ journal ఈ phone లో safe గా ఉంది.</>,
+            note: 'Header లో sync dot ✓ synced అయ్యే వరకు app close చేయకండి.' };
+
   // ═══ CHECKING STATE ═══
   if (checking) {
     return (
@@ -902,25 +921,15 @@ export default function Journal() {
         </div>
       )}
 
-      {/* ═══ "అవును, నాది" WORKED — stays until tapped, above every prompt ═══ */}
-      {claimResult && (
+      {/* ═══ CONFIRMATION CARD — after "అవును, నాది" or a cloud restore; stays until tapped, above every prompt ═══ */}
+      {doneView && (
         <div style={overlay(10004)}>
-          <div style={card(claimResult.saved ? 'rgba(76,175,130,0.6)' : 'rgba(224,168,76,0.5)')}>
-            <div style={{ fontSize:44, marginBottom:8 }}>{claimResult.saved ? '✅' : '☁️'}</div>
-            <h3 style={{ color: claimResult.saved ? '#4CAF82' : '#E0A84C', fontSize:19, marginBottom:10, lineHeight:1.5 }}>
-              {claimResult.saved ? 'మీ journal cloud లో save అయింది' : 'Journal మీ account కి జత అయింది'}
-            </h3>
-            <p style={{ fontSize:14, color:G.smoke, lineHeight:1.8, marginBottom:8 }}>
-              {claimResult.saved
-                ? <>📊 <b>{claimResult.trades}</b> trades · <b>{claimResult.eods}</b> EOD reviews — అన్నీ cloud లో safe.</>
-                : <>Internet రాగానే cloud కి save అవుతుంది. మీ journal ఈ phone లో safe గా ఉంది.</>}
-            </p>
-            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>
-              {claimResult.saved
-                ? 'ఇక phone మారినా, మళ్ళీ login అయితే మీ journal తిరిగి వస్తుంది. Header లో sync dot ✓ synced చూపిస్తుంది.'
-                : 'Header లో sync dot ✓ synced అయ్యే వరకు app close చేయకండి.'}
-            </p>
-            <button onClick={() => setClaimResult(null)} style={claimResult.saved ? greenBtn : primaryBtn}>సరే, journal కి వెళ్దాం</button>
+          <div style={card(doneView.ok ? 'rgba(76,175,130,0.6)' : 'rgba(224,168,76,0.5)')}>
+            <div style={{ fontSize:44, marginBottom:8 }}>{doneView.icon}</div>
+            <h3 style={{ color: doneView.ok ? '#4CAF82' : '#E0A84C', fontSize:19, marginBottom:10, lineHeight:1.5 }}>{doneView.title}</h3>
+            <p style={{ fontSize:14, color:G.smoke, lineHeight:1.8, marginBottom:8 }}>{doneView.line}</p>
+            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>{doneView.note}</p>
+            <button onClick={() => setDoneCard(null)} style={doneView.ok ? greenBtn : primaryBtn}>సరే, journal కి వెళ్దాం</button>
           </div>
         </div>
       )}
