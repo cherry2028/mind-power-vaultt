@@ -78,6 +78,7 @@ export default function Journal() {
   const [logout, setLogout] = useState(null);            // {stage:'confirm'|'working'|'failed'|'unsafe', backupTaken?}
   const [loggingOut, setLoggingOut] = useState(false);   // unmounts the iframe before storage is cleared
   const [claim, setClaim] = useState(null);              // {stage:'working'|'failed'} — "అవును, నాది" upload
+  const [claimResult, setClaimResult] = useState(null);  // {saved, trades, eods} — success card after that reload
   const iframeRef = useRef(null);
   const bootRef = useRef('no');         // 'no' | 'running' | 'done' — binding + cloud pull, once per page load
   const bindingRef = useRef('pending'); // 'pending' | 'bound' | 'refused' | 'unverified' | 'local' | 'mismatch' | 'logged-out'
@@ -307,10 +308,11 @@ export default function Journal() {
     // Bound. The normal pull uploads the phone's journal (no row + local data -> push).
     const result = await pullJournal(supabase, user);
     const saved = result.status === 'pushed' || result.status === 'in-sync' || result.status === 'restored';
-    // Shown by the journal after reload, where the sync dot will read ✓ synced.
-    sessionStorage.setItem('mpv_restore_note', saved
-      ? '✅ మీ journal cloud లో save అయింది — ఇక phone మారినా safe గా ఉంటుంది'
-      : 'Journal మీ account కి జత అయింది — internet రాగానే cloud కి save అవుతుంది');
+    // Confirmed after the reload by a centred card on THIS page, once the journal
+    // is unlocked (MPV_HELLO) — not the journal's small corner toast, which the
+    // reminder / install / update prompts sit on top of. A scared student must see it.
+    const s = localSummary();
+    sessionStorage.setItem('mpv_claim_result', JSON.stringify({ saved, trades: s.trades, eods: s.eods }));
     window.location.reload();
   };
 
@@ -354,7 +356,17 @@ export default function Journal() {
     const onMessage = (e) => {
       if (e.source !== iframeRef.current?.contentWindow || !e.data) return;
       const type = e.data.type;
-      if (type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
+      if (type === 'MPV_HELLO') {
+        postSyncStatus(); // iframe booted — tell it the current status
+        // Journal unlocked after an "అవును, నాది" reload: say it worked, big and centred.
+        try {
+          const raw = sessionStorage.getItem('mpv_claim_result');
+          if (raw) {
+            sessionStorage.removeItem('mpv_claim_result');
+            setClaimResult(JSON.parse(raw));
+          }
+        } catch { /* a missing card must never break the journal */ }
+      }
       // "App Update చేయి" in the More menu: drop every worker + cache and
       // reload from the network. Journal data (localStorage + Supabase) is not
       // touched — this only clears the stale app shell.
@@ -886,6 +898,29 @@ export default function Journal() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ "అవును, నాది" WORKED — stays until tapped, above every prompt ═══ */}
+      {claimResult && (
+        <div style={overlay(10004)}>
+          <div style={card(claimResult.saved ? 'rgba(76,175,130,0.6)' : 'rgba(224,168,76,0.5)')}>
+            <div style={{ fontSize:44, marginBottom:8 }}>{claimResult.saved ? '✅' : '☁️'}</div>
+            <h3 style={{ color: claimResult.saved ? '#4CAF82' : '#E0A84C', fontSize:19, marginBottom:10, lineHeight:1.5 }}>
+              {claimResult.saved ? 'మీ journal cloud లో save అయింది' : 'Journal మీ account కి జత అయింది'}
+            </h3>
+            <p style={{ fontSize:14, color:G.smoke, lineHeight:1.8, marginBottom:8 }}>
+              {claimResult.saved
+                ? <>📊 <b>{claimResult.trades}</b> trades · <b>{claimResult.eods}</b> EOD reviews — అన్నీ cloud లో safe.</>
+                : <>Internet రాగానే cloud కి save అవుతుంది. మీ journal ఈ phone లో safe గా ఉంది.</>}
+            </p>
+            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>
+              {claimResult.saved
+                ? 'ఇక phone మారినా, మళ్ళీ login అయితే మీ journal తిరిగి వస్తుంది. Header లో sync dot ✓ synced చూపిస్తుంది.'
+                : 'Header లో sync dot ✓ synced అయ్యే వరకు app close చేయకండి.'}
+            </p>
+            <button onClick={() => setClaimResult(null)} style={claimResult.saved ? greenBtn : primaryBtn}>సరే, journal కి వెళ్దాం</button>
           </div>
         </div>
       )}

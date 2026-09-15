@@ -229,9 +229,12 @@ Production లో మొదట దొరికిన case: phone లో journal 
 | # | చేయండి | కనిపించాలి |
 |---|---|---|
 | I2.1 | Question screen లో **✅ అవును, నాది — cloud లో save చేయి** | "మీ journal cloud లో save చేస్తున్నాం… App close చేయకండి." → page reload |
-| I2.2 | PIN enter | Toast **✅ మీ journal cloud లో save అయింది — ఇక phone మారినా safe గా ఉంటుంది** + dot **✓ synced** |
+| I2.2 | PIN enter | మధ్యలో పెద్ద card: **✅ మీ journal cloud లో save అయింది** · "📊 N trades · M EOD reviews — అన్నీ cloud లో safe" · button **సరే, journal కి వెళ్దాం**. Card tap చేసే వరకు పోదు. Tap → journal, header dot **✓ synced** |
 | I2.3 | 🧪 | binding `(+stepb3)`, unsynced no. Trail: `claimed_no_row` |
 | I2.4 | `/portal` → email **+stepb3** → Test login → PIN | Question / refusal **రాదు**, journal normal, ✓ synced |
+
+**I2b. Success card మాత్రమే మళ్ళీ చూడాలంటే** (కొత్త no-row account లేకుండా): ఏ bound journal లోనైనా **`/journal` లో** 🧪 → **⑥** → OK →
+reload → (PIN) → పై I2.2 card కనిపించాలి, reminder / install / update prompts పైన. "సరే" తో మాత్రమే పోవాలి.
 
 👉 **"I2 done"** — C కి cloud row వచ్చిందని (phone లో ఉన్న trades అన్నీ, I1.7 trade తో సహా), A, B rows మారలేదని check చేస్తా.
 

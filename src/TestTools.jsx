@@ -114,6 +114,11 @@ const ACTIONS = [
     run: () => localStorage.setItem('mpvSyncDirty', '1'),
   },
   {
+    label: '⑥ (/journal లో మాత్రమే) "cloud లో save అయింది" card చూపించు',
+    confirm: '"అవును, నాది" తర్వాత కనిపించే success card ని test కోసం చూపిస్తాం. Data ఏమీ మారదు. Reload.',
+    run: () => sessionStorage.setItem('mpv_claim_result', JSON.stringify({ saved: true, trades: readArr('mpvtr').length, eods: readArr('mpveod').length })),
+  },
+  {
     label: '⑤ Decision trail clear చేయి',
     run: () => sessionStorage.removeItem(TRAIL_KEY),
     noReload: true,
