@@ -47,6 +47,8 @@ export const BINDING_RESULTS = [
   'refused_never_synced',           // proof failed: this phone never synced
   'refused_foreign_records',        // proof failed: records older than the last sync that this account's cloud lacks
   'refused_name_mismatch',          // proof failed: phone and cloud names differ, nothing unsynced
+  'claimed_no_row',                 // no cloud journal yet; student saw what is on the phone and said "అవును, నాది"
+  'declined_no_row',                // no cloud journal yet; student said "కాదు / తెలియదు" (sync stays paused)
   'unverified_offline',             // proof could not read the cloud (no internet) -> no sync this session
   'unverified_error',               // proof could not read the cloud (server refused) -> no sync this session
   // journal, any time
@@ -231,6 +233,44 @@ export const SIGNIN_RESULTS = {
   switch: 'signin_switch_cleared',
   refuse: 'signin_switch_refused_unsynced',
 };
+
+// ── NO CLOUD JOURNAL YET (refused_no_row) ───────────────────────────────────
+// This refusal is different from the others: the account has never had a
+// cloud journal, so the proof has nothing to compare against — and a wrong
+// answer can only create this account's FIRST row. No existing journal can be
+// overwritten or mixed. So it is the one refusal the person holding the phone
+// may resolve, after seeing what is on it. (Found in production 2026-09-15: a
+// paying student whose sync had never worked was stopped at a dead end.)
+const SUMMARY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// What a student needs to recognise their own journal: name, counts, dates.
+export function localSummary(local = collectLocal()) {
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  const dates = [];
+  for (const k of ID_ARRAY_KEYS) {
+    for (const rec of arr(local[k])) {
+      const d = rec?.date;
+      if (typeof d === 'string' && SUMMARY_DATE_RE.test(d) && d >= '2000-01-01' && d <= '2100-12-31') dates.push(d);
+    }
+  }
+  dates.sort();
+  const name = typeof local.mpvname === 'string' && local.mpvname.trim() ? local.mpvname.trim().slice(0, 60) : null;
+  return {
+    name,
+    trades: arr(local.mpvtr).length,
+    eods: arr(local.mpveod).length,
+    firstDate: dates[0] || null,
+    lastDate: dates[dates.length - 1] || null,
+  };
+}
+
+// "అవును, నాది". The caller must have re-verified, immediately before, that the
+// account still has no cloud row. Refuses if the phone is bound to anyone.
+export function claimUnboundDevice(user) {
+  if (readOwner()) return false;
+  writeOwner(user);
+  return true;
+}
 
 // ── PIN (same hash as the journal's own PIN screen, journal-content.html) ────
 export function hashPin(p) {

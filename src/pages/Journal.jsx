@@ -8,7 +8,7 @@ import { BUILD_ID, hardReset } from '../pwa';
 import { supabase } from '../supabase';
 import { generateWeeklyPdf } from '../utils/weeklyPdf';
 import { pullJournal, pushJournal, markDirty, isDirty, resetSyncMarkers } from '../utils/journalSync';
-import { OWNER_KEY, REFUSAL_CODES, readOwner, maskEmail, verifyUnboundDevice, clearAccountData } from '../utils/accountBinding';
+import { OWNER_KEY, REFUSAL_CODES, readOwner, maskEmail, verifyUnboundDevice, clearAccountData, localSummary, claimUnboundDevice } from '../utils/accountBinding';
 import { TARGET, SHOW_PREVIEW_BANNER, PREVIEW_BANNER_HEIGHT } from '../utils/deployTarget';
 import { MENTOR_WHATSAPP, mentorWaUrl } from '../utils/mentorContact';
 import { buildLicenseCardHtml, buildInsightCardHtml, buildMilestoneCardHtml, generateCardImage } from '../utils/shareCards';
@@ -55,6 +55,13 @@ async function checkEntitlement(client) {
 
 const FONT = "'DM Sans','Noto Sans Telugu',sans-serif";
 
+// 2026-09-08 -> "8 Sept 2026" for the no-cloud-journal summary.
+const fmtDay = (d) => {
+  if (!d) return '—';
+  const t = new Date(`${d}T00:00:00`);
+  return Number.isNaN(t.getTime()) ? '—' : t.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 export default function Journal() {
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -70,10 +77,13 @@ export default function Journal() {
   const [mismatch, setMismatch] = useState(null);        // {owner, current} — storage belongs to another account
   const [logout, setLogout] = useState(null);            // {stage:'confirm'|'working'|'failed'|'unsafe', backupTaken?}
   const [loggingOut, setLoggingOut] = useState(false);   // unmounts the iframe before storage is cleared
+  const [claim, setClaim] = useState(null);              // {stage:'working'|'failed'} — "అవును, నాది" upload
+  const [doneCard, setDoneCard] = useState(null);        // {kind:'claim'|'restore', saved?, trades, eods} — confirmation card
   const iframeRef = useRef(null);
   const bootRef = useRef('no');         // 'no' | 'running' | 'done' — binding + cloud pull, once per page load
   const bindingRef = useRef('pending'); // 'pending' | 'bound' | 'refused' | 'unverified' | 'local' | 'mismatch' | 'logged-out'
   const ownerRawRef = useRef(null);     // mpvOwner as it stood when this page finished booting
+  const refusedUserRef = useRef(null);  // {id, email} a refused phone signed in with (for "అవును, నాది")
   const syncUserRef = useRef(null);     // {id, email?} — null = no sync this session
   const syncStatusRef = useRef('off');  // 'synced' | 'syncing' | 'offline' | 'error' | 'paused' | 'unverified' | 'off'
   const navigate = useNavigate();
@@ -183,7 +193,9 @@ export default function Journal() {
         bindingRef.current = 'refused';
         syncUserRef.current = null;
         syncStatusRef.current = 'paused';
-        setRefusal({ reason: v.reason, account: maskEmail(user.email) });
+        refusedUserRef.current = { id: user.id, email: user.email || null };
+        // What is on the phone — a no_row student must SEE it before being asked.
+        setRefusal({ reason: v.reason, account: maskEmail(user.email), summary: localSummary(), declined: false });
         setRefusalOpen(true);
         return;
       }
@@ -201,7 +213,10 @@ export default function Journal() {
     syncUserRef.current = { id: user.id, email: user.email || null };
     const result = await pullJournal(supabase, syncUserRef.current);
     if (result.status === 'restored') {
-      sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+      // Confirmed by the centred card once the journal is unlocked (MPV_HELLO):
+      // after a logout or on a new phone, this is the moment a student fears the journal is gone.
+      const s = localSummary();
+      sessionStorage.setItem('mpv_restore_result', JSON.stringify({ trades: s.trades, eods: s.eods }));
     }
     if (result.status === 'blocked-empty') {
       // Stale dirty flag on a near-empty device vs a real cloud journal —
@@ -230,7 +245,7 @@ export default function Journal() {
     setLoggingOut(true); // unmount the iframe first, so nothing can write the keys back
     await new Promise((r) => setTimeout(r, 150));
     clearAccountData(); // local only — the cloud journal is never touched
-    ['mpv_journal_token', 'mpv_journal_access', 'mpv_restore_note'].forEach((k) => sessionStorage.removeItem(k));
+    ['mpv_journal_token', 'mpv_journal_access', 'mpv_restore_note', 'mpv_restore_result', 'mpv_claim_result'].forEach((k) => sessionStorage.removeItem(k));
     try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the app token is already gone */ }
     window.location.replace('/portal');
   };
@@ -263,6 +278,50 @@ export default function Journal() {
     sessionStorage.removeItem('mpv_journal_token');
     sessionStorage.removeItem('mpv_journal_access');
     window.location.replace('/portal');
+  };
+
+  // ═══ NO CLOUD JOURNAL YET — "ఈ phone లో ఉన్న journal మీదేనా?" ═══
+  // refused_no_row: this account has never had a cloud journal, so the proof has
+  // nothing to compare against. The student has seen the name, counts and dates
+  // and knows whose journal it is. A "yes" can only create this account's FIRST
+  // cloud row — nothing existing is overwritten or mixed (utils/accountBinding.js).
+  const claimNoRow = async () => {
+    const user = refusedUserRef.current;
+    if (!user || bindingRef.current !== 'refused' || !TARGET.syncAllowed) return;
+    setClaim({ stage: 'working' }); // unmounts the journal: nothing writes while the binding changes
+    await new Promise((r) => setTimeout(r, 150));
+
+    // Re-check right before binding — a cloud row may exist by now.
+    const v = await verifyUnboundDevice(supabase, user);
+    if (v.status === 'refused' && v.reason === 'no_row') {
+      if (!claimUnboundDevice(user)) { window.location.reload(); return; }
+      track('journal_binding', { result: 'claimed_no_row' });
+    } else if (v.status === 'refused') {
+      // No longer a no_row case: the normal refusal applies. Never claim over a cloud journal.
+      track('journal_binding', { result: v.result });
+      window.location.reload();
+      return;
+    } else if (v.status !== 'bound') {
+      setClaim({ stage: 'failed' }); // could not reach the cloud; nothing was bound
+      return;
+    } else {
+      track('journal_binding', { result: v.result }); // proof now passes on its own
+    }
+
+    // Bound. The normal pull uploads the phone's journal (no row + local data -> push).
+    const result = await pullJournal(supabase, user);
+    const saved = result.status === 'pushed' || result.status === 'in-sync' || result.status === 'restored';
+    // Confirmed after the reload by a centred card on THIS page, once the journal
+    // is unlocked (MPV_HELLO) — not the journal's small corner toast, which the
+    // reminder / install / update prompts sit on top of. A scared student must see it.
+    const s = localSummary();
+    sessionStorage.setItem('mpv_claim_result', JSON.stringify({ saved, trades: s.trades, eods: s.eods }));
+    window.location.reload();
+  };
+
+  const declineNoRow = () => {
+    track('journal_binding', { result: 'declined_no_row' });
+    setRefusal((r) => ({ ...r, declined: true }));
   };
 
   // Analytics: journal session opened (fires once per page load, after auth +
@@ -300,7 +359,18 @@ export default function Journal() {
     const onMessage = (e) => {
       if (e.source !== iframeRef.current?.contentWindow || !e.data) return;
       const type = e.data.type;
-      if (type === 'MPV_HELLO') postSyncStatus(); // iframe booted — tell it the current status
+      if (type === 'MPV_HELLO') {
+        postSyncStatus(); // iframe booted — tell it the current status
+        // Journal unlocked after a claim or a cloud restore: confirm it, big and centred.
+        try {
+          const claimed = sessionStorage.getItem('mpv_claim_result');
+          const restored = sessionStorage.getItem('mpv_restore_result');
+          sessionStorage.removeItem('mpv_claim_result');
+          sessionStorage.removeItem('mpv_restore_result');
+          if (claimed) setDoneCard({ kind: 'claim', ...JSON.parse(claimed) });
+          else if (restored) setDoneCard({ kind: 'restore', ...JSON.parse(restored) });
+        } catch { /* a missing card must never break the journal */ }
+      }
       // "App Update చేయి" in the More menu: drop every worker + cache and
       // reload from the network. Journal data (localStorage + Supabase) is not
       // touched — this only clears the stale app shell.
@@ -308,7 +378,11 @@ export default function Journal() {
       if (type === 'MPV_LOGOUT') startLogout();
       // The iframe stops writing the moment mpvOwner changes under it.
       if (type === 'MPV_OWNER_CHANGED') lockMismatch();
-      if (type === 'MPV_SHOW_SYNC_HELP' && bindingRef.current === 'refused') setRefusalOpen(true);
+      if (type === 'MPV_SHOW_SYNC_HELP' && bindingRef.current === 'refused') {
+        // Tapping ⏸ re-asks the no_row question, so a mistaken "no" can be undone.
+        setRefusal((r) => (r ? { ...r, declined: false } : r));
+        setRefusalOpen(true);
+      }
       if (type === 'MPV_DB_DIRTY') {
         // Always record that this phone has changes the cloud does not — the
         // sign-in and logout safety checks read this even while sync is off.
@@ -483,7 +557,7 @@ export default function Journal() {
   const resolveConflictRestore = () => {
     // Forget local sync markers so the boot pull restores the cloud journal.
     resetSyncMarkers();
-    sessionStorage.setItem('mpv_restore_note', 'మీ journal cloud నుండి restore అయింది ✦');
+    // The boot pull after this reload restores and queues the confirmation card.
     window.location.reload();
   };
   const resolveConflictForce = async () => {
@@ -665,6 +739,23 @@ export default function Journal() {
   const card = (border) => ({ maxWidth:430, width:'100%', background:G.dark1, border:`1px solid ${border}`, borderRadius:12, padding:'26px 22px', textAlign:'center', color:G.smoke });
   const primaryBtn = { width:'100%', padding:15, marginBottom:10, background:`linear-gradient(135deg, ${G.gold}, #9A7020)`, color:G.black, border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' };
   const linkBtn = { background:'transparent', border:'none', color:G.mid, fontSize:12, cursor:'pointer', textDecoration:'underline' };
+  const greenBtn = { width:'100%', padding:15, marginBottom:10, background:'linear-gradient(135deg,#2E7D52,#4CAF82)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' };
+  const secondaryBtn = { width:'100%', padding:13, marginBottom:10, background:'transparent', border:`1px solid ${G.goldDim}`, color:G.smoke, borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' };
+
+  // Confirmation card copy. The one message a worried student gets must be unmissable —
+  // not the journal's 6-second corner toast, which the bottom prompts can cover.
+  const doneView = !doneCard ? null
+    : doneCard.kind === 'restore'
+      ? { ok: true, icon: '✅', title: 'మీ journal cloud నుండి తిరిగి వచ్చింది',
+          line: <>📊 <b>{doneCard.trades}</b> trades · <b>{doneCard.eods}</b> EOD reviews — ఈ phone లో ఉన్నాయి.</>,
+          note: 'మీ journal ఏమీ పోలేదు. Header లో sync dot ✓ synced చూపిస్తుంది.' }
+      : doneCard.saved
+        ? { ok: true, icon: '✅', title: 'మీ journal cloud లో save అయింది',
+            line: <>📊 <b>{doneCard.trades}</b> trades · <b>{doneCard.eods}</b> EOD reviews — అన్నీ cloud లో safe.</>,
+            note: 'ఇక phone మారినా, మళ్ళీ login అయితే మీ journal తిరిగి వస్తుంది. Header లో sync dot ✓ synced చూపిస్తుంది.' }
+        : { ok: false, icon: '☁️', title: 'Journal మీ account కి జత అయింది',
+            line: <>Internet రాగానే cloud కి save అవుతుంది. మీ journal ఈ phone లో safe గా ఉంది.</>,
+            note: 'Header లో sync dot ✓ synced అయ్యే వరకు app close చేయకండి.' };
 
   // ═══ CHECKING STATE ═══
   if (checking) {
@@ -739,7 +830,7 @@ export default function Journal() {
         ))}
       </div>
 
-      {!loggingOut && (
+      {!loggingOut && !claim && (
         <iframe
           ref={iframeRef}
           title="Mind Power Vaultt Journal"
@@ -757,27 +848,88 @@ export default function Journal() {
         <ReviewRequest userId={syncUserRef.current?.id} onClose={() => setShowReview(false)} />
       )}
 
-      {/* ═══ SYNC REFUSED — phone's journal not proven to be this account's ═══ */}
+      {/* ═══ SYNC REFUSED — reassurance first: nothing is deleted, the journal works ═══ */}
       {refusal && refusalOpen && (
         <div style={overlay(10002)}>
-          <div style={card('rgba(224,168,76,0.45)')}>
-            <div style={{ fontSize:36, marginBottom:8 }}>⏸</div>
-            <h3 style={{ color:'#E0A84C', fontSize:16, marginBottom:10, lineHeight:1.5 }}>Cloud sync ఆపాం — మీ data ఈ phone లో safe</h3>
-            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:14 }}>
-              ఈ phone లో ఉన్న journal, <b style={{ color:G.smoke }}>{refusal.account}</b> account దే అని మేము confirm చేయలేకపోయాం.
-              ఏమీ delete చేయలేదు — తప్పు account లో కలవకుండా cloud sync మాత్రమే ఆపాం.
-            </p>
-            <div style={{ textAlign:'left', fontSize:13, color:G.smoke, lineHeight:1.8, marginBottom:14 }}>
-              <b style={{ color:G.gold }}>ఇప్పుడు చేయాల్సింది:</b><br/>
-              1. కింద button తో Backup download చేయండి — మీ journal file మీ phone లో ఉంటుంది.<br/>
-              2. Mentor కి WhatsApp చేయండి. Code: <b style={{ color:'#E0A84C' }}>{REFUSAL_CODES[refusal.reason]}</b>
-            </div>
-            <BackupButton />
-            <a href={mentorWaUrl(`Journal cloud sync ఆగింది. Code: ${REFUSAL_CODES[refusal.reason]}. సహాయం కావాలి.`)} target="_blank" rel="noopener noreferrer"
-              style={{ display:'block', boxSizing:'border-box', width:'100%', padding:13, marginBottom:12, border:'1px solid rgba(37,211,102,0.5)', color:'#25D366', borderRadius:8, fontSize:13, fontWeight:600, textDecoration:'none' }}>
-              💬 Mentor కి WhatsApp చేయి
-            </a>
-            <button onClick={() => setRefusalOpen(false)} style={linkBtn}>Journal ఈ phone లో వాడు (sync లేకుండా) →</button>
+          <div style={card('rgba(76,175,130,0.45)')}>
+            {claim?.stage === 'working' && (
+              <>
+                <div style={{ width:36, height:36, margin:'8px auto 14px', border:`2px solid ${G.goldDim}`, borderTopColor:G.gold, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                <p style={{ color:G.gold, fontSize:14, lineHeight:1.7 }}>
+                  మీ journal cloud లో save చేస్తున్నాం…<br/>
+                  <span style={{ fontSize:12, color:G.mid }}>App close చేయకండి.</span>
+                </p>
+              </>
+            )}
+            {claim?.stage === 'failed' && (
+              <>
+                <div style={{ fontSize:34, marginBottom:8 }}>⚠️</div>
+                <h3 style={{ color:'#E0A84C', fontSize:16, marginBottom:10 }}>Cloud కి చేరలేకపోయాం</h3>
+                <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:16 }}>
+                  మీ journal ఈ phone లో safe గా ఉంది — ఏమీ మారలేదు. Internet చూసి మళ్ళీ try చేయండి.
+                </p>
+                <button onClick={claimNoRow} style={greenBtn}>మళ్ళీ try చేయి</button>
+                <button onClick={() => window.location.reload()} style={secondaryBtn}>📖 Journal కి వెళ్ళు</button>
+              </>
+            )}
+            {!claim && (
+              <>
+                <div style={{ fontSize:34, marginBottom:6 }}>🛡️</div>
+                <h3 style={{ color:'#4CAF82', fontSize:17, marginBottom:8, lineHeight:1.5 }}>మీ journal safe — ఏమీ delete కాలేదు</h3>
+                <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:16 }}>
+                  ఈ phone లో journal మామూలుగా పని చేస్తుంది — trades, reviews అన్నీ ఇక్కడే save అవుతాయి.
+                  <b style={{ color:G.smoke }}> Cloud sync మాత్రమే ఆగింది.</b>
+                </p>
+
+                {refusal.reason === 'no_row' && !refusal.declined ? (
+                  <>
+                    <p style={{ fontSize:13, color:G.smoke, lineHeight:1.7, marginBottom:10 }}>
+                      <b>{refusal.account}</b> account కి cloud లో ఇంకా journal లేదు. ఈ phone లో ఉన్నది:
+                    </p>
+                    <div style={{ textAlign:'left', background:'rgba(201,168,76,0.06)', border:`1px solid ${G.goldDim}`, borderRadius:8, padding:'12px 14px', fontSize:13, color:G.smoke, lineHeight:1.9, marginBottom:14 }}>
+                      <div>👤 పేరు: <b>{refusal.summary?.name || '— (పేరు లేదు)'}</b></div>
+                      <div>📊 Trades: <b>{refusal.summary?.trades ?? 0}</b> · EOD reviews: <b>{refusal.summary?.eods ?? 0}</b></div>
+                      <div>📅 తేదీలు: <b>{fmtDay(refusal.summary?.firstDate)} – {fmtDay(refusal.summary?.lastDate)}</b></div>
+                    </div>
+                    <h3 style={{ color:G.gold, fontSize:16, marginBottom:12 }}>ఈ phone లో ఉన్న journal మీదేనా?</h3>
+                    <button onClick={claimNoRow} style={greenBtn}>✅ అవును, నాది — cloud లో save చేయి</button>
+                    <button onClick={() => setRefusalOpen(false)} style={primaryBtn}>📖 ఇప్పుడు journal వాడు — తర్వాత చెబుతాను</button>
+                    <button onClick={declineNoRow} style={secondaryBtn}>కాదు / తెలియదు</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setRefusalOpen(false)} style={primaryBtn}>📖 Journal ఈ phone లో వాడు →</button>
+                    <p style={{ fontSize:12, color:G.mid, lineHeight:1.7, margin:'6px 0 14px' }}>
+                      ఈ phone లో ఉన్న journal, <b style={{ color:G.smoke }}>{refusal.account}</b> account దే అని confirm చేయలేకపోయాం —
+                      తప్పు account లో కలవకుండా sync మాత్రమే ఆపాం. Backup తీసుకుని mentor కి ఈ code చెప్పండి:{' '}
+                      <b style={{ color:'#E0A84C' }}>{REFUSAL_CODES[refusal.reason]}</b>
+                    </p>
+                    <BackupButton />
+                    <a href={mentorWaUrl(`Journal cloud sync ఆగింది. Code: ${REFUSAL_CODES[refusal.reason]}. సహాయం కావాలి.`)} target="_blank" rel="noopener noreferrer"
+                      style={{ display:'block', boxSizing:'border-box', width:'100%', padding:13, marginBottom:12, border:'1px solid rgba(37,211,102,0.5)', color:'#25D366', borderRadius:8, fontSize:13, fontWeight:600, textDecoration:'none' }}>
+                      💬 Mentor కి WhatsApp చేయి
+                    </a>
+                    {refusal.reason === 'no_row' && (
+                      <button onClick={() => setRefusal((r) => ({ ...r, declined: false }))} style={linkBtn}>ఈ journal నాదే — మళ్ళీ అడగండి</button>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CONFIRMATION CARD — after "అవును, నాది" or a cloud restore; stays until tapped, above every prompt ═══ */}
+      {doneView && (
+        <div style={overlay(10004)}>
+          <div style={card(doneView.ok ? 'rgba(76,175,130,0.6)' : 'rgba(224,168,76,0.5)')}>
+            <div style={{ fontSize:44, marginBottom:8 }}>{doneView.icon}</div>
+            <h3 style={{ color: doneView.ok ? '#4CAF82' : '#E0A84C', fontSize:19, marginBottom:10, lineHeight:1.5 }}>{doneView.title}</h3>
+            <p style={{ fontSize:14, color:G.smoke, lineHeight:1.8, marginBottom:8 }}>{doneView.line}</p>
+            <p style={{ fontSize:13, color:G.mid, lineHeight:1.8, marginBottom:18 }}>{doneView.note}</p>
+            <button onClick={() => setDoneCard(null)} style={doneView.ok ? greenBtn : primaryBtn}>సరే, journal కి వెళ్దాం</button>
           </div>
         </div>
       )}
