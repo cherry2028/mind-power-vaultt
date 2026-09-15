@@ -49,7 +49,7 @@ function fakeSupabase(row, error = null) {
     select() { return api; },
     eq(col, val) { calls.eqs.push([col, val]); return api; },
     async maybeSingle() { calls.reads++; return error ? { data: null, error } : { data: row, error: null }; },
-    async upsert() { calls.upserts++; return { error: null }; },
+    async upsert(row) { calls.upserts++; calls.upserted = row; return { error: null }; },
     delete() { calls.deletes++; return api; },
   };
   return { client: api, calls };
@@ -66,6 +66,7 @@ const T = (id) => ({ id, date: '2026-09-10', inst: 'NIFTY', pnl: 100 });
 const rowOf = (data) => ({ data, updated_at: STAMP });
 const USER_A = { id: 'uuid-a', email: 'alpha@example.com' };
 const USER_B = { id: 'uuid-b', email: 'bravo@example.com' };
+const USER_C = { id: 'uuid-c', email: 'charlie@example.com' };
 
 // ═════════════════════════════════════════════════════════════════════════════
 console.log('\n══ deployTarget — host/database pairing ══');
@@ -289,6 +290,40 @@ console.log('\n══ backup file — readable by the journal\'s own Data Restor
   const restoreKeys = JSON.parse(restore[1].replace(/'/g, '"'));
   eq('every list Data Restore reads is present', restoreKeys.filter(([, s]) => !(s in b.db)).map(([, s]) => s), []);
   eq('never includes the PIN', JSON.stringify(b).includes('-1234'), false);
+}
+
+console.log('\n══ no cloud journal yet — the student says it is theirs (claimed_no_row) ══');
+{
+  // The production case of 2026-09-15: journal on the phone, never synced, no cloud row.
+  setLocal({
+    mpvtr: [{ id: OLD(40), date: '2026-08-06', inst: 'NIFTY' }, { id: OLD(2), date: '2026-09-08', inst: 'BANKNIFTY' }],
+    mpveod: [{ id: OLD(3), date: '2026-09-07' }],
+    mpvpm: [{ id: OLD(5), date: 'not-a-date' }],
+    mpvname: 'Jyothi',
+  }, { mpv_device_id: 'DEV-9' });
+  eq('summary shows name, counts and date range (bad dates ignored)', AB.localSummary(),
+    { name: 'Jyothi', trades: 2, eods: 1, firstDate: '2026-08-06', lastDate: '2026-09-08' });
+
+  const before = snap();
+  const { client, calls } = fakeSupabase(null);
+  const r = await AB.verifyUnboundDevice(client, USER_C);
+  eq('no cloud row + journal on phone -> refused_no_row (the question is offered)', [r.status, r.reason], ['refused', 'no_row']);
+  eq('asking changes nothing on the phone', snap(), before);
+
+  eq('claim binds this account', [AB.claimUnboundDevice(USER_C), AB.readOwner()?.id], [true, USER_C.id]);
+  eq('claim refuses once any binding exists', AB.claimUnboundDevice(USER_B), false);
+
+  const res = await JS.pullJournal(client, USER_C);
+  eq('normal pull then uploads the phone journal as this account\'s FIRST row',
+    [res.status, calls.upserts, calls.upserted?.user_id], ['pushed', 1, USER_C.id]);
+  eq('the uploaded journal is exactly what the student was shown',
+    [calls.upserted?.data?.mpvtr.map((t) => t.id), calls.upserted?.data?.mpveod.length, calls.upserted?.data?.mpvname],
+    [[OLD(40), OLD(2)], 1, 'Jyothi']);
+  eq('no delete during a claim', calls.deletes, 0);
+}
+{
+  setLocal();
+  eq('empty phone summary is safe', AB.localSummary(), { name: null, trades: 0, eods: 0, firstDate: null, lastDate: null });
 }
 
 console.log('\n══ static guards ══');
