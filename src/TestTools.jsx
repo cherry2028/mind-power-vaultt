@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { TARGET } from './utils/deployTarget';
 import { OWNER_KEY, readOwner, maskEmail, isBlankDevice } from './utils/accountBinding';
+import { promptState, reevaluatePromptNow, BUILD_ID } from './pwa';
+
+const PROMPT_TEST_IST = 'mpvTestPromptIST';
+// Stored as "HH:MM@setAt" so the overridden clock keeps running from that moment.
+const setPromptIst = (v) => { if (v) localStorage.setItem(PROMPT_TEST_IST, `${v}@${Date.now()}`); else localStorage.removeItem(PROMPT_TEST_IST); reevaluatePromptNow(); };
 
 // PREVIEW-ONLY test tools for the Step B phone test. Mounted only when the
 // build flag is on (never in a Vercel production build) AND the page is on a
@@ -79,6 +84,17 @@ function makeView() {
       ['EOD reviews', String(readArr('mpveod').length)],
       ['PIN set', localStorage.getItem('mpvPin') ? 'yes' : 'no'],
       ['blank device', isBlankDevice() ? 'yes' : 'no'],
+      ['build', BUILD_ID],
+      ...(() => {
+        const ps = promptState();
+        const d = ps.lastDecision;
+        return [
+          ['update prompt', ps.promptVisible ? 'VISIBLE' : 'hidden'],
+          ['prompt decision', d ? `${d.show ? 'show' : 'hide'} · ${d.reason} · ${d.trigger}` : '—'],
+          ['prompt clock', d ? `${d.clock}${ps.skew ? ` · skew ${Math.round(ps.skew.skewMs / 1000)}s` : ''}` : '—'],
+          ['prompt IST override', (localStorage.getItem(PROMPT_TEST_IST) || '').split('@')[0] || '— (real time)'],
+        ];
+      })(),
     ],
     trail: readTrail(),
   };
@@ -150,6 +166,26 @@ const ACTIONS = [
     run: () => {
       localStorage.setItem('mpvtr', JSON.stringify(readArr('mpvtr').filter((t) => !String(t?.inst || '').startsWith(NODIR_PREFIX))));
     },
+  },
+  {
+    label: '⑩ Update prompt: IST 10:00 (market hours)',
+    run: () => setPromptIst('10:00'),
+    noReload: true,
+  },
+  {
+    label: '⑪ Update prompt: IST 16:00 (after close)',
+    run: () => setPromptIst('16:00'),
+    noReload: true,
+  },
+  {
+    label: '⑫ Update prompt: real time (override తీసేయి)',
+    run: () => setPromptIst(''),
+    noReload: true,
+  },
+  {
+    label: '⑬ Update prompt memory reset (dismiss + after-close)',
+    run: () => { localStorage.removeItem('mpvUpdDismissedAt'); localStorage.removeItem('mpvUpdAfterCloseKey'); reevaluatePromptNow(); },
+    noReload: true,
   },
 ];
 

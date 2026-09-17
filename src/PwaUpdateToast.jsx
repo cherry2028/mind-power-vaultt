@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { onNeedRefresh, refreshNow } from './pwa';
+import { onNeedRefresh, refreshNow, dismissPrompt } from './pwa';
 
-// App-wide "a new version is available" toast. Dismissible — the update simply
-// applies on the next natural reload if ignored.
+// App-wide "a new version is available" toast. Whether it is visible is decided
+// in pwa.js (never during a sheet/form, never 09:00–15:45 IST). Dismissing it
+// starts the quiet period; it can come back on a later foreground return.
 export default function PwaUpdateToast() {
   const [show, setShow] = useState(false);
 
@@ -26,7 +27,7 @@ export default function PwaUpdateToast() {
         Refresh
       </button>
       <button
-        onClick={() => setShow(false)}
+        onClick={dismissPrompt}
         aria-label="Dismiss"
         style={{ flexShrink: 0, background: 'transparent', border: 'none', color: '#6A5A40', fontSize: 16, cursor: 'pointer', padding: '4px 6px' }}
       >

@@ -10,7 +10,9 @@ import process from 'node:process'
 function buildId() {
   const d = new Date();
   const p = (n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}.${p(d.getHours())}${p(d.getMinutes())}`;
+  // UTC, so a local build stamps the same way Vercel does (the update prompt
+  // uses the stamp to reject a device clock that is earlier than the build).
+  const stamp = `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}.${p(d.getUTCHours())}${p(d.getUTCMinutes())}`;
   let sha = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7);
   if (!sha) {
     try { sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
