@@ -352,6 +352,10 @@ function App(){
   const [leadErrs,setLeadErrs] = useState({});
   const [leadSending,setLeadSending] = useState(false);
   const [leadSent,setLeadSent]   = useState(false);
+const [leadFail,setLeadFail]   = useState(false); // store failed → error + WhatsApp fallback
+// Synchronous in-flight guard: `leadSending` state only changes on the next
+// render, so two fast taps both got through and would store the lead twice.
+const leadInFlight = useRef(false);
   const [showTerms,setShowTerms] = useState(false);
 
   const [adminOpen,setAdminOpen]       = useState(false);
@@ -813,12 +817,19 @@ function App(){
     
     // SECURE SUBMIT — backend only (no exposed tokens)
     const submit=async()=>{
+      if(sending||leadInFlight.current)return;
       const e=valid();
       if(Object.keys(e).length){setErrs(e);return;}
+      leadInFlight.current=true;
       setSending(true);
+      setLeadFail(false);
 
+      // Success is only claimed once /api/notify confirms the lead is STORED.
+      // Before this, a failed request still showed "Report sent" and the lead
+      // was gone without a trace.
+      let ok=false, status=0;
       try {
-        await fetch("/api/notify", {
+        const r = await fetch("/api/notify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -827,20 +838,26 @@ function App(){
             name: form.name, phone: form.wa, email: form.email, level: form.level, lang, report: aiProfile
           })
         });
-        setSending(false);
-        setLeadSent(true);
-        // LEAD conversion — fires ONCE here, only on a successful submit (not on
-        // render, not on the catch/failure path below). GA4 generate_lead is the
-        // backup path; the Ads conversion is a no-op until its label is set.
-        track("generate_lead", { form: "quiz_lead_capture", level: form.level });
-        adsConversion("masterclass_lead");
-        setTimeout(()=>goTo(7), 2000);
+        status = r.status;
+        ok = r.ok;
       } catch(err) {
-        console.error("Submission Error:", err);
-        setSending(false);
-        setLeadSent(true);
-        setTimeout(()=>goTo(7), 2000);
+        console.error("Submission Error:", err && err.message);
       }
+      leadInFlight.current=false;
+      setSending(false);
+      if(!ok){
+        // Counted, so lost submissions are visible in GA4. No personal data sent.
+        track("lead_submit_failed", { form: "quiz_lead_capture", status });
+        setLeadFail(true);
+        return;
+      }
+      setLeadSent(true);
+      // LEAD conversion — fires ONCE here, only after the lead is stored (not on
+      // render, not on the failure path above). GA4 generate_lead is the backup
+      // path; the Ads conversion is a no-op until its label is set.
+      track("generate_lead", { form: "quiz_lead_capture", level: form.level });
+      adsConversion("masterclass_lead");
+      setTimeout(()=>goTo(7), 2000);
     };
     const is=(f)=>({width:"100%",padding:"14px 18px",background:"rgba(201,168,76,0.04)",border:`1px solid ${errs[f]?"rgba(200,80,80,0.5)":G.goldDim}`,borderRadius:6,color:G.smoke,fontSize:15,fontFamily:sans});
 
@@ -901,6 +918,19 @@ function App(){
           </div>
           <div style={{marginTop:8}}>
             <button className="bg" onClick={submit} style={{...gBtn,width:"100%",padding:"18px",fontSize:13,borderRadius:4,opacity:sending?0.5:1,cursor:sending?"not-allowed":"pointer"}}>{sending?LL.send:LL.sub2}</button>
+            {leadFail&&(
+              <div role="alert" style={{marginTop:16,padding:"16px 18px",border:"1px solid rgba(200,80,80,0.5)",borderRadius:6,background:"rgba(200,80,80,0.08)",textAlign:"center"}}>
+                <p className={lc} style={{color:G.smoke,fontSize:14,lineHeight:1.8,margin:0}}>
+                  {lang==="te"?"మీ details save కాలేదు — ఇది మా వైపు సమస్య. మళ్ళీ try చేయండి, లేదా నేరుగా WhatsApp లో పంపండి.":"Your details were not saved — the problem is on our side. Please try again, or send them to us on WhatsApp."}
+                </p>
+                <a href={"https://wa.me/919059181616?text="+encodeURIComponent((lang==="te"?"నమస్కారం, website లో నా details save కాలేదు.":"Hello, my details did not save on the website.")+"\n"+(lang==="te"?"పేరు":"Name")+": "+form.name+"\nWhatsApp: "+form.wa+(form.level?"\nLevel: "+form.level:""))}
+                  target="_blank" rel="noopener noreferrer"
+                  onClick={()=>track("lead_whatsapp_fallback", { form: "quiz_lead_capture" })}
+                  style={{display:"inline-block",marginTop:12,padding:"12px 20px",background:"#25D366",color:"#05050A",borderRadius:6,fontWeight:700,fontSize:14,textDecoration:"none",fontFamily:sans}}>
+                  {lang==="te"?"WhatsApp లో పంపండి →":"Send on WhatsApp →"}
+                </a>
+              </div>
+            )}
             <p style={{textAlign:"center",marginTop:12,fontSize:11,color:G.vsoft,letterSpacing:1,fontFamily:sans}}>{LL.priv}</p>
           </div>
         </div>

@@ -36,19 +36,6 @@ export const api = {
     return res.json();
   },
 
-  async saveLead(payload) {
-    const res = await fetch('/api/save-lead', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Lead submission failed');
-    return data;
-  },
-
   async sendTelegram(message) {
     const res = await fetch('/api/send-telegram', {
       method: 'POST',
