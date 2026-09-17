@@ -8,6 +8,7 @@ import GetJournal from "./pages/GetJournal";
 // heavy and only needed once a logged-in student opens /journal — so they no
 // longer ship in the marketing landing bundle (/ and /get-journal load faster).
 const Journal = lazy(() => import("./pages/Journal"));
+const TradebookAutopsy = lazy(() => import("./pages/autopsy/AutopsyPage"));
 import { api } from "./utils/api-client";
 import Seo from "./Seo";
 import RouteTracker from "./RouteTracker";
@@ -1403,6 +1404,9 @@ export default function RoutedApp() {
             <Journal />
           </Suspense>
         } />
+        {/* Tradebook Autopsy — free, no login; the CSV is read in this tab only. */}
+        <Route path="/tradebook-autopsy" element={<Suspense fallback={<div style={{minHeight:"100vh",background:"#05050A"}} />}><TradebookAutopsy /></Suspense>} />
+        <Route path="/autopsy" element={<Suspense fallback={<div style={{minHeight:"100vh",background:"#05050A"}} />}><TradebookAutopsy /></Suspense>} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />

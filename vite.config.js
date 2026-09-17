@@ -51,7 +51,7 @@ export default defineConfig({
         // They'd add ~580 KB to the install for features most students touch
         // once a week — the runtime cache-first handler picks them up on first
         // use instead, and they stay available offline from then on.
-        globIgnores: ['**/jspdf*.js', '**/html2canvas*.js'],
+        globIgnores: ['**/jspdf*.js', '**/html2canvas*.js', '**/AutopsyPage*.js'],
       },
       manifest: {
         name: 'Mind Power Vaultt — Trading Journal',

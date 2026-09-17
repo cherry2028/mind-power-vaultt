@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node tests/tradebook-copy.test.mjs && node tests/tradebook-isolation.test.mjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

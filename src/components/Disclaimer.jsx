@@ -18,6 +18,9 @@ const C = {
 export default function Disclaimer() {
   const { pathname } = useLocation();
   if (pathname === '/journal') return null;
+  // Tradebook Autopsy renders its own SEBI disclaimer: its report may not carry
+  // the discipline/psychology vocabulary this footer uses.
+  if (pathname === '/tradebook-autopsy' || pathname === '/autopsy') return null;
 
   const em = { color: C.cream, fontWeight: 800 };
 
