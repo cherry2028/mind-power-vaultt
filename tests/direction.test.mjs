@@ -12,7 +12,7 @@
 // (the P1 pnlCalc tests only ever exercised the module copy).
 import fs from 'node:fs';
 import * as P from '../src/utils/pnlCalc.js';
-const { computePnl, directionConflict } = P;
+const { computePnl, directionConflict, directionMissing } = P;
 
 let pass = 0, fail = 0;
 function eq(name, got, expected) {
@@ -39,6 +39,16 @@ eq('no SL → cannot check → no conflict', conflict({ seg: 'options', dir: 'sh
 eq('SL equal to entry → no conflict', conflict({ seg: 'options', dir: 'short', en: 230, sl: 230 }), false);
 eq('direction missing → no conflict here (caught by required-direction rule)', conflict({ seg: 'options', dir: '', en: 230, sl: 177 }), false);
 
+console.log('\n══ Missing direction is shown, never assumed ══');
+const missing = (t) => (typeof directionMissing === 'function' ? directionMissing(t) : 'directionMissing missing');
+eq('options, no dir → missing', missing({ seg: 'options', dir: '' }), true);
+eq('futures, dir undefined → missing', missing({ seg: 'futures' }), true);
+eq('crypto, unrecognised dir → missing', missing({ seg: 'crypto', dir: 'buy' }), true);
+eq('options long → not missing', missing({ seg: 'options', dir: 'long' }), false);
+eq('options short → not missing', missing({ seg: 'options', dir: 'short' }), false);
+eq('cash, no dir → not missing (direction unused in cash P&L)', missing({ seg: 'cash', dir: '' }), false);
+eq('quick-logged trade (no segment) → not missing', missing({ inst: 'X', pnl: 500 }), false);
+
 console.log('\n══ Journal HTML: capture UI ══');
 const html = fs.readFileSync(new URL('../src/journal-content.html', import.meta.url), 'utf8');
 const fnSrc = (name) => {
@@ -55,6 +65,10 @@ eq('saveOpenTrade path validates direction conflict', /directionConflict\(/.test
 eq('closeTradeFinish refuses to save a contradictory trade', /directionConflict\(/.test(fnSrc('closeTradeFinish') || ''), true);
 eq('options chip labels say who went first (no bare "Sold")', !/\['Bought','Sold'\]/.test(fnSrc('dirLabels') || ''), true);
 
+eq('inline directionMissing exists in the journal', fnSrc('directionMissing') !== null, true);
+eq('close refuses to save a non-cash trade with no direction', /directionMissing\(/.test(fnSrc('closeTradeFinish') || ''), true);
+eq('no auto P&L is computed while direction is missing', /directionMissing\(/.test(fnSrc('recalcAuto') || ''), true);
+eq('trade card says "Direction లేదు" for a non-cash trade with no direction', /directionMissing\(t\)[^;]*Direction లేదు/.test(html), true);
 eq('an untouched auto-filled amount is re-computed when direction/prices change (no frozen LOSS sign)',
   /untouchedAuto/.test(fnSrc('recalcAuto') || '') && /TS2_AUTO=/.test(fnSrc('applyAutoPnl') || ''), true);
 
@@ -63,11 +77,13 @@ console.log('\n══ Sync: inline journal copies behave exactly like the module
   const inline = fnSrc('directionConflict'), inlinePnl = fnSrc('computePnl'), inlineNum = fnSrc('num');
   if (!inline || !inlinePnl || !inlineNum) { eq('inline functions present for sync check', false, true); }
   else {
-    const mk = new Function(`${inlineNum}\n${inlinePnl}\n${inline}\nreturn { computePnl, directionConflict };`)();
+    const inlineMissing = fnSrc('directionMissing') || 'function directionMissing(){return "absent";}';
+    const mk = new Function(`${inlineNum}\n${inlinePnl}\n${inline}\n${inlineMissing}\nreturn { computePnl, directionConflict, directionMissing };`)();
+    const modMissing = typeof directionMissing === 'function' ? directionMissing : () => 'absent-module';
     let drift = 0;
     for (const seg of ['options', 'futures', 'crypto', 'cash']) for (const dir of ['long', 'short', '']) for (const sl of ['', 90, 100, 110]) for (const ex of [80, 120]) {
       const t = { seg, dir, en: 100, ex, sl, qty: 2, lotSize: 25 };
-      if ((mk.directionConflict(t) === null) !== (directionConflict(t) === null) || mk.computePnl(t) !== computePnl(t)) drift++;
+      if ((mk.directionConflict(t) === null) !== (directionConflict(t) === null) || mk.computePnl(t) !== computePnl(t) || mk.directionMissing(t) !== modMissing(t)) drift++;
     }
     eq('96 input combinations: inline === module', drift, 0);
   }

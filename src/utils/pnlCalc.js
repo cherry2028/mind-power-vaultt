@@ -57,3 +57,11 @@ export function directionConflict(t) {
   if (t.dir === 'short' && sl < en) return 'short_sl_below_entry';
   return null;
 }
+
+// A non-cash trade with no recorded direction. computePnl() would treat it as a
+// long; the journal instead shows "Direction లేదు" and asks before closing.
+// Cash is excluded (its P&L never uses direction); quick-logged trades with no
+// segment are excluded (they never had price details).
+export function directionMissing(t) {
+  return !!(t && t.seg && t.seg !== 'cash' && t.dir !== 'long' && t.dir !== 'short');
+}

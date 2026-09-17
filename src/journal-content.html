@@ -1576,7 +1576,7 @@ function rTr(){
   ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
   var list=ge('tllist');list.innerHTML='';
   if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
-  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirTxt=t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase();var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirMissing=directionMissing(t)?'Direction లేదు':'';var dirTxt=dirMissing||(t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase());var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirMissing?'<span class="tg" style="background:rgba(224,168,76,0.13);color:#E0A84C">'+dirMissing+'</span>':dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
 }
 // Compact per-segment detail line. Every field is optional — old trades (no
 // details) show just date · setup, exactly like before.
@@ -2268,6 +2268,10 @@ function computePnl(t){
 // options buyer, above it for a short / options writer. When it is on the other
 // side, the direction is what was mistyped. Cash is skipped (direction is not
 // used in cash P&L). Mirrors src/utils/pnlCalc.js directionConflict().
+// Non-cash trade with no recorded direction. Before 2026-09-17 these silently
+// computed as a long; they are now shown as "Direction లేదు" and must be
+// answered before a close. Mirrors src/utils/pnlCalc.js directionMissing().
+function directionMissing(t){return !!(t&&t.seg&&t.seg!=='cash'&&t.dir!=='long'&&t.dir!=='short');}
 function directionConflict(t){
   if(!t||!t.seg||t.seg==='cash')return null;
   if(t.dir!=='long'&&t.dir!=='short')return null;
@@ -2281,7 +2285,10 @@ function recalcAuto(){
   if(SEG_STEP===1)renderRiskLive(); // step 1 shows live risk/RR, not auto P&L
   var row=ge('autoPnlRow');if(!row)return;
   if(SEG_STEP!==2){row.style.display='none';return;}
-  var p=computePnl(segReadFields());
+  var rf=segReadFields();
+  // Never compute a P&L on an assumed direction.
+  if(directionMissing(rf)){row.style.display='none';delete row.dataset.pnl;return;}
+  var p=computePnl(rf);
   if(p===null){row.style.display='none';return;}
   row.style.display='';
   ge('autoPnlVal').textContent=(p>=0?'+₹':'-₹')+Math.abs(p).toLocaleString('en-IN');
@@ -2405,6 +2412,7 @@ function closeTradeFinish(){
     var fresh=segReadFields(),merged={},mk;
     for(mk in t)merged[mk]=t[mk];
     for(mk in fresh){if(fresh[mk])merged[mk]=fresh[mk];}
+    if(directionMissing(merged)){ge('ts2-dtl').classList.add('open');rerenderSeg2();toast(merged.seg==='options'?'Buyer ఆ Writer ఆ? — close చేసే ముందు select చేయి. Direction లేకుండా P&L లెక్కించము.':'Long ఆ Short ఆ? — close చేసే ముందు select చేయి.',6000);return;}
     var dcf=directionConflict(merged);
     if(dcf){ge('ts2-dtl').classList.add('open');rerenderSeg2();toast(dcf,6000);return;}
     auto=computePnl(merged);
