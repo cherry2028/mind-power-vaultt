@@ -39,3 +39,29 @@ export function computePnl(t) {
   const dirSign = seg === 'cash' ? 1 : (t.dir === 'short' ? -1 : 1);
   return Math.round(dirSign * (ex - en) * qty);
 }
+
+// A stop-loss sits below the entry for a long / options buyer and above it for a
+// short / options writer. On the wrong side, the DIRECTION is what was mistyped:
+// on 2026-09-17 an options buy (230 → 346, SL 177) was saved as "Sold" and the
+// correct arithmetic for a writer showed −₹69,600 instead of +₹69,600.
+// Returns null when consistent or uncheckable (cash, no SL, no direction),
+// otherwise a short reason code. Inlined in src/journal-content.html (with
+// Telugu messages); tests/direction.test.mjs runs both copies.
+export function directionConflict(t) {
+  if (!t || !t.seg || t.seg === 'cash') return null;
+  if (t.dir !== 'long' && t.dir !== 'short') return null;
+  const n = (v) => (v === null || v === undefined || v === '' ? null : (isFinite(Number(v)) ? Number(v) : null));
+  const en = n(t.en), sl = n(t.sl);
+  if (en === null || sl === null || sl === en) return null;
+  if (t.dir === 'long' && sl > en) return 'long_sl_above_entry';
+  if (t.dir === 'short' && sl < en) return 'short_sl_below_entry';
+  return null;
+}
+
+// A non-cash trade with no recorded direction. computePnl() would treat it as a
+// long; the journal instead shows "Direction లేదు" and asks before closing.
+// Cash is excluded (its P&L never uses direction); quick-logged trades with no
+// segment are excluded (they never had price details).
+export function directionMissing(t) {
+  return !!(t && t.seg && t.seg !== 'cash' && t.dir !== 'long' && t.dir !== 'short');
+}

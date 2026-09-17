@@ -1576,7 +1576,7 @@ function rTr(){
   ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
   var list=ge('tllist');list.innerHTML='';
   if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
-  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirTxt=t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase();var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirMissing=directionMissing(t)?'Direction లేదు':'';var dirTxt=dirMissing||(t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase());var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirMissing?'<span class="tg" style="background:rgba(224,168,76,0.13);color:#E0A84C">'+dirMissing+'</span>':dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
 }
 // Compact per-segment detail line. Every field is optional — old trades (no
 // details) show just date · setup, exactly like before.
@@ -2086,7 +2086,9 @@ function segDefault(){
   return best||localStorage.getItem('mpvSeg')||'options';
 }
 function segLbl(s){return s==='options'?'⚙️ Options':s==='cash'?'📈 Cash':s==='futures'?'🔮 Futures':s==='crypto'?'🪙 Crypto':s;}
-function dirLabels(){return TSEG.seg==='options'?['Bought','Sold']:['Long','Short'];}
+// Say who went FIRST. A bare "Sold" on the close sheet read as "I sold to exit"
+// and turned options BUYS into writes (−₹69,600 instead of +₹69,600, 2026-09-17).
+function dirLabels(){return TSEG.seg==='options'?['Bought (Buyer)','Sold first (Writer)']:['Long (Buy first)','Short (Sell first)'];}
 // Numeric input helper (numeric keypad on mobile)
 function nfld(id,lbl,ph,val){return '<div class="fld"><div class="lbl">'+lbl+'</div><input type="number" inputmode="decimal" id="'+id+'" placeholder="'+(ph||'')+'" value="'+(val==null?'':val)+'" oninput="recalcAuto()"/></div>';}
 // ── STEP-1 field split ───────────────────────────────────────────────────────
@@ -2229,7 +2231,7 @@ function rerenderSeg(t){
       out+='<button type="button" class="chip'+(TSEG.seg===s?' on':'')+'" onclick="TSEG.seg=\''+s+'\';localStorage.setItem(\'mpvSeg\',\''+s+'\');rerenderSeg()">'+segLbl(s)+'</button>';
     });
     segRow.innerHTML=out;
-    var dl=ge('dirLbl');if(dl)dl.textContent=TSEG.seg==='options'?'Bought / Sold':'Direction';
+    var dl=ge('dirLbl');if(dl)dl.textContent=TSEG.seg==='options'?'Buyer / Writer':'Direction';
     var dr=ge('dir-row');if(dr){var L=dirLabels();
       dr.innerHTML='<button type="button" class="chip'+(TSEG.dir==='long'?' on':'')+'" onclick="TSEG.dir=\'long\';rerenderSeg()">'+L[0]+'</button>'
         +'<button type="button" class="chip'+(TSEG.dir==='short'?' on':'')+'" onclick="TSEG.dir=\'short\';rerenderSeg()">'+L[1]+'</button>';}
@@ -2262,11 +2264,31 @@ function computePnl(t){
   var dirSign=t.seg==='cash'?1:(t.dir==='short'?-1:1);
   return Math.round(dirSign*(ex-en)*qty);
 }
+// A stop-loss can only sit on one side of the entry: below it for a long /
+// options buyer, above it for a short / options writer. When it is on the other
+// side, the direction is what was mistyped. Cash is skipped (direction is not
+// used in cash P&L). Mirrors src/utils/pnlCalc.js directionConflict().
+// Non-cash trade with no recorded direction. Before 2026-09-17 these silently
+// computed as a long; they are now shown as "Direction లేదు" and must be
+// answered before a close. Mirrors src/utils/pnlCalc.js directionMissing().
+function directionMissing(t){return !!(t&&t.seg&&t.seg!=='cash'&&t.dir!=='long'&&t.dir!=='short');}
+function directionConflict(t){
+  if(!t||!t.seg||t.seg==='cash')return null;
+  if(t.dir!=='long'&&t.dir!=='short')return null;
+  var en=num(t.en),sl=num(t.sl);
+  if(en===null||sl===null||sl===en)return null;
+  if(t.dir==='long'&&sl>en)return t.seg==='options'?'SL entry కంటే పైన ఉంది — Buyer కి SL కింద ఉంటుంది. "Sold first (Writer)" ఆ? సరి చూడు.':'SL entry కంటే పైన ఉంది — Long కి SL కింద ఉంటుంది. Direction సరి చూడు.';
+  if(t.dir==='short'&&sl<en)return t.seg==='options'?'SL entry కంటే కింద ఉంది — ఇది Buyer trade. "Bought (Buyer)" select చేయి.':'SL entry కంటే కింద ఉంది — Short కి SL పైన ఉంటుంది. Direction సరి చూడు.';
+  return null;
+}
 function recalcAuto(){
   if(SEG_STEP===1)renderRiskLive(); // step 1 shows live risk/RR, not auto P&L
   var row=ge('autoPnlRow');if(!row)return;
   if(SEG_STEP!==2){row.style.display='none';return;}
-  var p=computePnl(segReadFields());
+  var rf=segReadFields();
+  // Never compute a P&L on an assumed direction.
+  if(directionMissing(rf)){row.style.display='none';delete row.dataset.pnl;return;}
+  var p=computePnl(rf);
   if(p===null){row.style.display='none';return;}
   row.style.display='';
   ge('autoPnlVal').textContent=(p>=0?'+₹':'-₹')+Math.abs(p).toLocaleString('en-IN');
@@ -2275,13 +2297,18 @@ function recalcAuto(){
   // HYBRID: first computable value pre-fills the sign + amount, but both stay
   // fully editable (brokerage/slippage adjustments). Never overwrite an amount
   // the student already typed.
-  if(ge('ts2-pnl').value===''&&TS2_SIGN===0)applyAutoPnl();
+  // Refresh an auto-filled amount the student has not touched. Filling only an
+  // EMPTY box froze the first computation: correcting Writer → Buyer left the
+  // stale LOSS sign and saved −₹69,600 anyway.
+  var untouchedAuto=TS2_AUTO&&ge('ts2-pnl').value===String(TS2_AUTO.abs)&&TS2_SIGN===TS2_AUTO.sign;
+  if((ge('ts2-pnl').value===''&&TS2_SIGN===0)||untouchedAuto)applyAutoPnl();
 }
 function applyAutoPnl(){
   var row=ge('autoPnlRow');var p=Number(row&&row.dataset.pnl);
   if(!isFinite(p))return;
   setPnlSign(p>=0?1:-1);
   ge('ts2-pnl').value=String(Math.abs(p));
+  TS2_AUTO={abs:Math.abs(p),sign:p>=0?1:-1};
 }
 // Entry validation. Never blocks a trade outright — an unlogged trade is worse
 // than a flawed one — but entry/qty are needed for any honest risk maths, and
@@ -2291,6 +2318,9 @@ function validateTrade(d,noSl){
   var q=num(d.qty);
   if(q===null||q<=0)return{ok:false,msg:(TSEG.seg==='options'||TSEG.seg==='futures')?'Lots ఎన్ని? అది వేయి.':'Quantity వేయి.'};
   if(!noSl&&num(d.sl)===null)return{ok:false,msg:'SL వేయి — లేదా "SL పెట్టలేదు" tick చేయి.'};
+  // No silent default: an unset direction used to compute as a long.
+  if(d.seg&&d.seg!=='cash'&&d.dir!=='long'&&d.dir!=='short')return{ok:false,msg:TSEG.seg==='options'?'Buyer ఆ Writer ఆ? — select చేయి.':'Long ఆ Short ఆ? — select చేయి.'};
+  var dc=directionConflict(d);if(dc)return{ok:false,msg:dc};
   return{ok:true,msg:''};
 }
 function saveOpenTrade(){
@@ -2318,7 +2348,9 @@ function saveOpenTrade(){
   renderTrade();updHdr();rTr();
   toast('Trade open అయింది — close అయ్యాక P&L వేయి ✦',4000);
 }
-var TS2_ID=null,TS2_SIGN=0; // 0 = no choice yet — student MUST tap Loss or Profit
+// TS2_SIGN 0 = no choice yet — student MUST tap Loss or Profit.
+// TS2_AUTO = last auto-filled {abs,sign}, to tell it apart from a typed amount.
+var TS2_ID=null,TS2_SIGN=0,TS2_AUTO=null;
 function setPnlSign(s){
   TS2_SIGN=s;
   ge('ts2-sign-loss').classList.toggle('on',s===-1);
@@ -2332,7 +2364,14 @@ function segChipsHtmlInline(){
   });
   out+='</div>';
   var L=dirLabels();
-  out+='<div class="lbl">'+(TSEG.seg==='options'?'Bought / Sold':'Direction')+'</div><div class="chiprow">'
+  // Closing is the moment a buyer SELLS — never re-ask "Bought / Sold" here.
+  // The direction chosen at entry is shown locked; chips appear only when it is
+  // missing or contradicts the stop-loss and genuinely needs fixing.
+  if(TS2_TRADE&&TS2_TRADE.dir&&!directionConflict(TS2_TRADE)&&TSEG.dir===TS2_TRADE.dir){
+    out+='<div class="lbl">'+(TSEG.seg==='options'?'Buyer / Writer':'Direction')+'</div><div style="font-size:13px;color:#C9A84C;margin:0 0 10px">🔒 '+(TSEG.dir==='long'?L[0]:L[1])+' — open చేసినప్పుడు ఎంచుకున్నది</div>';
+    return out;
+  }
+  out+='<div class="lbl">'+(TSEG.seg==='options'?'Buyer / Writer':'Direction')+'</div><div class="chiprow">'
     +'<button type="button" class="chip'+(TSEG.dir==='long'?' on':'')+'" onclick="TSEG.dir=\'long\';rerenderSeg2()">'+L[0]+'</button>'
     +'<button type="button" class="chip'+(TSEG.dir==='short'?' on':'')+'" onclick="TSEG.dir=\'short\';rerenderSeg2()">'+L[1]+'</button></div>';
   return out;
@@ -2350,7 +2389,7 @@ function openStep2(id){
   var t=null;for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id===id)t=DB.tr[i];}
   if(!t)return;TS2_ID=id;TS2_TRADE=t;
   ge('ts2-tt').textContent='Close: '+t.inst;
-  TS2_SIGN=0;ge('ts2-sign-loss').classList.remove('on');ge('ts2-sign-profit').classList.remove('on');
+  TS2_SIGN=0;TS2_AUTO=null;ge('ts2-sign-loss').classList.remove('on');ge('ts2-sign-profit').classList.remove('on');
   ge('ts2-pnl').value='';ge('tr-voice').value='';
   TSEG.seg=t.seg||'';TSEG.dir=t.dir||'';TSEG.opt=t.optType||'CE';TSEG.mkt=t.mkt||'spot';
   SEG_STEP=2;
@@ -2373,6 +2412,9 @@ function closeTradeFinish(){
     var fresh=segReadFields(),merged={},mk;
     for(mk in t)merged[mk]=t[mk];
     for(mk in fresh){if(fresh[mk])merged[mk]=fresh[mk];}
+    if(directionMissing(merged)){ge('ts2-dtl').classList.add('open');rerenderSeg2();toast(merged.seg==='options'?'Buyer ఆ Writer ఆ? — close చేసే ముందు select చేయి. Direction లేకుండా P&L లెక్కించము.':'Long ఆ Short ఆ? — close చేసే ముందు select చేయి.',6000);return;}
+    var dcf=directionConflict(merged);
+    if(dcf){ge('ts2-dtl').classList.add('open');rerenderSeg2();toast(dcf,6000);return;}
     auto=computePnl(merged);
   }catch(e){auto=null;}
   var pv=ge('ts2-pnl').value.replace(/\D/g,'');

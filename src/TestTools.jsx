@@ -11,6 +11,7 @@ import { OWNER_KEY, readOwner, maskEmail, isBlankDevice } from './utils/accountB
 // They write localStorage directly and never touch the cloud.
 
 const FOREIGN_INST = 'TEST-FOREIGN';
+const NODIR_PREFIX = 'TEST-NODIR-'; // ⑧ ⑨: pre-fix trades with no direction
 const FOREIGN_ID = 1600000000000; // 2020-09-13 — older than any sync stamp on a test phone
 const TRAIL_KEY = 'mpvTestBindingTrail';
 
@@ -127,6 +128,28 @@ const ACTIONS = [
     label: '⑦ (/journal లో మాత్రమే) "cloud నుండి తిరిగి వచ్చింది" card చూపించు',
     confirm: 'Logout / కొత్త phone తర్వాత restore అయినప్పుడు కనిపించే card ని test కోసం చూపిస్తాం. Data ఏమీ మారదు. Reload.',
     run: () => sessionStorage.setItem('mpv_restore_result', JSON.stringify({ trades: readArr('mpvtr').length, eods: readArr('mpveod').length })),
+  },
+  {
+    // The fixed entry form can no longer create a trade without a direction, so
+    // the pre-fix state has to be planted to test it. Synthetic numbers only.
+    label: '⑧ Direction లేని పాత options trades కలుపు (1 open + 1 closed)',
+    confirm: 'Direction లేకుండా ఈరోజు date తో TEST-NODIR-OPEN, TEST-NODIR-CLOSED trades కలుపుతాం, reload. Preview (staging) database కి మాత్రమే sync అవుతాయి.',
+    run: () => {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+      const now = Date.now();
+      const base = { date: today, setup: '', emo: 'calm', pln: true, mist: '', voice: '', rv: '2', seg: 'options', optType: 'CE' };
+      const trades = readArr('mpvtr').filter((t) => !String(t?.inst || '').startsWith(NODIR_PREFIX));
+      trades.push({ ...base, id: now - 60000, inst: `${NODIR_PREFIX}CLOSED SENSEX 75000 CE`, status: 'closed', closedAt: now - 30000, en: '150', ex: '170', qty: '2', lotSize: '20', pnl: 400 });
+      trades.push({ ...base, id: now, inst: `${NODIR_PREFIX}OPEN SENSEX 74400 CE`, status: 'open', pnl: 0, en: '230', sl: '177', qty: '30', lotSize: '20' });
+      localStorage.setItem('mpvtr', JSON.stringify(trades));
+    },
+  },
+  {
+    label: '⑨ TEST-NODIR trades తీసేయి',
+    confirm: 'TEST-NODIR trades ఈ phone నుండి తీసేస్తాం, reload.',
+    run: () => {
+      localStorage.setItem('mpvtr', JSON.stringify(readArr('mpvtr').filter((t) => !String(t?.inst || '').startsWith(NODIR_PREFIX))));
+    },
   },
 ];
 
