@@ -1,16 +1,58 @@
-// /api/notify.js — Vercel Serverless Function
+// /api/notify.js — Vercel Serverless Function (quiz lead form)
+// 0. STORES the lead in Supabase (public.leads) — before anything else. If
+//    that fails the request fails (500) and the form offers WhatsApp, so a
+//    lead is never silently lost again.
 // 1. Sends full report to USER's email (via Resend)
 // 2. Sends lead alert to K Prasad's Telegram Bot
+// 3. Records on the row whether the email and Telegram alert went out.
+//    Telegram failing no longer fails the request: the lead is already safe.
 //
 // Environment Variables needed in Vercel:
+//   VITE_SUPABASE_URL / SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY — lead store
 //   TELEGRAM_BOT_TOKEN  — from @BotFather
 //   TELEGRAM_CHAT_ID    — K Prasad's chat ID
 //   RESEND_API_KEY      — from resend.com (free 100 emails/day)
+//
+// Phone numbers and emails are never written to function logs.
 
+import { createClient } from '@supabase/supabase-js';
 import { escapeHTML } from './_lib/utils.js';
 import { checkSimpleLimit } from './_lib/ratelimit.js';
 
-export default async function handler(req, res) {
+const MAX_REPORT_CHARS = 20000;
+
+// Pure: request body → the row we store, or the reason it is refused.
+export function validateLead(body) {
+  const b = body && typeof body === 'object' ? body : {};
+  const name = typeof b.name === 'string' ? b.name.trim() : '';
+  if (!name || name.length > 100) return { ok: false, error: 'invalid_name' };
+  const phone = typeof b.phone === 'string' || typeof b.phone === 'number' ? String(b.phone).replace(/\D/g, '') : '';
+  if (phone.length < 10 || phone.length > 15) return { ok: false, error: 'invalid_phone' };
+  const email = typeof b.email === 'string' ? b.email.trim() : '';
+  if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return { ok: false, error: 'invalid_email' };
+  const level = typeof b.level === 'string' && b.level.trim() ? b.level.trim().slice(0, 40) : null;
+  const lang = b.lang === 'te' || b.lang === 'en' ? b.lang : null;
+  let report = b.report && typeof b.report === 'object' && !Array.isArray(b.report) ? b.report : null;
+  if (report && JSON.stringify(report).length > MAX_REPORT_CHARS) report = null;
+  return { ok: true, lead: { source: 'quiz', name, phone, email: email || null, level, lang, report } };
+}
+
+function defaultDb(env) {
+  const url = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+export default function handler(req, res) {
+  return handleNotify(req, res);
+}
+
+// deps are injectable for tests: { db, fetch, env }
+export async function handleNotify(req, res, deps = {}) {
+  const env = deps.env || process.env;
+  const doFetch = deps.fetch || fetch;
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -25,8 +67,27 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
-  const { name, phone, email, level, report, lang } = req.body || {};
-  if (!name || !phone) return res.status(400).json({ error: 'Missing name or phone' });
+  const v = validateLead(req.body);
+  if (!v.ok) return res.status(400).json({ error: v.error });
+  const { name, phone, email, level, report, lang } = v.lead;
+
+  // ═══════════════════════════════════════════════════════════════
+  // 0. STORE THE LEAD FIRST — nothing else happens if this fails
+  // ═══════════════════════════════════════════════════════════════
+  const db = deps.db !== undefined ? deps.db : defaultDb(env);
+  if (!db) {
+    console.error('[MPV-LEAD] store not configured (SUPABASE_SERVICE_ROLE_KEY / URL missing)');
+    return res.status(500).json({ error: 'lead_store_unconfigured' });
+  }
+  let leadId = null;
+  try {
+    const { data, error } = await db.from('leads').insert(v.lead).select('id').single();
+    if (error || !data) throw new Error(error?.message || 'no row returned');
+    leadId = data.id;
+  } catch (e) {
+    console.error('[MPV-LEAD] insert failed:', e?.message || e);
+    return res.status(500).json({ error: 'lead_store_failed' });
+  }
 
   const isTE = lang === 'te';
   const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
@@ -35,7 +96,7 @@ export default async function handler(req, res) {
   // 1. SEND REPORT TO USER'S EMAIL (via Resend)
   // ═══════════════════════════════════════════════════════════════
   let emailSent = false;
-  const resendKey = process.env.RESEND_API_KEY;
+  const resendKey = env.RESEND_API_KEY;
 
   if (resendKey && email) {
     const emailHtml = `
@@ -127,7 +188,7 @@ export default async function handler(req, res) {
 </html>`;
 
     try {
-      const emailRes = await fetch('https://api.resend.com/emails', {
+      const emailRes = await doFetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,9 +203,9 @@ export default async function handler(req, res) {
       });
       const emailData = await emailRes.json();
       if (emailData.id) emailSent = true;
-      else console.error('Resend error:', emailData);
+      else console.error('[MPV-LEAD] Resend error:', emailData?.name || emailData?.message || 'unknown');
     } catch (e) {
-      console.error('Email send error:', e);
+      console.error('[MPV-LEAD] email send error:', e?.message || e);
     }
   }
 
@@ -152,13 +213,9 @@ export default async function handler(req, res) {
   // 2. SEND LEAD ALERT TO K PRASAD (via Telegram Bot)
   // ═══════════════════════════════════════════════════════════════
   let telegramSent = false;
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-
-  if (!botToken || !chatId) {
-    console.error('Telegram configuration missing');
-    return res.status(500).json({ error: 'Telegram configuration missing. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.' });
-  }
+  let telegramError = null;
+  const botToken = env.TELEGRAM_BOT_TOKEN;
+  const chatId = env.TELEGRAM_CHAT_ID;
 
   // Changed Markdown to HTML format to prevent Telegram blocking special characters
   const tgMessage = `<b>🧠 NEW MPV LEAD</b>
@@ -182,9 +239,13 @@ ${(report?.behaviorLines || []).map((l, i) => `<b>S${i + 1}:</b> ${escapeHTML(l)
 🔑 <b>ACTION:</b> ${escapeHTML(report?.actionStep || 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━
 📅 ${timestamp}
-📨 Report ${emailSent ? 'sent to ' + escapeHTML(email) : 'email not configured'}`;
+📨 Report ${emailSent ? 'sent to ' + escapeHTML(email) : 'email not sent'}
+🆔 Lead ${String(leadId).slice(0, 8)}`;
 
-  try {
+  if (!botToken || !chatId) {
+    telegramError = 'not_configured';
+    console.error('[MPV-LEAD] Telegram not configured');
+  } else try {
     const MAX_LENGTH = 4000;
     
     // Fallback plain text if HTML fails or if we need to chunk easily
@@ -194,7 +255,7 @@ ${(report?.behaviorLines || []).map((l, i) => `<b>S${i + 1}:</b> ${escapeHTML(l)
     for (let i = 0; i < plainTextMsg.length; i += MAX_LENGTH) {
       const chunk = plainTextMsg.substring(i, i + MAX_LENGTH);
       
-      const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      const tgRes = await doFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -205,22 +266,39 @@ ${(report?.behaviorLines || []).map((l, i) => `<b>S${i + 1}:</b> ${escapeHTML(l)
       
       const tgData = await tgRes.json();
       if (!tgData.ok) {
-        console.error('Telegram chunk error:', tgData);
-        // Don't fail the whole request if one chunk fails, just log it
-      } else {
-        telegramSent = true;
+        // Every chunk must arrive, or K Prasad sees a partial lead.
+        telegramError = String(tgData.description || 'sendMessage failed').slice(0, 300);
+        console.error('[MPV-LEAD] Telegram error:', telegramError);
+        break;
       }
     }
+    if (!telegramError) telegramSent = true;
   } catch (e) {
-    console.error('Telegram send error:', e);
-    // Don't fail the API call just because telegram failed
+    telegramError = String(e?.message || e).slice(0, 300);
+    console.error('[MPV-LEAD] Telegram send error:', telegramError);
   }
 
-  // Always log the lead (viewable in Vercel logs)
-  console.log('📌 NEW LEAD:', JSON.stringify({ name, phone, email, level, timestamp }));
+  // ═══════════════════════════════════════════════════════════════
+  // 3. RECORD THE OUTCOME ON THE ROW — the lead is already stored, so a
+  //    failure here only loses the delivery status, never the lead.
+  // ═══════════════════════════════════════════════════════════════
+  try {
+    const { error } = await db.from('leads').update({
+      email_sent: emailSent,
+      telegram_ok: telegramSent,
+      telegram_error: telegramError,
+      notified_at: new Date().toISOString(),
+    }).eq('id', leadId);
+    if (error) console.error('[MPV-LEAD] outcome update failed:', error.message);
+  } catch (e) {
+    console.error('[MPV-LEAD] outcome update failed:', e?.message || e);
+  }
+
+  console.log('[MPV-LEAD] stored', JSON.stringify({ lead: String(leadId).slice(0, 8), emailSent, telegramSent }));
 
   return res.status(200).json({
     success: true,
+    stored: true,
     emailSent,
     telegramSent,
     message: 'Report processed successfully'
