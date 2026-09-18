@@ -248,7 +248,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .timp{background:rgba(224,168,76,0.13);color:#E0A84C}
 .tm{font-size:10.5px;color:#9A8870;margin-top:4px;line-height:1.6}
 .tpnl{font-size:19px;font-weight:900;text-align:right}
-.tdel{font-size:10px;color:#6A5A40;background:none;border:none;display:block;text-align:right;margin-top:4px;cursor:pointer}
+.tdel{font-size:12.5px;color:#9A8870;background:none;border:1px solid rgba(201,168,76,0.3);border-radius:9px;display:block;margin:8px 0 0 auto;min-width:104px;min-height:44px;padding:0 14px;cursor:pointer;font-family:inherit}
+.tdelc{margin-top:10px;padding:12px 13px;border:1px solid rgba(207,102,121,0.45);border-radius:10px;background:rgba(207,102,121,0.08)}
+.tdelq{font-size:12.5px;color:#F5F2EA;line-height:1.75}
+.tdelr{display:flex;gap:8px;margin-top:11px}
+.tdelr button{flex:1;min-height:44px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.tdelyes{background:#CF6679;color:#05050A;border:none}
+.tdelno{background:transparent;color:#9A8870;border:1px solid rgba(201,168,76,0.3)}
+.tdelnote{margin:0 0 11px;padding:11px 13px;border:1px solid rgba(201,168,76,0.35);border-radius:10px;background:rgba(201,168,76,0.07);font-size:12px;color:#E2C97A;line-height:1.8}
 .bc{display:flex;align-items:flex-end;gap:4px;height:75px}
 .brc{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
 .br{width:100%;border-radius:3px 3px 0 0;min-height:3px}
@@ -619,6 +626,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <button class="more-item" onclick="goLegacy('weekly')"><span class="mi">📅</span>Weekly Review</button>
     <button class="more-item" onclick="goLegacy('monthly')"><span class="mi">📆</span>Monthly Review</button>
     <button class="more-item" onclick="goLegacy('habits')"><span class="mi">🔥</span>Streak Details</button>
+    <button class="more-item" onclick="goLegacy('tradelog')"><span class="mi">📋</span>Trade Log (అన్ని trades)</button>
     <button class="more-item" onclick="goLegacy('history')"><span class="mi">📂</span>Records / History</button>
     <button class="more-item" onclick="goLegacy('performance')"><span class="mi">📈</span>Performance Dashboard</button>
     <button class="more-item" onclick="ge('moreSheet').classList.remove('open');ge('sharePanel').classList.add('open')"><span class="mi">📤</span>Export / Share — WhatsApp PDF, Email, Backup</button>
@@ -1410,7 +1418,11 @@ function gS(id,btn){
   var ns=document.querySelectorAll('.nb');for(var i=0;i<ns.length;i++)ns[i].classList.remove('on');
   var s=ge('sec-'+id);if(s)s.classList.add('on');if(btn)btn.classList.add('on');
   if(id==='tradelog'){
-    if(!pmDone()){ge('lockTitle').textContent='YOU ARE NOT PREPARED';ge('lockMsg').textContent='Pre-Market ritual complete చేయకుండా trade log చేయడం allowed కాదు.';ge('lockBtn').textContent='Ritual Complete చేయి →';ge('lockBtn').onclick=function(){ge('lockOverlay').classList.add('hidden');goToSection('premarket');};ge('lockOverlay').classList.remove('hidden');return;}
+    // No ritual gate here. The gate exists to stop UNPREPARED LOGGING, and this
+    // screen cannot log a trade — it only lists them and allows a delete. The
+    // day-flow logging gate (openStep1) is untouched. Reading your own history
+    // never requires a ritual.
+    TL_DEL_ID=null;TL_DEL_NOTE=false;
     if(checkKillSwitch())ge('killBanner').classList.add('show');else ge('killBanner').classList.remove('show');
     if(checkOvertrading())ge('otAlert').classList.add('show');else ge('otAlert').classList.remove('show');
     rTr();
@@ -1565,7 +1577,21 @@ function uCS(){var sc=0;for(var k in clSt){if(clSt[k])sc++;}var sn=ge('clsn'),sm
 function logCL(){clSt={};buildCL();toast('Checklist log అయింది ✦');}
 
 // ────── TRADE LOG ──────
-function delT(id){var n=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id!==id)n.push(DB.tr[i]);}DB.tr=n;ls('mpvtr',DB.tr);rTr();updHdr();toast('Trade removed');}
+// Delete is TWO steps: the first tap only arms the confirm, which names the
+// trade (instrument · date · amount) so nobody removes the wrong one. Deleting
+// is the one destructive action a student can take on their own history.
+var TL_DEL_ID=null;    // trade currently awaiting confirmation
+var TL_DEL_NOTE=false; // show the "open it on your other phone too" line
+function askDelT(id){TL_DEL_ID=(TL_DEL_ID===id?null:id);rTr();}
+function cancelDelT(){TL_DEL_ID=null;rTr();}
+function delT(id){
+  // Never delete without the confirm armed for THIS trade.
+  if(TL_DEL_ID!==id)return;
+  var n=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].id!==id)n.push(DB.tr[i]);}
+  DB.tr=n;ls('mpvtr',DB.tr);
+  TL_DEL_ID=null;TL_DEL_NOTE=true;
+  rTr();updHdr();toast('Trade తీసేశాం ✦');
+}
 function rTr(){
   var T=DB.tr,tot=T.length,tp=0,wins=0,pln=0,lostMist=0,gainDisc=0,closedN=0;
   for(var i=0;i<T.length;i++){if(T[i].pln)pln++;if(T[i].status==='open')continue;closedN++;var pv=Number(T[i].pnl||0);tp+=pv;if(pv>0)wins++;if(T[i].pln){if(pv>0)gainDisc+=pv;}else{lostMist+=Math.min(pv,0);}}
@@ -1575,8 +1601,10 @@ function rTr(){
   var disc=calcDisciplineScore();var hd=ge('tldisc');hd.textContent=discDisp(disc);hd.style.color=discColor(disc);
   ge('pvpLoss').textContent='-₹'+fi(Math.abs(lostMist));ge('pvpGain').textContent='+₹'+fi(gainDisc);
   var list=ge('tllist');list.innerHTML='';
-  if(!T.length){list.innerHTML='<div class="nd"><div class="ndi">📋</div>ఇంకా trades లేవు.</div>';return;}
-  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirMissing=directionMissing(t)?'Direction లేదు':'';var dirTxt=dirMissing||(t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase());var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirMissing?'<span class="tg" style="background:rgba(224,168,76,0.13);color:#E0A84C">'+dirMissing+'</span>':dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="delT('+t.id+')">remove</button></div></div>';list.appendChild(div);}
+  // After a delete: say plainly that another device can bring it back.
+  if(TL_DEL_NOTE){var nt=document.createElement('div');nt.className='tdelnote';nt.innerHTML='Trade ఈ phone నుండి తీసేశాం. ఈ journal ని వేరే phone / laptop లో కూడా వాడుతుంటే, అక్కడ కూడా ఒకసారి open చేయండి — లేకపోతే ఆ trade మళ్ళీ తిరిగి రావచ్చు.';list.appendChild(nt);}
+  if(!T.length){var e=document.createElement('div');e.className='nd';e.innerHTML='<div class="ndi">📋</div>ఇంకా trades లేవు.';list.appendChild(e);return;}
+  for(var i=T.length-1;i>=0;i--){var t=T[i];var pnl2=Number(t.pnl||0);var div=document.createElement('div');div.className='ti';div.style.borderLeftColor=pnl2>=0?'#4CAF82':'#CF6679';var mis=t.mist?'<div style="font-size:10px;color:#E0A84C;margin-top:3px">⚠ '+t.mist.replace(/_/g,' ')+'</div>':'';var vn=t.voice?'<div style="font-size:10px;color:#5B8FD4;margin-top:2px">🎙 '+t.voice+'</div>':'';var dirMissing=directionMissing(t)?'Direction లేదు':'';var dirTxt=dirMissing||(t.seg==='options'?(t.dir==='short'?'SOLD':t.dir==='long'?'BOUGHT':''):(t.dir||'').toUpperCase());var segTag=t.seg?'<span class="tg" style="background:rgba(201,168,76,0.12);color:#C9A84C">'+segLbl(t.seg)+'</span>':'';var rr=computeRR(t);var rrTag=(rr!==null)?'<span class="tg" style="background:'+(rr<1.5?'rgba(207,102,121,0.16)':'rgba(76,175,130,0.13)')+';color:'+(rr<1.5?'#CF6679':'#4CAF82')+'">R:R 1:'+rr.toFixed(1)+(rr<1.5?' ⚠':'')+'</span>':'';div.innerHTML='<div class="tr2"><div><div class="tn">'+t.inst+'</div><div class="tgs">'+segTag+(dirMissing?'<span class="tg" style="background:rgba(224,168,76,0.13);color:#E0A84C">'+dirMissing+'</span>':dirTxt?'<span class="tg '+(t.dir==='long'?'tlong':'tshort')+'">'+dirTxt+'</span>':'')+'<span class="tg '+(t.pln?'tplan':'timp')+'">'+(t.pln?'Planned':'Impulse')+'</span>'+rrTag+(t.emo?'<span class="tg" style="background:#181820;color:#777">'+t.emo+'</span>':'')+'</div><div class="tm">'+tDetail(t)+'</div>'+mis+vn+'</div><div><div class="tpnl" style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</div><button class="tdel" onclick="askDelT('+t.id+')">🗑 తీసేయి</button></div></div>'+(TL_DEL_ID===t.id?'<div class="tdelc"><div class="tdelq">ఈ trade ని తీసేయాలా?<br><b>'+esc2(t.inst)+'</b> · '+esc2(t.date||'')+' · <b style="color:'+pc(pnl2)+'">'+ps2(pnl2)+'</b></div><div class="tdelr"><button type="button" class="tdelno" onclick="cancelDelT()">వద్దు</button><button type="button" class="tdelyes" onclick="delT('+t.id+')">అవును, తీసేయి</button></div></div>':'');list.appendChild(div);}
 }
 // Compact per-segment detail line. Every field is optional — old trades (no
 // details) show just date · setup, exactly like before.
