@@ -27,7 +27,7 @@
 
 | | |
 |---|---|
-| **Preview** | (deploy అయ్యాక నేను link పంపుతాను) |
+| **Preview** | `https://mind-power-vaultt-git-feat-mar-d7b624-mpviwm2025-9339s-projects.vercel.app/portal` |
 | **Login** | ఎప్పటిలాగే 🧪 PREVIEW TEST LOGIN |
 | **🧪 panel కొత్త rows** | `market (Foundation)` · `day now — Indian / 24x7` |
 
