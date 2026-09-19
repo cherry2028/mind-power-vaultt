@@ -20,13 +20,16 @@
 //     Phase 2 (later, once this is proven in the wild) can auto-activate at
 //     launch, where there is nothing typed yet to lose.
 //
-//  3. WHEN THE PROMPT MAY APPEAR (2026-09-17). A dismissed prompt used to stay
+//  3. WHEN THE PROMPT MAY APPEAR (2026-09-19). A dismissed prompt used to stay
 //     hidden for the rest of the session, so a resumed installed app could sit
 //     on old code for days. The prompt is now re-evaluated on every foreground
 //     return, but only under the owner's rules (src/utils/updatePrompt.js):
-//     never while a sheet/form is open, never 09:00–15:45 IST, first return
-//     after 15:45 always, otherwise 10 minutes after a dismissal. IST comes
-//     from a server-corrected clock; an untrusted clock keeps it hidden.
+//     never while a sheet/form is open, never within 15 minutes of the
+//     student's last journal write, otherwise 10 minutes after a dismissal.
+//     There is no market-hours window: this journal carries crypto, forex and
+//     gold, and the live journals log most of their trades in the evening.
+//     Every rule is an elapsed-time comparison on this device, so no server
+//     clock is needed — which also means an offline student still gets it.
 //
 // The service worker itself needs no changes: it already answers SKIP_WAITING
 // with self.skipWaiting() and calls clients.claim() on activate, and its
@@ -36,7 +39,7 @@
 import { registerSW } from 'virtual:pwa-register';
 import { track } from './analytics';
 import { TEST_TOOLS_BUILD } from './utils/deployTarget';
-import { decidePrompt, entryInProgress, trustedNow, withIstTime, QUIET_MS } from './utils/updatePrompt';
+import { decidePrompt, entryInProgress, QUIET_MS, IDLE_MS } from './utils/updatePrompt';
 
 const FOREGROUND_THROTTLE_MS = 2 * 60 * 1000; // don't re-check on every tab flick
 const POLL_MS = 60 * 60 * 1000;               // hourly while the app stays open
@@ -47,19 +50,18 @@ let needRefresh = false;   // an update was detected (kept for diagnostics)
 let promptVisible = false; // what the toast actually shows
 let lastDecision = null;
 let watchTimer = null;
-let lastClockMeasure = 0;   // last SUCCESSFUL measurement
-let lastClockAttempt = 0;   // last attempt, success or not
 let applyUpdate = () => {};
 
 const LS_DISMISSED = 'mpvUpdDismissedAt';
-const LS_AFTER_CLOSE = 'mpvUpdAfterCloseKey';
-const LS_SKEW = 'mpvClockSkew';
-const LS_TEST_IST = 'mpvTestPromptIST'; // preview builds only: "HH:MM@setAtMs" — IST override that keeps ticking
-const CLOCK_REMEASURE_MS = 10 * 60 * 1000;
-const CLOCK_RETRY_MS = 30 * 1000; // after a failed measurement, retry soon — not in 10 minutes
+// Written by the journal's ls() on every real save (src/journal-content.html).
+// Device-local on purpose: it is NOT in JOURNAL_KEYS, so it never syncs to the
+// cloud and typing on one device cannot silence the prompt on another.
+const LS_LAST_WRITE = 'mpvLastWrite';
 const WATCH_MS = 3000;
-// Preview builds shorten the quiet period so the phone test takes seconds.
+// Preview builds shorten both waits so the phone test takes seconds, not half
+// an hour. Students always get the real 15 / 10 minutes.
 const PROMPT_QUIET_MS = TEST_TOOLS_BUILD ? 30 * 1000 : QUIET_MS;
+const PROMPT_IDLE_MS = TEST_TOOLS_BUILD ? 60 * 1000 : IDLE_MS;
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* private mode */ } }
@@ -81,35 +83,6 @@ export function onNeedRefresh(fn) {
   return () => listeners.delete(fn);
 }
 
-// ── clock ──────────────────────────────────────────────────────────────────
-function readSkew() {
-  try { const v = JSON.parse(lsGet(LS_SKEW)); return v && Number.isFinite(v.skewMs) ? v : null; } catch { return null; }
-}
-
-// Server time from an HTTP Date header. /api/* is never cached by the service
-// worker, and a missing function answers 404 at the edge — no invocation cost.
-async function measureClock(force) {
-  const now = Date.now();
-  const haveSkew = !!readSkew();
-  if (!force && haveSkew && now - lastClockMeasure < CLOCK_REMEASURE_MS) return;
-  if (!force && now - lastClockAttempt < CLOCK_RETRY_MS) return;
-  lastClockAttempt = now;
-  try {
-    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const t = setTimeout(() => ctrl && ctrl.abort(), 4000);
-    const t0 = Date.now();
-    const res = await fetch('/api/__clock', { method: 'HEAD', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
-    const t1 = Date.now();
-    clearTimeout(t);
-    const server = Date.parse(res.headers.get('date') || '');
-    if (!Number.isFinite(server)) return;
-    // Date has 1-second resolution: +500ms centres it.
-    const skewMs = Math.round(server + 500 - (t0 + t1) / 2);
-    lsSet(LS_SKEW, JSON.stringify({ skewMs, measuredAt: t1 }));
-    lastClockMeasure = t1;
-  } catch { /* offline — keep the last measurement, or stay untrusted */ }
-}
-
 // ── the decision ───────────────────────────────────────────────────────────
 function journalDocument() {
   const frame = typeof document !== 'undefined' && document.querySelector('iframe[title="Mind Power Vaultt Journal"]');
@@ -122,47 +95,35 @@ function journalDocument() {
   }
 }
 
-// The one time basis for every decision AND every dismissal, so the quiet
-// period is measured on the same clock it is checked against.
-function decisionClock() {
-  const clock = trustedNow(Date.now(), readSkew(), BUILD_ID);
-  const testIst = TEST_TOOLS_BUILD ? lsGet(LS_TEST_IST) : null;
-  let now = clock.now;
-  if (now !== null && testIst) {
-    // The override pins the IST time at the moment it was set, then lets the
-    // clock run on from there — otherwise a quiet period could never elapse.
-    const [hhmm, setAtRaw] = testIst.split('@');
-    const setAt = Number(setAtRaw);
-    const elapsed = Number.isFinite(setAt) && setAt > 0 ? Math.max(0, Date.now() - setAt) : 0;
-    now = withIstTime(now - elapsed, hhmm) + elapsed;
-  }
-  return { now, reason: clock.reason, testIst };
-}
-
 function evaluatePrompt(trigger, { allowShow = true } = {}) {
   try {
     const waiting = !!(swRegistration && swRegistration.waiting);
     const journal = journalDocument();
     const entry = entryInProgress([document, journal.doc], { journalUnreadable: journal.unreadable });
-    const clock = decisionClock();
-    const { now, testIst } = clock;
+    const now = Date.now();
+    const lastWriteAt = lsNum(LS_LAST_WRITE);
     const d = decidePrompt({
       entryInProgress: entry,
       waiting,
       now,
+      lastWriteAt,
       lastDismissedAt: lsNum(LS_DISMISSED),
-      shownAfterClose: lsNum(LS_AFTER_CLOSE),
+      idleMs: PROMPT_IDLE_MS,
       quietMs: PROMPT_QUIET_MS,
     });
-    lastDecision = { ...d, trigger, clock: clock.reason, testIst: testIst || null, at: new Date().toISOString() };
+    lastDecision = {
+      ...d,
+      trigger,
+      sinceWriteSec: lastWriteAt ? Math.round((now - lastWriteAt) / 1000) : null,
+      at: new Date().toISOString(),
+    };
 
     if (d.show && !promptVisible && allowShow) {
       promptVisible = true;
-      if (d.markAfterClose !== null) lsSet(LS_AFTER_CLOSE, String(d.markAfterClose));
       track('pwa_update_prompt_shown', { from_build: BUILD_ID, reason: d.reason, trigger });
       emit();
     } else if (!d.show && promptVisible && d.reason !== 'quiet_period') {
-      // A sheet opened, the market opened, or the update applied elsewhere:
+      // A sheet opened, a trade was saved, or the update applied elsewhere:
       // take the toast away. This is not a dismissal.
       promptVisible = false;
       emit();
@@ -174,7 +135,7 @@ function evaluatePrompt(trigger, { allowShow = true } = {}) {
 }
 
 // While the toast is up, keep checking so it disappears the moment a trade
-// sheet opens or 09:00 IST arrives. Never shows anything by itself.
+// sheet opens or a trade is saved. Never shows anything by itself.
 function syncWatch() {
   if (promptVisible && !watchTimer) {
     watchTimer = setInterval(() => evaluatePrompt('watch', { allowShow: false }), WATCH_MS);
@@ -184,26 +145,28 @@ function syncWatch() {
   }
 }
 
-async function measureThenEvaluate(trigger, forceClock) {
-  await measureClock(forceClock);
-  evaluatePrompt(trigger);
-}
-
 export function dismissPrompt() {
-  const { now } = decisionClock();
-  lsSet(LS_DISMISSED, String(now !== null ? now : Date.now()));
+  lsSet(LS_DISMISSED, String(Date.now()));
   promptVisible = false;
   emit();
   syncWatch();
 }
 
 export function promptState() {
-  return { promptVisible, needRefresh, lastDecision, skew: readSkew(), dismissedAt: lsNum(LS_DISMISSED), afterCloseKey: lsNum(LS_AFTER_CLOSE) };
+  return {
+    promptVisible,
+    needRefresh,
+    lastDecision,
+    dismissedAt: lsNum(LS_DISMISSED),
+    lastWriteAt: lsNum(LS_LAST_WRITE),
+    idleMs: PROMPT_IDLE_MS,
+    quietMs: PROMPT_QUIET_MS,
+  };
 }
 
-// Preview test tools: re-run the decision now (after changing the IST override).
+// Preview test tools: re-run the decision now (after moving a stamp).
 export function reevaluatePromptNow() {
-  measureThenEvaluate('test_tools', true);
+  evaluatePrompt('test_tools');
 }
 
 // Apply a waiting update — deterministically, without delegating to
@@ -288,7 +251,7 @@ export function swState() {
 // An update is known. Whether the toast shows is decided by the rules.
 function promptForRefresh(trigger) {
   needRefresh = true;
-  measureThenEvaluate(trigger || 'update_found', false);
+  evaluatePrompt(trigger || 'update_found');
 }
 
 function checkForUpdate(force) {
@@ -333,16 +296,16 @@ export function initPwa() {
     // that matters for an installed PWA: resumed from the app switcher, no
     // navigation, so nothing else would ever look for a new build.
     // Every foreground return also re-decides the prompt (not throttled —
-    // only the network update check and the clock measurement are).
+    // only the network update check is).
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         checkForUpdate(false);
-        measureThenEvaluate('foreground', false);
+        evaluatePrompt('foreground');
       }
     });
     window.addEventListener('focus', () => {
       checkForUpdate(false);
-      measureThenEvaluate('foreground', false);
+      evaluatePrompt('foreground');
     });
   } catch (err) {
     // Never let PWA plumbing break the app.

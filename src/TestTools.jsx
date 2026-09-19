@@ -3,9 +3,17 @@ import { TARGET } from './utils/deployTarget';
 import { OWNER_KEY, readOwner, maskEmail, isBlankDevice } from './utils/accountBinding';
 import { promptState, reevaluatePromptNow, BUILD_ID } from './pwa';
 
-const PROMPT_TEST_IST = 'mpvTestPromptIST';
-// Stored as "HH:MM@setAt" so the overridden clock keeps running from that moment.
-const setPromptIst = (v) => { if (v) localStorage.setItem(PROMPT_TEST_IST, `${v}@${Date.now()}`); else localStorage.removeItem(PROMPT_TEST_IST); reevaluatePromptNow(); };
+const LAST_WRITE = 'mpvLastWrite'; // written by the journal's ls() on every save
+// Move the write stamp to "n seconds ago", or clear it entirely.
+const setLastWrite = (agoMs) => {
+  if (agoMs === null) localStorage.removeItem(LAST_WRITE);
+  else localStorage.setItem(LAST_WRITE, String(Date.now() - agoMs));
+  reevaluatePromptNow();
+};
+const sinceWrite = () => {
+  const t = Number(localStorage.getItem(LAST_WRITE));
+  return Number.isFinite(t) && t > 0 ? `${Math.round((Date.now() - t) / 1000)}s ago` : '— (never)';
+};
 
 // PREVIEW-ONLY test tools for the Step B phone test. Mounted only when the
 // build flag is on (never in a Vercel production build) AND the page is on a
@@ -91,8 +99,8 @@ function makeView() {
         return [
           ['update prompt', ps.promptVisible ? 'VISIBLE' : 'hidden'],
           ['prompt decision', d ? `${d.show ? 'show' : 'hide'} · ${d.reason} · ${d.trigger}` : '—'],
-          ['prompt clock', d ? `${d.clock}${ps.skew ? ` · skew ${Math.round(ps.skew.skewMs / 1000)}s` : ''}` : '—'],
-          ['prompt IST override', (localStorage.getItem(PROMPT_TEST_IST) || '').split('@')[0] || '— (real time)'],
+          ['last journal write', sinceWrite()],
+          ['idle / quiet needed', `${Math.round(ps.idleMs / 1000)}s / ${Math.round(ps.quietMs / 1000)}s`],
         ];
       })(),
     ],
@@ -168,23 +176,23 @@ const ACTIONS = [
     },
   },
   {
-    label: '⑩ Update prompt: IST 10:00 (market hours)',
-    run: () => setPromptIst('10:00'),
+    label: '⑩ ఇప్పుడే journal లో రాసినట్టు (write = now)',
+    run: () => setLastWrite(0),
     noReload: true,
   },
   {
-    label: '⑪ Update prompt: IST 16:00 (after close)',
-    run: () => setPromptIst('16:00'),
+    label: '⑪ రాసి చాలాసేపు అయినట్టు (write = 1 hr ago)',
+    run: () => setLastWrite(60 * 60 * 1000),
     noReload: true,
   },
   {
-    label: '⑫ Update prompt: real time (override తీసేయి)',
-    run: () => setPromptIst(''),
+    label: '⑫ Write stamp తీసేయి (ఎప్పుడూ రాయనట్టు)',
+    run: () => setLastWrite(null),
     noReload: true,
   },
   {
-    label: '⑬ Update prompt memory reset (dismiss + after-close)',
-    run: () => { localStorage.removeItem('mpvUpdDismissedAt'); localStorage.removeItem('mpvUpdAfterCloseKey'); reevaluatePromptNow(); },
+    label: '⑬ Update prompt memory reset (dismiss + write)',
+    run: () => { localStorage.removeItem('mpvUpdDismissedAt'); localStorage.removeItem('mpvUpdAfterCloseKey'); localStorage.removeItem(LAST_WRITE); reevaluatePromptNow(); },
     noReload: true,
   },
 ];

@@ -1,7 +1,14 @@
-// When the "new version" prompt may appear — the owner's rules, 2026-09-17.
+// When the "new version" prompt may appear — the owner's rules, 2026-09-19.
+//
+//   1. Never while a trade sheet or any form is open — at any hour.
+//   2. Never within 15 minutes of the student's last journal write.
+//   3. Otherwise, 10 minutes after a dismissal.
+//
+// The earlier 09:00–15:45 IST block is gone: this journal carries crypto,
+// forex and gold, and the live journals log most trades in the evening.
+import fs from 'node:fs';
 import {
-  istMinutes, istDay, isMarketBlocked, afterCloseKey, withIstTime, buildTime,
-  trustedNow, decidePrompt, entryInProgress, QUIET_MS, CLOCK_SKEW_LIMIT_MS,
+  decidePrompt, elapsedSince, entryInProgress, QUIET_MS, IDLE_MS,
 } from '../src/utils/updatePrompt.js';
 
 let pass = 0, fail = 0;
@@ -11,112 +18,77 @@ function eq(name, got, expected) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  → ${JSON.stringify(got)}${ok ? '' : `  (expected ${JSON.stringify(expected)})`}`);
 }
 
-// An IST wall-clock moment → epoch ms (IST = UTC+05:30).
-const IST = (y, mo, d, h, mi, s = 0) => Date.UTC(y, mo - 1, d, h, mi, s) - 330 * 60 * 1000;
 const MIN = 60 * 1000;
-
-console.log('\n══ IST from epoch, independent of device timezone ══');
-eq('09:15 IST', istMinutes(IST(2026, 9, 17, 9, 15)), 555);
-eq('00:00 IST', istMinutes(IST(2026, 9, 18, 0, 0)), 0);
-eq('23:59 IST', istMinutes(IST(2026, 9, 17, 23, 59)), 1439);
-eq('same IST day at 00:00 and 23:59', istDay(IST(2026, 9, 17, 0, 0)) === istDay(IST(2026, 9, 17, 23, 59)), true);
-eq('UTC 18:29 on 17 Sep is still 17 Sep IST (23:59)', istDay(Date.UTC(2026, 8, 17, 18, 29)) === istDay(IST(2026, 9, 17, 12, 0)), true);
-eq('UTC 18:30 on 17 Sep is 18 Sep IST (00:00)', istDay(Date.UTC(2026, 8, 17, 18, 30)) === istDay(IST(2026, 9, 18, 12, 0)), true);
-{
-  const saved = process.env.TZ;
-  process.env.TZ = 'America/Los_Angeles';
-  eq('device timezone set to Los Angeles changes nothing', istMinutes(IST(2026, 9, 17, 10, 0)), 600);
-  process.env.TZ = saved;
-}
-
-console.log('\n══ Rule 2: never 09:00–15:45 IST ══');
-eq('08:59 not blocked', isMarketBlocked(IST(2026, 9, 17, 8, 59)), false);
-eq('09:00 blocked', isMarketBlocked(IST(2026, 9, 17, 9, 0)), true);
-eq('12:30 blocked', isMarketBlocked(IST(2026, 9, 17, 12, 30)), true);
-eq('15:44 blocked', isMarketBlocked(IST(2026, 9, 17, 15, 44)), true);
-eq('15:45 not blocked', isMarketBlocked(IST(2026, 9, 17, 15, 45)), false);
-eq('Saturday 10:00 also blocked (rule is time of day, no calendar guess)', isMarketBlocked(IST(2026, 9, 19, 10, 0)), true);
-
-console.log('\n══ After-close window key ══');
-const MON = istDay(IST(2026, 9, 14, 12, 0));
-eq('Mon 15:45 → Mon', afterCloseKey(IST(2026, 9, 14, 15, 45)) === MON, true);
-eq('Mon 23:00 → Mon', afterCloseKey(IST(2026, 9, 14, 23, 0)) === MON, true);
-eq('Tue 07:00 → still Mon\'s close', afterCloseKey(IST(2026, 9, 15, 7, 0)) === MON, true);
-eq('Tue 10:00 → null (market hours)', afterCloseKey(IST(2026, 9, 15, 10, 0)), null);
-eq('Tue 16:00 → Tue', afterCloseKey(IST(2026, 9, 15, 16, 0)) === MON + 1, true);
-
-const base = { entryInProgress: false, waiting: true, lastDismissedAt: null, shownAfterClose: null, quietMs: QUIET_MS };
+const NOW = Date.UTC(2026, 8, 19, 14, 30); // any moment: no rule reads the clock face
+const base = { entryInProgress: false, waiting: true, now: NOW, lastWriteAt: null, lastDismissedAt: null, idleMs: IDLE_MS, quietMs: QUIET_MS };
 const decide = (o) => decidePrompt({ ...base, ...o });
 
+console.log('\n══ The waits are 15 and 10 minutes ══');
+eq('idle after a write', IDLE_MS, 15 * MIN);
+eq('quiet after a dismissal', QUIET_MS, 10 * MIN);
+
 console.log('\n══ Rule 1: a sheet or form open wins over everything ══');
-eq('form open at 16:00 with update waiting → hidden', decide({ entryInProgress: true, now: IST(2026, 9, 17, 16, 0) }).reason, 'entry_in_progress');
-eq('form open during first-after-close moment → hidden, after-close NOT used up', decide({ entryInProgress: true, now: IST(2026, 9, 17, 15, 50) }), { show: false, reason: 'entry_in_progress', markAfterClose: null });
-eq('form open with untrusted clock → still reported as entry_in_progress (checked first)', decide({ entryInProgress: true, now: null }).reason, 'entry_in_progress');
+eq('form open with an update waiting → hidden', decide({ entryInProgress: true }).reason, 'entry_in_progress');
+eq('form open and idle for hours → still hidden', decide({ entryInProgress: true, lastWriteAt: NOW - 5 * 60 * MIN }).reason, 'entry_in_progress');
+eq('form open with no clock → still reported as entry_in_progress (checked first)', decide({ entryInProgress: true, now: null }).reason, 'entry_in_progress');
 
-console.log('\n══ No update / untrusted clock ══');
-eq('nothing waiting → hidden', decide({ waiting: false, now: IST(2026, 9, 17, 16, 0) }).reason, 'no_update_waiting');
-eq('clock untrusted → hidden', decide({ now: null }).reason, 'clock_untrusted');
+console.log('\n══ Nothing waiting ══');
+eq('no update → hidden', decide({ waiting: false }).reason, 'no_update_waiting');
+eq('a broken clock value → hidden rather than guessed', decide({ now: null }).reason, 'no_clock');
 
-console.log('\n══ Rule 2 in the decision ══');
-for (const [h, m] of [[9, 0], [9, 15], [11, 30], [15, 44]]) {
-  eq(`${h}:${String(m).padStart(2, '0')} IST → hidden even if never shown today`, decide({ now: IST(2026, 9, 17, h, m) }).reason, 'market_hours');
+console.log('\n══ Rule 2: 15 minutes after the student\'s last write ══');
+eq('saved 1 minute ago → hidden', decide({ lastWriteAt: NOW - MIN }).reason, 'recent_write');
+eq('saved 14m59s ago → hidden', decide({ lastWriteAt: NOW - (15 * MIN - 1000) }).reason, 'recent_write');
+eq('saved exactly 15 min ago → shown', decide({ lastWriteAt: NOW - 15 * MIN }), { show: true, reason: 'idle' });
+eq('saved 3 hours ago → shown', decide({ lastWriteAt: NOW - 180 * MIN }).show, true);
+eq('never written (new student) → shown', decide({ lastWriteAt: null }).show, true);
+eq('write rule beats the quiet period when both would hide (write reported first)',
+  decide({ lastWriteAt: NOW - MIN, lastDismissedAt: NOW - MIN }).reason, 'recent_write');
+eq('preview idle (60s) honoured', decide({ lastWriteAt: NOW - 61 * 1000, idleMs: 60 * 1000 }).show, true);
+
+console.log('\n══ Time of day is no longer a rule ══');
+for (const [h, label] of [[9 * 60, '09:00 IST'], [11 * 60 + 30, '11:30 IST'], [15 * 60 + 30, '15:30 IST'], [20 * 60, '20:00 IST']]) {
+  // IST wall time h, expressed as an epoch, with no write and no dismissal.
+  const t = Date.UTC(2026, 8, 19) + (h - 330) * MIN;
+  eq(`${label}: idle student sees the prompt`, decide({ now: t }).show, true);
+}
+eq('…and a student mid-entry never does, whatever the hour',
+  decide({ now: Date.UTC(2026, 8, 19) + (11 * 60 - 330) * MIN, entryInProgress: true }).show, false);
+
+console.log('\n══ Rule 3: 10-minute quiet period after ✕ ══');
+eq('dismissed 9m59s ago → hidden', decide({ lastDismissedAt: NOW - (10 * MIN - 1000) }).reason, 'quiet_period');
+eq('dismissed exactly 10 min ago → shown', decide({ lastDismissedAt: NOW - 10 * MIN }).show, true);
+eq('never dismissed → shown', decide({}).show, true);
+eq('preview quiet period (30s) honoured', decide({ lastDismissedAt: NOW - 31 * 1000, quietMs: 30 * 1000 }).show, true);
+
+console.log('\n══ A clock that jumps can release the prompt, never silence it forever ══');
+eq('dismissal stamped in the future → ignored', decide({ lastDismissedAt: NOW + 60 * MIN }).show, true);
+eq('write stamped in the future → ignored', decide({ lastWriteAt: NOW + 60 * MIN }).show, true);
+eq('elapsedSince: no stamp / future stamp / real gap', [elapsedSince(NOW, null), elapsedSince(NOW, NOW + 1000), elapsedSince(NOW, NOW - 5 * MIN)], [null, null, 5 * MIN]);
+eq('elapsedSince: zero and negative stamps are not stamps', [elapsedSince(NOW, 0), elapsedSince(NOW, -5)], [null, null]);
+{
+  // The device clock is 7 hours slow. Both stamps came off the SAME clock, so
+  // the elapsed time is still right — this is why no server clock is needed.
+  const slow = NOW - 7 * 60 * MIN;
+  eq('device clock hours off → decision unchanged', decide({ now: slow, lastWriteAt: slow - 16 * MIN }).show, true);
+  eq('…and still suppressed inside the window', decide({ now: slow, lastWriteAt: slow - 2 * MIN }).reason, 'recent_write');
 }
 
-console.log('\n══ Rule 3: first foreground return after 15:45 ignores the quiet period ══');
+console.log('\n══ The stamp the rule depends on ══');
 {
-  const now = IST(2026, 9, 17, 15, 46);
-  const d = decide({ now, lastDismissedAt: now - 60 * 1000 });
-  eq('dismissed 1 min ago, first return after close → shown', [d.show, d.reason], [true, 'first_after_close']);
-  eq('…and marks today\'s close as used', d.markAfterClose === afterCloseKey(now), true);
-  const again = decide({ now: now + 2 * MIN, lastDismissedAt: now + MIN, shownAfterClose: d.markAfterClose });
-  eq('dismissed after that → quiet period applies again', again.reason, 'quiet_period');
-}
-{
-  const d = decide({ now: IST(2026, 9, 18, 7, 0), shownAfterClose: afterCloseKey(IST(2026, 9, 17, 16, 0)) });
-  eq('next morning 07:00, yesterday\'s close already used → normal rule (shown, not after-close)', [d.show, d.reason], [true, 'outside_market_hours']);
-}
-{
-  const d = decide({ now: IST(2026, 9, 18, 7, 0), shownAfterClose: afterCloseKey(IST(2026, 9, 16, 16, 0)) });
-  eq('app not opened after yesterday\'s close → 07:00 counts as the first return after close', d.reason, 'first_after_close');
-}
-
-console.log('\n══ Rule 4: 10-minute quiet period outside market hours ══');
-{
-  const now = IST(2026, 9, 17, 20, 0);
-  const used = afterCloseKey(now);
-  eq('dismissed 9m59s ago → hidden', decide({ now, shownAfterClose: used, lastDismissedAt: now - (10 * MIN - 1000) }).reason, 'quiet_period');
-  eq('dismissed exactly 10 min ago → shown', decide({ now, shownAfterClose: used, lastDismissedAt: now - 10 * MIN }).show, true);
-  eq('never dismissed → shown', decide({ now, shownAfterClose: used }).show, true);
-  eq('dismissal in the "future" (clock moved back) does not silence it forever', decide({ now, shownAfterClose: used, lastDismissedAt: now + 60 * MIN }).show, true);
-  eq('preview quiet period (30s) honoured', decide({ now, shownAfterClose: used, lastDismissedAt: now - 31 * 1000, quietMs: 30 * 1000 }).show, true);
-}
-
-console.log('\n══ Clock trust ══');
-const BUILD = '20260917.1005-5707e5c';
-eq('build stamp parsed as UTC', new Date(buildTime(BUILD)).toISOString(), '2026-09-17T10:05:00.000Z');
-{
-  const dev = IST(2026, 9, 17, 16, 0);
-  eq('recent measurement, small skew → server-confirmed device time',
-    trustedNow(dev, { skewMs: 1200, measuredAt: dev - 5 * MIN }, BUILD), { now: dev + 1200, reason: 'server_confirmed' });
-  const wrong = dev - 7 * 60 * MIN; // device clock 7 hours slow: shows 09:00 IST at a real 16:00
-  const t = trustedNow(wrong, { skewMs: 7 * 60 * MIN, measuredAt: wrong - MIN }, BUILD);
-  eq('device clock 7 h slow → corrected with the server skew', [t.reason, istMinutes(t.now)], ['server_corrected', 16 * 60]);
-  eq('…so the corrected time is outside market hours and the prompt may show', decide({ now: t.now }).show, true);
-  const fast = dev - 6 * 60 * MIN + 30 * MIN; // real 10:30 IST, device says 16:30
-  const tf = trustedNow(fast + 6 * 60 * MIN, { skewMs: -6 * 60 * MIN, measuredAt: fast + 6 * 60 * MIN - MIN }, BUILD);
-  eq('device clock 6 h FAST (says 16:30 at a real 10:30) → corrected back into market hours → hidden', decide({ now: tf.now }).reason, 'market_hours');
-  eq('no measurement, device clock plausible → still untrusted (hidden)', trustedNow(dev, null, BUILD), { now: null, reason: 'clock_unverified' });
-  eq('no measurement, device clock before the running build → clearly off', trustedNow(buildTime(BUILD) - 2 * 24 * 60 * MIN, null, BUILD).reason, 'clock_clearly_off');
-  eq('measurement older than a day → not used', trustedNow(dev, { skewMs: 0, measuredAt: dev - 25 * 60 * MIN }, BUILD).now, null);
-  eq('skew limit is 5 minutes', CLOCK_SKEW_LIMIT_MS, 5 * MIN);
-}
-
-console.log('\n══ Preview-only IST override ══');
-{
-  const real = Date.UTC(2026, 8, 17, 4, 30, 17); // 10:00:17 IST
-  const moved = withIstTime(real, '16:05');
-  eq('moves only the time of day', [istMinutes(moved), istDay(moved) === istDay(real)], [16 * 60 + 5, true]);
-  eq('garbage leaves time unchanged', withIstTime(real, 'soon'), real);
+  const html = fs.readFileSync(new URL('../src/journal-content.html', import.meta.url), 'utf8');
+  const ls = html.slice(html.indexOf('function ls(k,v)'), html.indexOf('function ge(id)'));
+  eq('the journal stamps mpvLastWrite inside ls(), the one function every save goes through',
+    /localStorage\.setItem\('mpvLastWrite',String\(Date\.now\(\)\)\)/.test(ls), true);
+  eq('…only after startApp finished, so booting does not count as working',
+    /if\(MPV_STARTED\)/.test(ls) && /MPV_STARTED=true/.test(html), true);
+  const sync = fs.readFileSync(new URL('../src/utils/journalSync.js', import.meta.url), 'utf8');
+  const keys = sync.slice(sync.indexOf('JOURNAL_KEYS'), sync.indexOf('STAMP_KEY'));
+  eq('…and the stamp never syncs to the cloud (device-local)', keys.includes('mpvLastWrite'), false);
+  const pwa = fs.readFileSync(new URL('../src/pwa.js', import.meta.url), 'utf8');
+  eq('the app reads that stamp for the decision', pwa.includes("const LS_LAST_WRITE = 'mpvLastWrite'") && pwa.includes('lastWriteAt'), true);
+  eq('no market-hours rule survives anywhere', /MARKET_BLOCK|market_hours|first_after_close|afterCloseKey/.test(pwa + fs.readFileSync(new URL('../src/utils/updatePrompt.js', import.meta.url), 'utf8')), false);
+  eq('no server-clock call survives (an offline student still gets the prompt)', /__clock/.test(pwa), false);
 }
 
 console.log('\n══ entryInProgress against fake documents ══');

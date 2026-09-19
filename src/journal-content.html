@@ -1178,8 +1178,17 @@ function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}ca
 // never write one account's journal into another account's storage.
 var MPV_OWNER_BOOT=null;try{MPV_OWNER_BOOT=localStorage.getItem('mpvOwner');}catch(e){}
 var MPV_OWNER_LOST=false;
+// True once startApp() has finished. Writes before that are boot bookkeeping,
+// not the student typing — see the write stamp in ls().
+var MPV_STARTED=false;
 function ownerOk(){try{return localStorage.getItem('mpvOwner')===MPV_OWNER_BOOT;}catch(e){return true;}}
-function ls(k,v){if(!ownerOk()){if(!MPV_OWNER_LOST){MPV_OWNER_LOST=true;try{window.parent.postMessage({type:'MPV_OWNER_CHANGED'},'*');}catch(e3){}}return;}try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;try{window.parent.postMessage({type:'MPV_DB_DIRTY'},'*');}catch(e2){}}
+function ls(k,v){if(!ownerOk()){if(!MPV_OWNER_LOST){MPV_OWNER_LOST=true;try{window.parent.postMessage({type:'MPV_OWNER_CHANGED'},'*');}catch(e3){}}return;}try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}MEM[k]=v;
+  // When did this student last actually write something? The app reads this
+  // stamp and will not raise the "new version" prompt within 15 minutes of it
+  // (src/utils/updatePrompt.js). Device-local: NOT in JOURNAL_KEYS, so it is
+  // never pushed to the cloud and never travels to a second device.
+  if(MPV_STARTED){try{localStorage.setItem('mpvLastWrite',String(Date.now()));}catch(e4){}}
+  try{window.parent.postMessage({type:'MPV_DB_DIRTY'},'*');}catch(e2){}}
 function ge(id){return document.getElementById(id);}
 
 var DB={f:{},pm:[],tr:[],eod:[],h:{g:{},s:0,b:0},psyday:[],mirror:[],weekly:[],monthly:[],rules:[],strategy:{},insight:{}};
@@ -2829,6 +2838,7 @@ function startApp(){
   if(MPV_BUILD&&MPV_BUILD.indexOf('__')!==0&&DB.f._build!==MPV_BUILD){DB.f._build=MPV_BUILD;ls('mpvf',DB.f);}
   // The app decides which screen — student never picks a tab
   dayGo(autoDay());
+  MPV_STARTED=true; // from here on, every ls() is the student's own work
 }
 
 // ────── INIT ──────
