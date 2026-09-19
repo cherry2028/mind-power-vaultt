@@ -4,6 +4,15 @@ import { sumPnl, whyNot } from './gates.js';
 export const MIN_N = 10;
 export const MIN_TIME_COVERAGE = 0.9;
 
+// The buckets below are Indian equity session edges. A file whose fills do not
+// sit inside that session (MCX, currency, or any non-Indian venue) would get
+// labels its trades never had — "09:15–09:30" printed over a market that has
+// no 09:15 open. So the file itself has to prove it is session-shaped first.
+// 09:00 covers the pre-open window, 15:40 covers closing-window stamps.
+export const SESSION_FROM = 9 * 3600;
+export const SESSION_TO = 15 * 3600 + 40 * 60;
+export const MIN_SESSION_SHARE = 0.9;
+
 const H = (h, m) => h * 3600 + m * 60;
 // Fixed edges. Never searched for the worst window.
 export const BUCKETS = [
@@ -18,8 +27,19 @@ export const BUCKETS = [
 
 export const bucketOf = (sec) => BUCKETS.find((b) => sec >= b.from && sec < b.to);
 
+// Share of timed trades opened inside the Indian equity session. Timeless
+// trades are not counted either way — MIN_TIME_COVERAGE already gates those.
+export function sessionShare(trades) {
+  const timed = trades.filter((t) => t.entrySec !== null && t.entrySec !== undefined);
+  if (!timed.length) return 0;
+  return timed.filter((t) => t.entrySec >= SESSION_FROM && t.entrySec <= SESSION_TO).length / timed.length;
+}
+
 export function timeOfDay(trades, totalLossPaise, timeCoverage) {
   if (timeCoverage < MIN_TIME_COVERAGE) return { skipped: { id: 'F3', reason: 'no_time' } };
+
+  const share = sessionShare(trades);
+  if (share < MIN_SESSION_SHARE) return { skipped: { id: 'F3', reason: 'not_indian_session', share } };
 
   const rows = BUCKETS.map((b) => {
     const ts = trades.filter((t) => t.entrySec !== null && bucketOf(t.entrySec) === b);

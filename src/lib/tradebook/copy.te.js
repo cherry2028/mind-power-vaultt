@@ -190,6 +190,7 @@ export function skippedLine(s) {
   switch (s.reason) {
     case 'min_n': return `${name}: ఒక group లో గరిష్ఠంగా ${n(s.n)} trades. కనీసం ${n(s.min)} కావాలి — చూపడం లేదు.`;
     case 'no_time': return `${name}: ఈ file లో trade time column లేదు — చూపడం లేదు.`;
+    case 'not_indian_session': return `${name}: ఈ report లోని time buckets NSE/BSE equity session (09:15–15:30) కోసం. ${s.share ? `ఈ file లో ${Math.round(s.share * 100)}% trades మాత్రమే 09:00–15:40 మధ్య open అయ్యాయి` : `ఈ file లో ఏ trade కూడా 09:00–15:40 మధ్య open అవ్వలేదు`} — వేరే market timings. తప్పు labels వేయకుండా చూపడం లేదు.`;
     case 'one_trade': return `${name}: నష్టం ఒక్క trade వల్లే — ఆ ఒక్కటి తీసేస్తే నష్టం లేదు. Pattern గా చూపడం లేదు.`;
     case 'too_small': return `${name}: నష్టం ₹1,000 లేదా మొత్తం losses లో 5% కంటే తక్కువ — చూపడం లేదు.`;
     case 'no_pattern':

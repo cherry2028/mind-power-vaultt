@@ -2,7 +2,7 @@
 import { leakTest, shareGate, median, whyNot } from '../src/lib/tradebook/findings/gates.js';
 import { concentration } from '../src/lib/tradebook/findings/concentration.js';
 import { instrument } from '../src/lib/tradebook/findings/instrument.js';
-import { timeOfDay, bucketOf } from '../src/lib/tradebook/findings/timeOfDay.js';
+import { timeOfDay, bucketOf, sessionShare } from '../src/lib/tradebook/findings/timeOfDay.js';
 import { size } from '../src/lib/tradebook/findings/size.js';
 import { buildModel } from '../src/lib/tradebook/report.js';
 
@@ -55,6 +55,29 @@ eq('9 trades per instrument → skipped min_n', instrument(rep(9, () => T(-2000,
 console.log('\n══ F3 time of day ══');
 eq('bucket edges: 09:15:00 open, 09:29:59 open, 09:30:00 early, 15:30:00 late', [bucketOf(33300).id, bucketOf(34199).id, bucketOf(34200).id, bucketOf(55800).id], ['open', 'open', 'early', 'late']);
 eq('no time column → skipped no_time', timeOfDay(rep(50, () => T(-1)), 0, 0.5).skipped.reason, 'no_time');
+
+// The buckets are Indian equity session edges. A file from another market must
+// never be printed under them — "09:15–09:30" over a venue with no 09:15 open.
+eq('sessionShare: 09:00 and 15:40 are inside, 08:59 and 15:41 are not',
+  [sessionShare([T(-1, { entrySec: 9 * 3600 })]), sessionShare([T(-1, { entrySec: 15 * 3600 + 40 * 60 })]),
+   sessionShare([T(-1, { entrySec: 9 * 3600 - 1 })]), sessionShare([T(-1, { entrySec: 15 * 3600 + 40 * 60 + 1 })])],
+  [1, 1, 0, 0]);
+eq('sessionShare ignores trades with no time', sessionShare([T(-1, { entrySec: 11 * 3600 }), T(-1, { entrySec: null })]), 1);
+{
+  // MCX-shaped file: an evening commodity session, a real loss, enough trades.
+  const mcx = [...rep(15, () => T(-700, { entrySec: 21 * 3600 })), ...rep(30, () => T(300, { entrySec: 19 * 3600 }))];
+  const r = timeOfDay(mcx, 15 * 70000, 1);
+  eq('non-session file → skipped, not bucketed', [r.finding, r.skipped.reason, Math.round(r.skipped.share * 100)], [undefined, 'not_indian_session', 0]);
+}
+{
+  // 89% inside the session is still not enough; 90% is.
+  const mk = (inside) => [...rep(inside, () => T(-700, { entrySec: 10 * 3600 })), ...rep(100 - inside, () => T(-700, { entrySec: 21 * 3600 }))];
+  eq('89% inside → skipped, 90% inside → bucketed',
+    [timeOfDay(mk(89), 100 * 70000, 1).skipped.reason, timeOfDay(mk(90), 100 * 70000, 1).finding.id],
+    ['not_indian_session', 'F3']);
+}
+eq('an all-Indian-session file is unaffected by the guard',
+  sessionShare([...rep(15, () => T(-700, { entrySec: 9 * 3600 + 20 * 60 })), ...rep(30, () => T(300, { entrySec: 13 * 3600 }))]), 1);
 {
   const ts = [...rep(15, () => T(-700, { entrySec: 9 * 3600 + 20 * 60 })), ...rep(30, () => T(300, { entrySec: 13 * 3600 }))];
   const r = timeOfDay(ts, 15 * 70000, 1);
