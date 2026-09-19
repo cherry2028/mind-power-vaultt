@@ -812,6 +812,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
               <div class="fld"><div class="lbl">Overtrading Alert After</div><input type="number" id="f-ota" placeholder="3"/></div>
             </div>
           </div>
+          <div class="card">
+            <div class="ct">నా Market</div>
+            <div class="fld">
+              <div class="lbl">ఏ market లో trade చేస్తావు?</div>
+              <div class="ew" id="fmw">
+                <button type="button" class="eb on" id="f-mkt-in" onclick="pMkt(this,'in')">🇮🇳 Indian — equity / F&amp;O</button>
+                <button type="button" class="eb" id="f-mkt-24" onclick="pMkt(this,'24x7')">🌐 24x7 — crypto / forex / gold</button>
+              </div>
+              <input type="hidden" id="f-mkt" value="in">
+              <div id="f-mkt-h" style="font-size:11.5px;color:#9A8870;line-height:1.85;margin-top:9px"></div>
+            </div>
+          </div>
           <div class="rgt"><button class="btn bpri" onclick="saveF()">Foundation Save చేయి ✦</button></div>
         </div>
 
@@ -1189,7 +1201,31 @@ function loadDB(){
   for(var i=0;i<keys.length;i++){var a=lg(keys[i][0]);if(a)DB[keys[i][1]]=a;}
 }
 
-function td(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// ───────── WHERE THE DAY ENDS ─────────
+// Every screen that asks "is this today?" — kill switch, daily loss limit,
+// overtrading count, ritual gate, EOD, streaks, the daily licence — goes
+// through td(). This is the ONLY place the boundary is decided, and the ONLY
+// thing the market setting changes.
+//
+//   Indian (default): the device's calendar date. Exactly what this journal
+//   has always done. An Indian session opens and closes inside one date, so
+//   midnight is never in the middle of it.
+//
+//   24x7: the day rolls over at 05:30 IST, which is 00:00 UTC — where a crypto
+//   daily candle closes, where daily volume resets and where the funding
+//   window turns over. Forex and gold roll at 17:00 New York, within a couple
+//   of hours of the same line. It means a position taken at 02:00 IST still
+//   belongs to the session the trader was actually in, instead of starting a
+//   fresh "day" in the middle of their night. Because that boundary IS 00:00
+//   UTC, the 24x7 day is simply the UTC date — so unlike the Indian branch it
+//   does not depend on how the device's timezone is set.
+//
+// A student who never answers the question is Indian, so nothing moves for
+// anyone who does not choose otherwise.
+function mktMode(){return (DB&&DB.f&&DB.f.mkt==='24x7')?'24x7':'in';}
+function tdLocal(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function td24(){var d=new Date();return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');}
+function td(){return mktMode()==='24x7'?td24():tdLocal();}
 function fi(n){return Math.abs(Number(n||0)).toLocaleString('en-IN');}
 function pc(v){return Number(v)>=0?'#4CAF82':'#CF6679';}
 function ps2(v){var n=Number(v||0);return(n>=0?'+':'-')+'₹'+fi(n);}
@@ -1554,10 +1590,29 @@ function toggleVoice(){
 }
 
 // ────── FOUNDATION ──────
-function loadF(){var f=DB.f||{};var mp=[['why','f-why'],['con','f-con'],['edge','f-edge'],['vis','f-vis'],['cap','f-cap'],['day','f-day'],['wk','f-wk'],['maxt','f-maxt'],['ota','f-ota']];for(var i=0;i<mp.length;i++){var el=ge(mp[i][1]);if(el&&f[mp[i][0]])el.value=f[mp[i][0]];}}
+function loadF(){var f=DB.f||{};var mp=[['why','f-why'],['con','f-con'],['edge','f-edge'],['vis','f-vis'],['cap','f-cap'],['day','f-day'],['wk','f-wk'],['maxt','f-maxt'],['ota','f-ota']];for(var i=0;i<mp.length;i++){var el=ge(mp[i][1]);if(el&&f[mp[i][0]])el.value=f[mp[i][0]];}showMkt(mktMode());}
+// Paint the chips and say plainly what the choice does to "today".
+function showMkt(v){
+  var h=ge('f-mkt');if(h)h.value=v;
+  var a=ge('f-mkt-in'),b=ge('f-mkt-24');
+  if(a&&b){
+    a.classList.toggle('on',v==='in');b.classList.toggle('on',v==='24x7');
+    var onC='#C9A84C';
+    a.style.color=v==='in'?onC:'';a.style.borderColor=v==='in'?onC:'';
+    b.style.color=v==='24x7'?onC:'';b.style.borderColor=v==='24x7'?onC:'';
+  }
+  var t=ge('f-mkt-h');
+  if(t)t.innerHTML=(v==='24x7'
+    ?'రోజు <b>ఉదయం 5:30 (IST)</b> కి మారుతుంది — అదే 00:00 UTC, crypto daily candle close అయ్యేది అక్కడే. అంటే రాత్రి 2 గంటలకు చేసిన trade ఇంకా ముందు రోజుదే.'
+    :'రోజు <b>అర్ధరాత్రి 12:00</b> కి మారుతుంది — ఇప్పుడు ఉన్నట్టే, ఏ మార్పూ లేదు.')
+    +'<br>ఈ setting kill switch, daily loss limit, overtrading count, ritual, EOD, streak — అన్నిటికీ "ఈరోజు" ఏదో నిర్ణయిస్తుంది. Trades ఏవీ మారవు; ఇప్పటికే save అయిన dates అలాగే ఉంటాయి.';
+}
+function pMkt(btn,v){showMkt(v);}
 function saveF(){
   if(!DB.f._firstDay)DB.f._firstDay=td();
   DB.f.why=ge('f-why').value;DB.f.con=ge('f-con').value;DB.f.edge=ge('f-edge').value;DB.f.vis=ge('f-vis').value;DB.f.cap=ge('f-cap').value;DB.f.day=ge('f-day').value;DB.f.wk=ge('f-wk').value;DB.f.maxt=ge('f-maxt').value;DB.f.ota=ge('f-ota').value;
+  // Only ever 'in' or '24x7' — anything else is treated as Indian by mktMode().
+  DB.f.mkt=(ge('f-mkt')&&ge('f-mkt').value==='24x7')?'24x7':'in';
   ls('mpvf',DB.f);toast('Foundation save అయింది ✦');
 }
 
@@ -1786,7 +1841,7 @@ function rWk(){
 
 // ────── MONTHLY ──────
 function saveMonthly(){var d={id:Date.now(),month:ge('mn-dt').value,mistake:ge('mn-mis').value,strength:ge('mn-str').value,level:ge('mnlv').value,letter:ge('mn-let').value};DB.monthly.push(d);ls('mpvmn',DB.monthly);toast('Monthly save అయింది ✦');}
-function rMn(){var now=new Date();var mStart=new Date(now.getFullYear(),now.getMonth(),1);var mTr=[],mP=0,mW=0;for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=mStart){mTr.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);mP+=pv;if(pv>0)mW++;}}var mWr=mTr.length?Math.round(mW/mTr.length*100):0;var mEod=[];for(var i=0;i<DB.eod.length;i++){if(new Date(DB.eod[i].date)>=mStart)mEod.push(DB.eod[i]);}var mAvg=0;for(var i=0;i<mEod.length;i++)mAvg+=(mEod[i].proc||0);if(mEod.length)mAvg=mAvg/mEod.length;var we=ge('mnpnl');we.textContent=(mP>=0?'+':'-')+'₹'+fi(mP);we.style.color=pc(mP);ge('mntr').textContent=mTr.length;ge('mnwr').textContent=mWr+'%';ge('mnpr').textContent=mAvg.toFixed(1);var mn=ge('mn-dt');if(mn&&!mn.value){var y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');mn.value=y+'-'+mo;}}
+function rMn(){var mStart=new Date(td().slice(0,7)+'-01');var mTr=[],mP=0,mW=0;for(var i=0;i<DB.tr.length;i++){if(new Date(DB.tr[i].date)>=mStart){mTr.push(DB.tr[i]);var pv=Number(DB.tr[i].pnl||0);mP+=pv;if(pv>0)mW++;}}var mWr=mTr.length?Math.round(mW/mTr.length*100):0;var mEod=[];for(var i=0;i<DB.eod.length;i++){if(new Date(DB.eod[i].date)>=mStart)mEod.push(DB.eod[i]);}var mAvg=0;for(var i=0;i<mEod.length;i++)mAvg+=(mEod[i].proc||0);if(mEod.length)mAvg=mAvg/mEod.length;var we=ge('mnpnl');we.textContent=(mP>=0?'+':'-')+'₹'+fi(mP);we.style.color=pc(mP);ge('mntr').textContent=mTr.length;ge('mnwr').textContent=mWr+'%';ge('mnpr').textContent=mAvg.toFixed(1);var mn=ge('mn-dt');if(mn&&!mn.value)mn.value=td().slice(0,7);}
 
 // ────── HABITS ──────
 var HD=[{id:'rules',l:'అన్ని rules follow చేశాను'},{id:'nr',l:'Revenge trade లేదు'},{id:'sl',l:'Stop loss respect చేశాను'},{id:'ck',l:'Pre-trade checklist చేశాను'},{id:'eod',l:'EOD review చేశాను'},{id:'no',l:'Overtrading లేదు'}];
@@ -2631,7 +2686,15 @@ function toggleHero(){HERO_ALL=!HERO_ALL;renderHero();}
 
 // ── INSIGHT ENGINE (variable reward — one card per Evening Mirror) ──
 function closedTr(){var a=[];for(var i=0;i<DB.tr.length;i++){if(DB.tr[i].status!=='open')a.push(DB.tr[i]);}return a;}
-function daysAgoStr(n){var x=new Date();x.setDate(x.getDate()-n);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
+// n days before the student's current day — same boundary as td(). Parsed as
+// UTC so a month end or a DST jump can never shift it by one.
+function dayMinus(n){
+  var q=td().split('-');
+  var x=new Date(Date.UTC(Number(q[0]),Number(q[1])-1,Number(q[2])));
+  x.setUTCDate(x.getUTCDate()-n);
+  return x.getUTCFullYear()+'-'+String(x.getUTCMonth()+1).padStart(2,'0')+'-'+String(x.getUTCDate()).padStart(2,'0');
+}
+function daysAgoStr(n){return dayMinus(n);}
 function trWinRate(list){var w=0;for(var i=0;i<list.length;i++)if(Number(list[i].pnl||0)>0)w++;return list.length?Math.round(w/list.length*100):0;}
 function buildInsight(){
   var T=closedTr(),all=DB.tr,cands=[];
@@ -2966,9 +3029,7 @@ function sendWeeklyPdf(){
     if(!name||!name.trim()){toast('Name లేకుండా report పంపలేము.');return;}
     name=name.trim();ls('mpvname',name);
   }
-  var end=new Date(),start=new Date();start.setDate(end.getDate()-6);
-  function ds(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-  var ws=ds(start),we=ds(end);
+  var ws=dayMinus(6),we=td(); // the student's own last 7 days
   var trades=[],i;
   for(i=0;i<DB.tr.length;i++){var t=DB.tr[i];if(t.date>=ws&&t.date<=we)trades.push(t);}
   var eods=[];

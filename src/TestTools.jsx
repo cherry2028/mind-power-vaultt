@@ -10,6 +10,18 @@ import { OWNER_KEY, readOwner, maskEmail, isBlankDevice } from './utils/accountB
 //
 // They write localStorage directly and never touch the cloud.
 
+// A mirror of the journal's own day rule, for the phone test only: it shows
+// what each market setting WOULD call today, so the boundary can be checked
+// without sitting up until 05:30 IST. The journal itself is the source of
+// truth (td() in journal-content.html); nothing here feeds back into it.
+const pad2 = (n) => String(n).padStart(2, '0');
+const dayIndian = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+const day24x7 = () => { const d = new Date(); return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`; };
+const marketMode = () => {
+  try { return JSON.parse(localStorage.getItem('mpvf') || '{}').mkt === '24x7' ? '24x7' : 'in (default)'; }
+  catch { return '?'; }
+};
+
 const FOREIGN_INST = 'TEST-FOREIGN';
 const NODIR_PREFIX = 'TEST-NODIR-'; // ⑧ ⑨: pre-fix trades with no direction
 const FOREIGN_ID = 1600000000000; // 2020-09-13 — older than any sync stamp on a test phone
@@ -79,6 +91,8 @@ function makeView() {
       ['EOD reviews', String(readArr('mpveod').length)],
       ['PIN set', localStorage.getItem('mpvPin') ? 'yes' : 'no'],
       ['blank device', isBlankDevice() ? 'yes' : 'no'],
+      ['market (Foundation)', marketMode()],
+      ['day now — Indian / 24x7', `${dayIndian()} / ${day24x7()}${dayIndian() === day24x7() ? '  (same)' : '  ← DIFFERENT'}`],
     ],
     trail: readTrail(),
   };
